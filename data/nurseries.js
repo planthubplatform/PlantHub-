@@ -17,8 +17,8 @@
 const NURSERIES = [
   {
     id: "acreage-palms",
-    name: "Acreage Palm Growers",
-    city: "Loxahatchee",
+    name: "Beautiful Gardens Growers",
+    city: "Acreage",
     state: "FL",
     phone: "(555) 0142-0118",
     email: "sales@example.com",
