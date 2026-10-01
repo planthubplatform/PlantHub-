@@ -81,12 +81,12 @@ function agoShort(days) {
 // The colours for each band. Kept in one place so the dot, the text and the
 // card badge can never disagree with each other.
 const TIER_STYLE = {
-  fresh:  { dot: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-400",
-            chip: "bg-emerald-50 dark:bg-emerald-950/40 ring-emerald-600/20" },
+  fresh:  { dot: "bg-signal-500", text: "text-signal-700 dark:text-signal-400",
+            chip: "bg-signal-50 dark:bg-signal-700/20 ring-signal-600/25" },
   recent: { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-400",
             chip: "bg-amber-50 dark:bg-amber-950/40 ring-amber-600/20" },
-  stale:  { dot: "bg-stone-400",   text: "text-stone-500 dark:text-stone-400",
-            chip: "bg-stone-100 dark:bg-stone-800 ring-stone-500/20" },
+  stale:  { dot: "bg-ink-400",   text: "text-ink-400 dark:text-stone-400",
+            chip: "bg-ink-50 dark:bg-ink-800 ring-ink-400/25" },
 };
 
 // ---------------------------------------------------------------------------
@@ -276,7 +276,7 @@ function highlight(text, words) {
     if (word.length < 2) return;
     // "gi" = find every match, ignoring capital letters.
     const pattern = new RegExp("(" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
-    safe = safe.replace(pattern, '<mark class="bg-amber-200 dark:bg-amber-900 dark:text-amber-100 rounded px-0.5">$1</mark>');
+    safe = safe.replace(pattern, '<mark class="bg-clay-100 text-ink-900 dark:bg-clay-700 dark:text-cream rounded px-0.5">$1</mark>');
   });
   return safe;
 }
@@ -296,18 +296,18 @@ function cardHtml(hit, words, index) {
   const n = hit.nursery;
 
   const tags = n.specialties.map(function (s) {
-    return '<span class="text-[11px] uppercase tracking-wide font-medium text-brand-800 dark:text-brand-200 ' +
-      'bg-brand-50 dark:bg-stone-800 px-2.5 py-1 rounded-full">' + escapeHtml(s) + "</span>";
+    return '<span class="text-[11px] uppercase tracking-wide font-medium text-ink-700 dark:text-ink-100 ' +
+      'bg-sand dark:bg-ink-800 px-2.5 py-1 rounded-full">' + escapeHtml(s) + "</span>";
   }).join("");
 
   const rows = hit.plants.map(function (plant) {
     const days = daysSince(plant.updated);
     const style = TIER_STYLE[freshnessTier(days)];
 
-    return '<tr class="border-b border-stone-100 dark:border-stone-800 last:border-0">' +
+    return '<tr class="border-b border-ink-50 dark:border-ink-800 last:border-0">' +
       '<td class="py-2.5 pr-3 align-top">' +
         '<span class="font-medium">' + highlight(plant.common, words) + "</span>" +
-        '<span class="block italic text-[13px] text-stone-500 dark:text-stone-400">' +
+        '<span class="block italic text-[13px] text-ink-400 dark:text-stone-400">' +
           highlight(plant.botanical, words) + "</span></td>" +
       '<td class="py-2.5 pr-3 align-top whitespace-nowrap">' + escapeHtml(plant.size) + "</td>" +
       '<td class="py-2.5 pr-3 align-top whitespace-nowrap tabular-nums font-medium">' +
@@ -327,15 +327,15 @@ function cardHtml(hit, words, index) {
     ? "Availability"
     : "Matching availability (" + hit.plants.length + " of " + n.plants.length + " items)";
 
-  return '<article class="card-rise group bg-white dark:bg-stone-900 ring-1 ring-stone-900/5 dark:ring-white/10 ' +
+  return '<article class="card-rise group bg-white dark:bg-ink-900 ring-1 ring-ink-900/5 dark:ring-white/10 ' +
       'rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-5 sm:p-6" ' +
       'style="animation-delay:' + (index * 45) + 'ms">' +
 
     '<div class="flex flex-wrap items-start justify-between gap-3">' +
       "<div>" +
-        '<h2 class="font-display text-xl font-semibold text-stone-900 dark:text-stone-100">' +
+        '<h2 class="font-display text-xl font-semibold text-ink-900 dark:text-stone-100">' +
           highlight(n.name, words) + "</h2>" +
-        '<p class="text-sm text-stone-500 dark:text-stone-400 mt-0.5">' +
+        '<p class="text-sm text-ink-400 dark:text-stone-400 mt-0.5">' +
           highlight(n.city + ", " + n.state, words) + "</p>" +
       "</div>" +
       freshnessBadge(newestDays(hit.plants)) +
@@ -345,8 +345,8 @@ function cardHtml(hit, words, index) {
 
     '<div class="overflow-x-auto">' +
     '<table class="w-full text-sm border-collapse">' +
-      '<thead><tr class="text-left text-[11px] uppercase tracking-wide text-stone-500 dark:text-stone-400 ' +
-        'border-b border-stone-200 dark:border-stone-800">' +
+      '<thead><tr class="text-left text-[11px] uppercase tracking-wide text-ink-400 dark:text-stone-400 ' +
+        'border-b border-ink-100 dark:border-ink-800">' +
         '<th class="pb-2 pr-3 font-semibold">' + escapeHtml(shownNote) + "</th>" +
         '<th class="pb-2 pr-3 font-semibold">Size</th>' +
         '<th class="pb-2 pr-3 font-semibold">Qty</th>' +
@@ -357,14 +357,14 @@ function cardHtml(hit, words, index) {
     "</div>" +
 
     '<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-4 pt-4 ' +
-      'border-t border-stone-100 dark:border-stone-800 text-sm">' +
-      '<a class="font-medium text-stone-700 dark:text-stone-300 hover:text-brand-700 dark:hover:text-brand-300" ' +
+      'border-t border-ink-50 dark:border-ink-800 text-sm">' +
+      '<a class="font-medium text-ink-700 dark:text-stone-300 hover:text-clay-600 dark:hover:text-clay-300" ' +
         'href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' + escapeHtml(n.phone) + "</a>" +
-      '<a class="text-brand-700 dark:text-brand-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' +
+      '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' +
         escapeHtml(n.email) + "</a>" +
-      '<a class="text-brand-700 dark:text-brand-300 hover:underline" href="' + escapeHtml(n.website) +
+      '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="' + escapeHtml(n.website) +
         '" target="_blank" rel="noopener">Website</a>' +
-      '<span class="text-stone-500 dark:text-stone-400 ml-auto">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
+      '<span class="text-ink-400 dark:text-stone-400 ml-auto">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
     "</div>" +
   "</article>";
 }
@@ -373,14 +373,14 @@ function cardHtml(hit, words, index) {
 // whether it was the search or the freshness filter that emptied the page.
 function emptyHtml(query, blamedOnFilter) {
   const body = blamedOnFilter
-    ? "<p><strong class=\"text-stone-800 dark:text-stone-200\">Nothing updated in the last week</strong></p>" +
+    ? "<p><strong class=\"text-ink-800 dark:text-stone-200\">Nothing updated in the last week</strong></p>" +
       "<p class=\"mt-1.5\">Untick <em>Updated this week only</em> to see older listings.</p>"
-    : '<p><strong class="text-stone-800 dark:text-stone-200">No matches for &ldquo;' +
+    : '<p><strong class="text-ink-800 dark:text-stone-200">No matches for &ldquo;' +
         escapeHtml(query) + '&rdquo;</strong></p>' +
       "<p class=\"mt-1.5\">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by city.</p>";
 
-  return '<div class="bg-white dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700 ' +
-    'rounded-2xl px-5 py-10 text-center text-stone-500 dark:text-stone-400">' + body + "</div>";
+  return '<div class="bg-white dark:bg-ink-900 border border-dashed border-ink-100 dark:border-ink-700 ' +
+    'rounded-2xl px-5 py-10 text-center text-ink-400 dark:text-stone-400">' + body + "</div>";
 }
 
 // Put the results (or a friendly empty message) on the page.

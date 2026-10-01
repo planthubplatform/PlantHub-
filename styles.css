@@ -5,8 +5,12 @@
   index.html) and in the HTML that app.js builds. Tailwind is loaded via a
   <script> tag in index.html — no install, no build step.
 
+  The colour rule, repeated here because it is easy to break by accident:
+  GREEN MEANS FRESH. The warm bloom in the hero below is clay, not green,
+  so that green stays reserved for how recently a listing was confirmed.
+
   What's left in here:
-    1. The hero's glow and leaf texture (a layered background image).
+    1. The hero's bloom and leaf texture (a layered background image).
     2. The example-search "chips", used often enough to deserve one name.
     3. The gentle fade-in on result cards.
 */
@@ -15,14 +19,14 @@
    1. Hero background
    Three layers stacked, front to back:
      - a scattered leaf pattern, drawn as an SVG right here in the file
-     - a soft light bloom coming from the upper left
-     - a deep green base gradient
+     - a warm bloom coming from the upper left (clay, not green)
+     - a near-black green base
 --------------------------------------------------------------------------- */
 .hero-canvas {
   background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='0.07'%3E%3Cpath d='M20 95c0-22 14-38 36-44-4 24-16 38-36 44z'/%3E%3Cpath d='M20 95c14-10 22-22 26-34'/%3E%3Cpath d='M95 30c0 18-11 31-29 36 3-20 13-31 29-36z'/%3E%3Cpath d='M95 30c-11 8-18 18-21 28'/%3E%3C/g%3E%3C/svg%3E"),
-    radial-gradient(70rem 32rem at 12% -10%, rgba(147, 201, 167, 0.28), transparent 60%),
-    linear-gradient(160deg, #14532d 0%, #0d3a1f 55%, #072413 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23faf6ef' stroke-width='1.2' opacity='0.06'%3E%3Cpath d='M20 95c0-22 14-38 36-44-4 24-16 38-36 44z'/%3E%3Cpath d='M20 95c14-10 22-22 26-34'/%3E%3Cpath d='M95 30c0 18-11 31-29 36 3-20 13-31 29-36z'/%3E%3Cpath d='M95 30c-11 8-18 18-21 28'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(68rem 30rem at 10% -12%, rgba(194, 112, 60, 0.30), transparent 62%),
+    linear-gradient(158deg, #16291d 0%, #0b1710 58%, #060f0a 100%);
   background-size: 120px 120px, auto, auto;
 }
 
@@ -33,54 +37,46 @@
   inset-inline: 0;
   bottom: 0;
   height: 5rem;
-  background: linear-gradient(to bottom, transparent, rgba(7, 36, 19, 0.45));
+  background: linear-gradient(to bottom, transparent, rgba(6, 15, 10, 0.5));
   pointer-events: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  .hero-canvas {
-    background-image:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.2' opacity='0.05'%3E%3Cpath d='M20 95c0-22 14-38 36-44-4 24-16 38-36 44z'/%3E%3Cpath d='M20 95c14-10 22-22 26-34'/%3E%3Cpath d='M95 30c0 18-11 31-29 36 3-20 13-31 29-36z'/%3E%3Cpath d='M95 30c-11 8-18 18-21 28'/%3E%3C/g%3E%3C/svg%3E"),
-      radial-gradient(70rem 32rem at 12% -10%, rgba(90, 168, 122, 0.16), transparent 60%),
-      linear-gradient(160deg, #1c1917 0%, #0c0a09 100%);
-  }
 }
 
 /* ---------------------------------------------------------------------------
    2. Example-search chips
+   Sand and ink, with clay on hover. No green: these aren't freshness.
 --------------------------------------------------------------------------- */
 .chip {
   padding: 0.375rem 0.875rem;
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 9999px;
-  border: 1px solid #e3f0e7;
-  background: #f1f8f3;
-  color: #14532d;
+  border: 1px solid #ead9c4;
+  background: #f2e9dc;
+  color: #1b3328;
   cursor: pointer;
   transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
 }
 
 .chip:hover {
-  border-color: #2f7a4d;
-  background: #e3f0e7;
+  border-color: #c2703c;
+  background: #f4ddcb;
   transform: translateY(-1px);
 }
 
 .chip:focus-visible {
-  outline: 2px solid #2f7a4d;
+  outline: 2px solid #c2703c;
   outline-offset: 2px;
 }
 
 @media (prefers-color-scheme: dark) {
   .chip {
-    border-color: #44403c;
-    background: #292524;
-    color: #c3e0cc;
+    border-color: #1b3328;
+    background: #122117;
+    color: #d6e0db;
   }
   .chip:hover {
-    border-color: #5aa87a;
-    background: #44403c;
+    border-color: #c2703c;
+    background: #1b3328;
   }
 }
 
