@@ -1,0 +1,3 @@
+# Python leaves these behind when it runs a script. They are not part of the site.
+__pycache__/
+*.pyc
