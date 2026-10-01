@@ -2,7 +2,8 @@
 <!--
   index.html — the page itself.
   HTML describes WHAT is on the page (headings, boxes, text).
-  The look comes from styles.css, and the search behaviour comes from app.js.
+  The look now comes from Tailwind CSS (loaded below, no install needed —
+  it's a single <script> tag), and the search behaviour comes from app.js.
 -->
 <html lang="en">
 <head>
@@ -10,53 +11,101 @@
   <!-- Tells phones to use their real width instead of pretending to be a desktop. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PlantHub — Wholesale Plant & Nursery Search</title>
+
+  <!-- Tailwind CSS, loaded straight from a CDN: no npm, no build step. -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // Extends Tailwind's default palette with PlantHub's own brand colors,
+    // so classes like "bg-brand-700" or "text-brand-800" are available below.
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50:  '#f1f8f3',
+              100: '#e3f0e7',
+              200: '#c3e0cc',
+              500: '#2f7a4d',
+              700: '#1f5c38',
+              800: '#14532d',
+              900: '#0d3a1f',
+            },
+            cream: '#faf6ef',
+          },
+        },
+      },
+    };
+  </script>
+
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="bg-cream text-stone-900 dark:bg-stone-950 dark:text-stone-100 font-sans leading-relaxed">
 
-  <header class="site-header">
-    <div class="wrap">
-      <h1 class="logo">Plant<span>Hub</span></h1>
-      <p class="tagline">Wholesale plant &amp; nursery search — South Florida</p>
+  <header class="bg-brand-800 dark:bg-stone-900 dark:border-b dark:border-stone-800">
+    <div class="max-w-3xl mx-auto px-4 pt-8 pb-16">
+      <h1 class="font-serif text-3xl sm:text-4xl tracking-tight text-white dark:text-stone-100">
+        Plant<span class="text-brand-200">Hub</span>
+      </h1>
+      <p class="mt-2 text-white/80 dark:text-stone-400 text-sm sm:text-base">
+        Wholesale plant &amp; nursery search — South Florida
+      </p>
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="max-w-3xl mx-auto px-4">
 
     <!-- The search box. "id" gives app.js a way to find this element. -->
-    <section class="search-panel">
-      <label class="search-label" for="search">Search for a plant</label>
-      <div class="search-row">
+    <section class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800
+                     rounded-2xl shadow-lg shadow-brand-900/5 p-5 sm:p-6 -mt-10 mb-6">
+      <label class="block font-semibold text-stone-800 dark:text-stone-100 mb-2" for="search">
+        Search for a plant
+      </label>
+      <div class="flex flex-col sm:flex-row gap-2">
         <input
           type="search"
           id="search"
           placeholder="Try: clusia, live oak, or Wodyetia"
-          autocomplete="off">
-        <button type="button" id="clear" class="clear-btn">Clear</button>
+          autocomplete="off"
+          class="flex-1 min-w-0 px-4 py-3 text-base rounded-xl border border-stone-300 dark:border-stone-700
+                 bg-cream dark:bg-stone-800 text-stone-900 dark:text-stone-100
+                 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500">
+        <button type="button" id="clear"
+          class="px-4 py-3 text-sm font-medium rounded-xl border border-stone-300 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-stone-800 dark:text-stone-200
+                 hover:border-brand-500 transition-colors sm:w-auto w-full">
+          Clear
+        </button>
       </div>
-      <p class="hint">Search by common name, botanical name, nursery, or city.</p>
+      <p class="mt-2.5 text-sm text-stone-500 dark:text-stone-400">
+        Search by common name, botanical name, nursery, or city.
+      </p>
 
       <!-- Quick example searches, so a first-time visitor isn't staring at a blank box. -->
-      <div class="chips" id="chips">
-        <button type="button" class="chip">palm</button>
-        <button type="button" class="chip">clusia</button>
-        <button type="button" class="chip">live oak</button>
-        <button type="button" class="chip">mango</button>
-        <button type="button" class="chip">Loxahatchee</button>
+      <div class="flex flex-wrap gap-2 mt-3" id="chips">
+        <button type="button" class="chip px-3 py-1.5 text-sm rounded-full border border-stone-200 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-brand-800 dark:text-brand-200 hover:border-brand-500 transition-colors">palm</button>
+        <button type="button" class="chip px-3 py-1.5 text-sm rounded-full border border-stone-200 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-brand-800 dark:text-brand-200 hover:border-brand-500 transition-colors">clusia</button>
+        <button type="button" class="chip px-3 py-1.5 text-sm rounded-full border border-stone-200 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-brand-800 dark:text-brand-200 hover:border-brand-500 transition-colors">live oak</button>
+        <button type="button" class="chip px-3 py-1.5 text-sm rounded-full border border-stone-200 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-brand-800 dark:text-brand-200 hover:border-brand-500 transition-colors">mango</button>
+        <button type="button" class="chip px-3 py-1.5 text-sm rounded-full border border-stone-200 dark:border-stone-700
+                 bg-brand-50 dark:bg-stone-800 text-brand-800 dark:text-brand-200 hover:border-brand-500 transition-colors">Loxahatchee</button>
       </div>
     </section>
 
-    <p class="count" id="count"></p>
+    <p class="text-sm text-stone-500 dark:text-stone-400 mb-3" id="count"></p>
 
     <!-- app.js fills this with nursery cards. It starts empty on purpose. -->
-    <div id="results" class="results"></div>
+    <div id="results" class="grid gap-4 mb-10"></div>
 
   </main>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <p><strong>Sample data.</strong> The nurseries, availability and contact details on this
-      page are invented for testing and do not describe real businesses.</p>
+  <footer class="border-t border-stone-200 dark:border-stone-800">
+    <div class="max-w-3xl mx-auto px-4 py-6 text-sm text-stone-500 dark:text-stone-400">
+      <p><strong class="text-stone-700 dark:text-stone-300">Sample data.</strong> The nurseries, availability and
+      contact details on this page are invented for testing and do not describe real businesses.</p>
     </div>
   </footer>
 

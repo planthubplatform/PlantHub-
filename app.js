@@ -151,7 +151,7 @@ function highlight(text, words) {
     if (word.length < 2) return;
     // "gi" = find every match, ignoring capital letters.
     const pattern = new RegExp("(" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
-    safe = safe.replace(pattern, "<mark>$1</mark>");
+    safe = safe.replace(pattern, '<mark class="bg-amber-200 dark:bg-amber-900 dark:text-amber-100 rounded px-0.5">$1</mark>');
   });
   return safe;
 }
@@ -161,15 +161,17 @@ function cardHtml(hit, words) {
   const n = hit.nursery;
 
   const tags = n.specialties.map(function (s) {
-    return '<span class="tag">' + escapeHtml(s) + "</span>";
+    return '<span class="text-xs uppercase tracking-wide text-brand-800 dark:text-brand-200 ' +
+      'bg-brand-50 dark:bg-stone-800 px-2.5 py-1 rounded-full">' + escapeHtml(s) + "</span>";
   }).join("");
 
   const rows = hit.plants.map(function (plant) {
-    return "<tr>" +
-      "<td>" + highlight(plant.common, words) +
-        '<span class="botanical">' + highlight(plant.botanical, words) + "</span></td>" +
-      "<td>" + escapeHtml(plant.size) + "</td>" +
-      '<td class="qty">' + plant.quantity.toLocaleString() + "</td>" +
+    return '<tr class="border-b border-stone-100 dark:border-stone-800 last:border-0">' +
+      '<td class="py-2 pr-2 align-top">' + highlight(plant.common, words) +
+        '<span class="block italic text-sm text-stone-500 dark:text-stone-400">' +
+          highlight(plant.botanical, words) + "</span></td>" +
+      '<td class="py-2 pr-2 align-top">' + escapeHtml(plant.size) + "</td>" +
+      '<td class="py-2 align-top whitespace-nowrap">' + plant.quantity.toLocaleString() + "</td>" +
     "</tr>";
   }).join("");
 
@@ -178,21 +180,27 @@ function cardHtml(hit, words) {
     ? "Availability"
     : "Matching availability (" + hit.plants.length + " of " + n.plants.length + " items)";
 
-  return '<article class="card">' +
-    "<h2>" + highlight(n.name, words) + "</h2>" +
-    '<p class="where">' + highlight(n.city + ", " + n.state, words) + "</p>" +
-    '<div class="tags">' + tags + "</div>" +
-    '<table class="plants">' +
-      "<thead><tr>" +
-        "<th>" + shownNote + "</th><th>Size</th><th>Qty</th>" +
+  return '<article class="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 ' +
+      'rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5">' +
+    '<h2 class="text-lg font-semibold text-stone-900 dark:text-stone-100">' + highlight(n.name, words) + "</h2>" +
+    '<p class="text-sm text-stone-500 dark:text-stone-400 mt-0.5 mb-3">' +
+      highlight(n.city + ", " + n.state, words) + "</p>" +
+    '<div class="flex flex-wrap gap-1.5 mb-4">' + tags + "</div>" +
+    '<table class="w-full text-sm border-collapse">' +
+      '<thead><tr class="text-left text-xs uppercase tracking-wide text-stone-500 dark:text-stone-400 ' +
+        'border-b border-stone-200 dark:border-stone-800">' +
+        "<th class=\"pb-2 pr-2 font-medium\">" + shownNote + "</th>" +
+        '<th class="pb-2 pr-2 font-medium">Size</th><th class="pb-2 font-medium">Qty</th>' +
       "</tr></thead>" +
       "<tbody>" + rows + "</tbody>" +
     "</table>" +
-    '<div class="contact">' +
-      "<span>" + escapeHtml(n.phone) + "</span>" +
-      '<a href="mailto:' + escapeHtml(n.email) + '">' + escapeHtml(n.email) + "</a>" +
-      '<a href="' + escapeHtml(n.website) + '" target="_blank" rel="noopener">Website</a>' +
-      '<span class="min-order">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
+    '<div class="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-stone-100 dark:border-stone-800 text-sm">' +
+      '<span class="text-stone-700 dark:text-stone-300">' + escapeHtml(n.phone) + "</span>" +
+      '<a class="text-brand-700 dark:text-brand-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' +
+        escapeHtml(n.email) + "</a>" +
+      '<a class="text-brand-700 dark:text-brand-300 hover:underline" href="' + escapeHtml(n.website) +
+        '" target="_blank" rel="noopener">Website</a>' +
+      '<span class="text-stone-500 dark:text-stone-400">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
     "</div>" +
   "</article>";
 }
@@ -205,9 +213,11 @@ function render(query) {
   if (hits.length === 0) {
     countLine.textContent = "";
     resultsBox.innerHTML =
-      '<div class="empty">' +
-        "<p><strong>No matches for &ldquo;" + escapeHtml(query) + "&rdquo;</strong></p>" +
-        "<p>Try a shorter search, like <em>palm</em> or <em>oak</em>, " +
+      '<div class="bg-white dark:bg-stone-900 border border-dashed border-stone-300 dark:border-stone-700 ' +
+        'rounded-2xl px-5 py-8 text-center text-stone-500 dark:text-stone-400">' +
+        '<p><strong class="text-stone-800 dark:text-stone-200">No matches for &ldquo;' +
+          escapeHtml(query) + '&rdquo;</strong></p>' +
+        '<p class="mt-1.5">Try a shorter search, like <em>palm</em> or <em>oak</em>, ' +
         "or search by city.</p>" +
       "</div>";
     return;
