@@ -10,13 +10,42 @@
   so that green stays reserved for how recently a listing was confirmed.
 
   What's left in here:
-    1. The hero's bloom and leaf texture (a layered background image).
-    2. The example-search "chips", used often enough to deserve one name.
-    3. The gentle fade-in on result cards.
+    1. The page width — one place that decides how wide the site is.
+    2. The hero's bloom and leaf texture (a layered background image).
+    3. The example-search "chips", used often enough to deserve one name.
+    4. The gentle fade-in on result cards.
 */
 
 /* ---------------------------------------------------------------------------
-   1. Hero background
+   1. Page width
+   Every full-width band on the page (hero, main, footer) puts its contents in
+   one of these, so the site has ONE width and it is changed in ONE place.
+
+   max-width is the widest the content ever gets on a big monitor; past that it
+   centres rather than stretching forever. The side padding grows with the
+   screen so the text never touches the edge. On a phone, the max-width never
+   comes into play — the screen is narrower than it — so all a phone sees is
+   the 1rem of padding.
+
+   To make the site narrower or wider, change the one number below.
+--------------------------------------------------------------------------- */
+.page {
+  width: 100%;
+  max-width: 100rem;      /* 1600px */
+  margin-inline: auto;
+  padding-inline: 1rem;   /* phones */
+}
+
+@media (min-width: 640px) {
+  .page { padding-inline: 1.5rem; }
+}
+
+@media (min-width: 1024px) {
+  .page { padding-inline: 2.5rem; }
+}
+
+/* ---------------------------------------------------------------------------
+   2. Hero background
    Three layers stacked, front to back:
      - a scattered leaf pattern, drawn as an SVG right here in the file
      - a warm bloom coming from the upper left (clay, not green)
@@ -42,7 +71,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   2. Example-search chips
+   3. Example-search chips
    Sand and ink, with clay on hover. No green: these aren't freshness.
 --------------------------------------------------------------------------- */
 .chip {
@@ -81,7 +110,7 @@
 }
 
 /* ---------------------------------------------------------------------------
-   3. Result cards fade up as they appear.
+   4. Result cards fade up as they appear.
    app.js sets a slightly longer delay on each card, so they arrive in sequence
    instead of all at once.
 --------------------------------------------------------------------------- */

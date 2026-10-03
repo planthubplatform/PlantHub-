@@ -89,51 +89,63 @@
   <!-- "hero-canvas" in styles.css adds the warm bloom and the leaf texture
        that Tailwind classes can't express on their own. -->
   <header class="hero-canvas relative overflow-hidden bg-ink-900">
-    <div class="relative max-w-4xl mx-auto px-4 pt-12 pb-24 sm:pt-16 sm:pb-28">
+    <div class="page relative pt-12 pb-24 sm:pt-16 sm:pb-28">
 
-      <p class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]
-                text-cream/70 bg-white/10 ring-1 ring-white/15 rounded-full px-3 py-1 mb-5">
-        <span class="w-1.5 h-1.5 rounded-full bg-cream/50"></span>
-        South Florida · Palm Beach County
-      </p>
+      <!-- On a wide screen the words sit on the left and the totals on the
+           right, so the hero uses the space instead of leaving a tall empty
+           gap. Under 1024px wide they stack, which is what a phone gets. -->
+      <div class="lg:flex lg:items-end lg:justify-between lg:gap-16">
 
-      <!-- The wordmark. The green dot is the same dot that marks a fresh
-           listing further down the page — the logo is the promise. -->
-      <h1 class="font-display font-semibold text-4xl sm:text-6xl tracking-tight text-cream
-                 flex items-center gap-3 sm:gap-4">
-        PlantHub<span class="shrink-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-signal-400
-                             ring-4 sm:ring-[6px] ring-signal-400/20" aria-hidden="true"></span>
-      </h1>
-
-      <p class="mt-4 max-w-xl text-base sm:text-lg text-cream/70">
-        Search every wholesale nursery at once. See <strong class="text-cream font-semibold">who has it</strong>,
-        <strong class="text-cream font-semibold">how many</strong>, and
-        <strong class="text-cream font-semibold">when they last checked</strong>.
-      </p>
-
-      <!-- Live totals, filled in by app.js. -->
-      <dl class="flex flex-wrap gap-x-8 gap-y-3 mt-8 text-cream/60">
         <div>
-          <dt class="text-[11px] uppercase tracking-wider">Nurseries</dt>
-          <dd class="font-display text-2xl text-cream" id="stat-nurseries">—</dd>
+          <p class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]
+                    text-cream/70 bg-white/10 ring-1 ring-white/15 rounded-full px-3 py-1 mb-5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cream/50"></span>
+            South Florida · Palm Beach County
+          </p>
+
+          <!-- The wordmark. The green dot is the same dot that marks a fresh
+               listing further down the page — the logo is the promise. -->
+          <h1 class="font-display font-semibold text-4xl sm:text-6xl tracking-tight text-cream
+                     flex items-center gap-3 sm:gap-4">
+            PlantHub<span class="shrink-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-signal-400
+                                 ring-4 sm:ring-[6px] ring-signal-400/20" aria-hidden="true"></span>
+          </h1>
+
+          <!-- max-w-xl holds this sentence to a readable line length even on a
+               wide monitor. A wide page is good; a 200-character line isn't. -->
+          <p class="mt-4 max-w-xl text-base sm:text-lg text-cream/70">
+            Search every wholesale nursery at once. See <strong class="text-cream font-semibold">who has it</strong>,
+            <strong class="text-cream font-semibold">how many</strong>, and
+            <strong class="text-cream font-semibold">when they last checked</strong>.
+          </p>
         </div>
-        <div>
-          <dt class="text-[11px] uppercase tracking-wider">Listings</dt>
-          <dd class="font-display text-2xl text-cream" id="stat-listings">—</dd>
-        </div>
-        <div>
-          <dt class="text-[11px] uppercase tracking-wider">Updated this week</dt>
-          <dd class="font-display text-2xl text-signal-400" id="stat-fresh">—</dd>
-        </div>
-      </dl>
+
+        <!-- Live totals, filled in by app.js. -->
+        <dl class="flex flex-wrap gap-x-8 gap-y-3 mt-8 text-cream/60
+                   lg:mt-0 lg:shrink-0 lg:flex-col lg:gap-y-5 lg:text-right">
+          <div>
+            <dt class="text-[11px] uppercase tracking-wider">Nurseries</dt>
+            <dd class="font-display text-2xl text-cream" id="stat-nurseries">—</dd>
+          </div>
+          <div>
+            <dt class="text-[11px] uppercase tracking-wider">Listings</dt>
+            <dd class="font-display text-2xl text-cream" id="stat-listings">—</dd>
+          </div>
+          <div>
+            <dt class="text-[11px] uppercase tracking-wider">Updated this week</dt>
+            <dd class="font-display text-2xl text-signal-400" id="stat-fresh">—</dd>
+          </div>
+        </dl>
+
+      </div>
     </div>
   </header>
 
-  <main class="max-w-4xl mx-auto px-4">
+  <main class="page">
 
     <!-- ===== Search panel ============================================ -->
     <section class="relative z-10 bg-white dark:bg-ink-900 ring-1 ring-ink-900/5 dark:ring-white/10
-                    rounded-2xl shadow-xl shadow-ink-950/10 p-5 sm:p-6 -mt-14 mb-6">
+                    rounded-2xl shadow-xl shadow-ink-950/10 p-5 sm:p-6 lg:p-8 -mt-14 mb-6">
       <label class="block font-semibold text-ink-800 dark:text-stone-100 mb-2" for="search">
         Search for a plant
       </label>
@@ -205,22 +217,29 @@
       </div>
     </div>
 
-    <!-- app.js fills this with nursery cards. It starts empty on purpose. -->
-    <div id="results" class="grid gap-4 mb-12"></div>
+    <!-- app.js fills this with nursery cards. It starts empty on purpose.
+         One card per row on a phone, two from tablet width, three on a laptop
+         and four on a large monitor — otherwise a wide page gives one very long
+         card. Each column stays about as wide as a phone screen, which is a
+         width these cards are already known to read well at. -->
+    <div id="results" class="grid gap-4 mb-12 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"></div>
 
   </main>
 
   <footer class="border-t border-ink-100 dark:border-ink-800 mt-4">
-    <div class="max-w-4xl mx-auto px-4 py-8 text-sm text-ink-400 dark:text-stone-400 space-y-2">
-      <p>
-        <strong class="text-ink-700 dark:text-stone-300">Sample data.</strong>
-        The nurseries, availability and contact details on this page are invented for
-        testing and do not describe real businesses.
-      </p>
-      <p>
-        Every listing shows the date the nursery last confirmed it. No ads, no paywall,
-        no paid placement — results are never reordered by who pays.
-      </p>
+    <div class="page py-8">
+      <!-- The page is wide now, but these sentences stay a readable width. -->
+      <div class="max-w-3xl space-y-2 text-sm text-ink-400 dark:text-stone-400">
+        <p>
+          <strong class="text-ink-700 dark:text-stone-300">Sample data.</strong>
+          The nurseries, availability and contact details on this page are invented for
+          testing and do not describe real businesses.
+        </p>
+        <p>
+          Every listing shows the date the nursery last confirmed it. No ads, no paywall,
+          no paid placement — results are never reordered by who pays.
+        </p>
+      </div>
     </div>
   </footer>
 
