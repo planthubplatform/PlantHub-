@@ -11,7 +11,7 @@
 
   What's left in here:
     1. The page width — one place that decides how wide the site is.
-    2. The example-search "chips" and the removable filter tags.
+    2. The example-search "chips", the filter tags, and the filter lists.
     3. The listing table: row rules, hover, and the expanded detail row.
     4. Dense-table reading comfort (tabular numbers, no text ballooning).
 */
@@ -122,6 +122,17 @@
 /* The chevron points down when shut and up when open. */
 #filter-panel[open] > summary svg {
   transform: rotate(180deg);
+}
+
+/* A long facet list (container sizes, grades) scrolls inside a fixed height.
+   The browser draws that scrollbar ON TOP of the content on Windows, which
+   covered the count at the right-hand end of each row. The padding keeps the
+   counts clear of it, and scrollbar-gutter reserves the space up front so the
+   list doesn't shift sideways the moment it becomes scrollable. */
+.facet ul {
+  padding-right: 0.625rem;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
 }
 
 /* ---------------------------------------------------------------------------
