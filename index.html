@@ -5,22 +5,30 @@
   The look comes from Tailwind CSS (loaded below, no install needed — it's a
   single <script> tag) plus a few extras in styles.css, and the search
   behaviour comes from app.js.
+
+  The shape of this page is deliberate. Every wholesale plant directory in the
+  trade — PlantANT, Betrock — puts a filter rail on the left and ONE DENSE
+  TABLE on the right, a row per listing, because a buyer sourcing thirty items
+  compares listings, not nurseries. Cards are what consumer sites use. We match
+  the trade's shape, and then show the three columns the others hide behind a
+  login: quantity, price, and the date the listing was last confirmed.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <!-- Tells phones to use their real width instead of pretending to be a desktop. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlantHub — Wholesale Plant &amp; Nursery Search</title>
-  <meta name="description" content="Search South Florida wholesale nurseries by plant. See who has it, how many, and when they last checked.">
+  <title>PlantHub — Wholesale Plant Availability, Palm Beach County</title>
+  <meta name="description" content="Wholesale plant availability for Palm Beach County. Container size, grade, quantity on hand, price, and the date each nursery last confirmed the listing.">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
-  <!-- Two typefaces: Fraunces gives the name some character, Inter keeps the
-       small print easy to read. Loaded from Google Fonts, no install. -->
+  <!-- Two typefaces: Fraunces for the wordmark only, Inter for everything
+       else. Keeping the serif to the logo is what separates a trade tool from
+       a garden-centre brochure. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- Tailwind CSS, loaded straight from a CDN: no npm, no build step. -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -31,8 +39,7 @@
         GREEN MEANS FRESH. Nothing else.
 
       Green ("signal") is spent only where the page is telling you how recently
-      a nursery confirmed a listing — the dot in the logo, the freshness badges,
-      the "updated this week" number. Everything else is built from ink (a
+      a nursery confirmed a listing. Everything else is built from ink (a
       near-black green), cream, sand and clay. If green were also the buttons,
       the links and the tags, it would stop meaning anything, and freshness is
       the one thing this site has that the competition doesn't.
@@ -45,6 +52,7 @@
             ink: {
               50:  '#eef2f0',
               100: '#d6e0db',
+              200: '#bccdc4',
               400: '#4a6b5a',
               600: '#24402f',
               700: '#1b3328',
@@ -83,161 +91,191 @@
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans leading-relaxed antialiased">
+<body class="bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
 
-  <!-- ===== Hero ===================================================== -->
-  <!-- "hero-canvas" in styles.css adds the warm bloom and the leaf texture
-       that Tailwind classes can't express on their own. -->
-  <header class="hero-canvas relative overflow-hidden bg-ink-900">
-    <div class="page relative pt-12 pb-24 sm:pt-16 sm:pb-28">
+  <!-- ===== Working header ============================================
+       Not a hero. A trade user lands here to work, so this band is just the
+       wordmark, what the site is, and the totals — then the search box. -->
+  <header class="bg-ink-900 text-cream">
+    <div class="page flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3.5">
 
-      <!-- On a wide screen the words sit on the left and the totals on the
-           right, so the hero uses the space instead of leaving a tall empty
-           gap. Under 1024px wide they stack, which is what a phone gets. -->
-      <div class="lg:flex lg:items-end lg:justify-between lg:gap-16">
+      <div class="flex items-baseline gap-3">
+        <!-- The wordmark. The green dot is the same dot that marks a fresh
+             listing in the table below — the logo is the promise. -->
+        <span class="font-display font-semibold text-xl tracking-tight flex items-center gap-2">
+          PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-400" aria-hidden="true"></span>
+        </span>
+        <h1 class="text-[13px] text-cream/60 border-l border-white/15 pl-3">
+          Wholesale plant availability — Palm Beach County
+        </h1>
+      </div>
 
-        <div>
-          <p class="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em]
-                    text-cream/70 bg-white/10 ring-1 ring-white/15 rounded-full px-3 py-1 mb-5">
-            <span class="w-1.5 h-1.5 rounded-full bg-cream/50"></span>
-            South Florida · Palm Beach County
-          </p>
+      <!-- Totals for the whole database, filled in by app.js. -->
+      <dl class="flex items-center gap-x-6 text-[13px] text-cream/50">
+        <div class="flex items-baseline gap-1.5">
+          <dd class="font-semibold text-cream tabular-nums" id="stat-nurseries">—</dd>
+          <dt>nurseries</dt>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <dd class="font-semibold text-cream tabular-nums" id="stat-listings">—</dd>
+          <dt>listings</dt>
+        </div>
+        <div class="flex items-baseline gap-1.5">
+          <dd class="font-semibold text-signal-400 tabular-nums" id="stat-fresh">—</dd>
+          <dt>updated this week</dt>
+        </div>
+      </dl>
+    </div>
 
-          <!-- The wordmark. The green dot is the same dot that marks a fresh
-               listing further down the page — the logo is the promise. -->
-          <h1 class="font-display font-semibold text-4xl sm:text-6xl tracking-tight text-cream
-                     flex items-center gap-3 sm:gap-4">
-            PlantHub<span class="shrink-0 w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full bg-signal-400
-                                 ring-4 sm:ring-[6px] ring-signal-400/20" aria-hidden="true"></span>
-          </h1>
-
-          <!-- max-w-xl holds this sentence to a readable line length even on a
-               wide monitor. A wide page is good; a 200-character line isn't. -->
-          <p class="mt-4 max-w-xl text-base sm:text-lg text-cream/70">
-            Search every wholesale nursery at once. See <strong class="text-cream font-semibold">who has it</strong>,
-            <strong class="text-cream font-semibold">how many</strong>, and
-            <strong class="text-cream font-semibold">when they last checked</strong>.
-          </p>
+    <!-- ===== Search bar ============================================== -->
+    <div class="border-t border-white/10 bg-ink-800">
+      <div class="page py-3">
+        <div class="flex flex-col sm:flex-row gap-2">
+          <div class="relative flex-1 min-w-0">
+            <label class="sr-only" for="search">Search for a plant</label>
+            <!-- Magnifying glass, drawn with SVG so it stays crisp at any size. -->
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40 pointer-events-none"
+                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+            </svg>
+            <input
+              type="search"
+              id="search"
+              placeholder="Plant, botanical name, nursery or city — try clusia, live oak, Wodyetia"
+              autocomplete="off"
+              class="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-ink-950/60 text-cream
+                     placeholder:text-cream/35 border border-white/15
+                     focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-clay-500 transition">
+          </div>
+          <button type="button" id="clear"
+            class="px-4 py-2 text-sm font-medium rounded-md border border-white/15
+                   text-cream/80 hover:text-cream hover:border-clay-500 transition">
+            Clear
+          </button>
         </div>
 
-        <!-- Live totals, filled in by app.js. -->
-        <dl class="flex flex-wrap gap-x-8 gap-y-3 mt-8 text-cream/60
-                   lg:mt-0 lg:shrink-0 lg:flex-col lg:gap-y-5 lg:text-right">
-          <div>
-            <dt class="text-[11px] uppercase tracking-wider">Nurseries</dt>
-            <dd class="font-display text-2xl text-cream" id="stat-nurseries">—</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] uppercase tracking-wider">Listings</dt>
-            <dd class="font-display text-2xl text-cream" id="stat-listings">—</dd>
-          </div>
-          <div>
-            <dt class="text-[11px] uppercase tracking-wider">Updated this week</dt>
-            <dd class="font-display text-2xl text-signal-400" id="stat-fresh">—</dd>
-          </div>
-        </dl>
-
+        <!-- Quick example searches, so a first-time visitor isn't staring at a blank box. -->
+        <div class="flex flex-wrap items-center gap-1.5 mt-2.5" id="chips">
+          <span class="text-[11px] uppercase tracking-wider text-cream/35 mr-1">Common searches</span>
+          <button type="button" class="chip">clusia</button>
+          <button type="button" class="chip">live oak</button>
+          <button type="button" class="chip">foxtail palm</button>
+          <button type="button" class="chip">podocarpus</button>
+          <button type="button" class="chip">Loxahatchee</button>
+        </div>
       </div>
     </div>
   </header>
 
-  <main class="page">
-
-    <!-- ===== Search panel ============================================ -->
-    <section class="relative z-10 bg-white dark:bg-ink-900 ring-1 ring-ink-900/5 dark:ring-white/10
-                    rounded-2xl shadow-xl shadow-ink-950/10 p-5 sm:p-6 lg:p-8 -mt-14 mb-6">
-      <label class="block font-semibold text-ink-800 dark:text-stone-100 mb-2" for="search">
-        Search for a plant
-      </label>
-
-      <div class="flex flex-col sm:flex-row gap-2">
-        <div class="relative flex-1 min-w-0">
-          <!-- Magnifying glass, drawn with SVG so it stays crisp at any size. -->
-          <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400 pointer-events-none"
-               viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-               stroke-linecap="round" aria-hidden="true">
-            <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
-          </svg>
-          <input
-            type="search"
-            id="search"
-            placeholder="Try: clusia, live oak, or Wodyetia"
-            autocomplete="off"
-            class="w-full pl-11 pr-4 py-3 text-base rounded-xl border border-ink-100 dark:border-ink-700
-                   bg-cream dark:bg-ink-800 text-ink-900 dark:text-stone-100
-                   focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-clay-500 transition">
-        </div>
-        <button type="button" id="clear"
-          class="px-5 py-3 text-sm font-semibold rounded-xl border border-ink-100 dark:border-ink-700
-                 bg-sand dark:bg-ink-800 text-ink-800 dark:text-stone-200
-                 hover:border-clay-500 hover:bg-clay-50 dark:hover:bg-ink-700
-                 transition sm:w-auto w-full">
-          Clear
-        </button>
-      </div>
-
-      <p class="mt-2.5 text-sm text-ink-400 dark:text-stone-400">
-        Search by common name, botanical name, nursery, or city.
-      </p>
-
-      <!-- Quick example searches, so a first-time visitor isn't staring at a blank box. -->
-      <div class="flex flex-wrap gap-2 mt-3" id="chips">
-        <button type="button" class="chip">palm</button>
-        <button type="button" class="chip">clusia</button>
-        <button type="button" class="chip">live oak</button>
-        <button type="button" class="chip">mango</button>
-        <button type="button" class="chip">Loxahatchee</button>
-      </div>
-    </section>
-
-    <!-- ===== Controls ================================================ -->
-    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <p class="text-sm text-ink-400 dark:text-stone-400" id="count"></p>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <!-- The freshness filter. This is the thing no competitor offers, and
-             it is a freshness control, so it earns the green. -->
-        <label class="inline-flex items-center gap-2 text-sm font-medium cursor-pointer select-none
-                      px-3 py-1.5 rounded-full border border-ink-100 dark:border-ink-700
-                      bg-white dark:bg-ink-900 hover:border-signal-500 transition">
-          <input type="checkbox" id="fresh-only"
-                 class="w-4 h-4 rounded border-ink-100 text-signal-600 focus:ring-signal-500 focus:ring-offset-0">
-          <span class="text-ink-700 dark:text-stone-300">Updated this week only</span>
-        </label>
-
-        <label class="sr-only" for="sort">Sort results</label>
-        <select id="sort"
-          class="text-sm font-medium px-3 py-1.5 rounded-full border border-ink-100 dark:border-ink-700
-                 bg-white dark:bg-ink-900 text-ink-700 dark:text-stone-300
-                 hover:border-clay-500 focus:outline-none focus:ring-2 focus:ring-clay-500 transition">
-          <option value="fresh">Freshest first</option>
-          <option value="qty">Most in stock</option>
-          <option value="name">Nursery A–Z</option>
-        </select>
-      </div>
+  <!-- Prices and quantities on this page are invented. Saying so once, loudly,
+       at the top — not only in the footer. -->
+  <div class="bg-clay-100 dark:bg-clay-700/25 border-b border-clay-300/50 text-[13px] text-clay-700 dark:text-clay-100">
+    <div class="page py-2">
+      <strong class="font-semibold">Sample data.</strong>
+      Every nursery, quantity, price and contact detail below is invented for testing.
+      None of it describes a real business.
     </div>
+  </div>
 
-    <!-- app.js fills this with nursery cards. It starts empty on purpose.
-         One card per row on a phone, two from tablet width, three on a laptop
-         and four on a large monitor — otherwise a wide page gives one very long
-         card. Each column stays about as wide as a phone screen, which is a
-         width these cards are already known to read well at. -->
-    <div id="results" class="grid gap-4 mb-12 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"></div>
+  <main class="page py-5">
+    <div class="lg:flex lg:items-start lg:gap-6">
 
+      <!-- ===== Filter rail ===========================================
+           The trade expects filters down the left with a count beside each
+           one — that is how PlantANT and every grower catalogue works. The
+           difference is that ours aren't locked behind a subscription.
+           app.js fills each list; the markup here is just the frame. -->
+      <aside class="lg:w-56 lg:shrink-0 mb-4 lg:mb-0">
+        <!-- A <details> element: a box the browser can fold shut. On a phone it
+             starts shut, because three facet lists would otherwise push every
+             result off the screen. On a laptop app.js opens it on load. -->
+        <details id="filter-panel"
+                 class="lg:sticky lg:top-4 rounded-md border border-ink-100 dark:border-ink-800
+                        bg-white dark:bg-ink-900">
+
+          <summary class="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
+                          text-[11px] font-semibold uppercase tracking-wider
+                          text-ink-400 dark:text-stone-400">
+            <span>Filter</span>
+            <!-- How many filters are on, so a shut panel still says so. -->
+            <span id="filter-count"
+                  class="hidden text-[11px] font-semibold normal-case tracking-normal
+                         text-clay-700 dark:text-clay-300 bg-sand dark:bg-ink-800
+                         rounded-sm px-1.5"></span>
+
+            <button type="button" id="reset-filters"
+              class="ml-auto text-[12px] font-medium normal-case tracking-normal
+                     text-clay-600 dark:text-clay-300 hover:underline hidden">
+              Reset
+            </button>
+            <svg class="lg:hidden w-4 h-4 shrink-0 transition-transform" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+          </summary>
+
+          <div class="border-t border-ink-100 dark:border-ink-800">
+            <!-- Freshness earns the green: it is the one filter about how
+                 current a listing is. -->
+            <div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800">
+              <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input type="checkbox" id="fresh-only"
+                       class="w-3.5 h-3.5 rounded-sm border-ink-200 text-signal-600 focus:ring-signal-500 focus:ring-offset-0">
+                <span>Updated this week</span>
+              </label>
+            </div>
+
+            <!-- Three facet groups, each built by app.js from the data itself,
+                 so they can never list a size nobody stocks. -->
+            <div data-facet="size"  class="facet"></div>
+            <div data-facet="grade" class="facet"></div>
+            <div data-facet="city"  class="facet"></div>
+          </div>
+        </details>
+      </aside>
+
+      <!-- ===== Results =============================================== -->
+      <section class="min-w-0 flex-1">
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+          <p class="text-[13px] text-ink-400 dark:text-stone-400" id="count"></p>
+
+          <div class="flex items-center gap-2">
+            <label class="text-[13px] text-ink-400 dark:text-stone-400" for="sort">Sort</label>
+            <select id="sort"
+              class="text-[13px] font-medium px-2.5 py-1.5 rounded-md border border-ink-100 dark:border-ink-700
+                     bg-white dark:bg-ink-900 text-ink-800 dark:text-stone-200
+                     focus:outline-none focus:ring-2 focus:ring-clay-500 transition">
+              <option value="fresh">Freshest first</option>
+              <option value="qty">Most in stock</option>
+              <option value="price">Lowest price</option>
+              <option value="plant">Plant A–Z</option>
+              <option value="nursery">Nursery A–Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Any filters currently on, shown as removable tags. -->
+        <div id="active-filters" class="flex flex-wrap gap-1.5 mb-2.5 empty:hidden"></div>
+
+        <!-- app.js fills this with the listing table. It starts empty on purpose. -->
+        <div id="results"></div>
+      </section>
+    </div>
   </main>
 
-  <footer class="border-t border-ink-100 dark:border-ink-800 mt-4">
-    <div class="page py-8">
-      <!-- The page is wide now, but these sentences stay a readable width. -->
-      <div class="max-w-3xl space-y-2 text-sm text-ink-400 dark:text-stone-400">
+  <footer class="border-t border-ink-100 dark:border-ink-800 mt-8">
+    <div class="page py-7">
+      <div class="max-w-3xl space-y-2 text-[13px] text-ink-400 dark:text-stone-400">
         <p>
           <strong class="text-ink-700 dark:text-stone-300">Sample data.</strong>
-          The nurseries, availability and contact details on this page are invented for
-          testing and do not describe real businesses.
+          The nurseries, availability, prices and contact details on this page are
+          invented for testing and do not describe real businesses.
         </p>
         <p>
           Every listing shows the date the nursery last confirmed it. No ads, no paywall,
-          no paid placement — results are never reordered by who pays.
+          no paid placement — results are never reordered by who pays, and nothing is
+          hidden behind a login.
         </p>
       </div>
     </div>

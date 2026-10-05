@@ -2,16 +2,23 @@
   app.js — the search behaviour.
 
   The flow is always the same three steps:
-    1. Read what the visitor typed and which controls they set.
-    2. Work out which nurseries and plants match.
-    3. Redraw the results area.
+    1. Read what the visitor typed and which filters they set.
+    2. Work out which LISTINGS match.
+    3. Redraw the table and the filter counts.
 
   The data comes from data/nurseries.js, which the page loads first and which
   puts everything in a variable called NURSERIES.
 
-  Every plant carries an "updated" date. Showing how old a listing is — plainly,
-  on every row — is the thing this site does that the competition doesn't, so
-  the date gets its own helpers (section 2) and its own badge (section 5).
+  One listing = one plant at one nursery at one size. The data file nests
+  plants inside nurseries, which is the sensible way to type it in, but the
+  page works the other way round: a buyer sourcing thirty items compares
+  listings across every nursery at once. So the first thing we do is flatten
+  the nested data into one long list of rows (section 4), and everything after
+  that — searching, filtering, sorting — works on that flat list.
+
+  Every listing carries an "updated" date. Showing how old a listing is —
+  plainly, on every row — is the thing this site does that the competition
+  doesn't, so the date gets its own helpers (section 2) and its own column.
 */
 
 // ---------------------------------------------------------------------------
@@ -25,6 +32,10 @@ const resultsBox = document.getElementById("results");
 const countLine = document.getElementById("count");
 const sortSelect = document.getElementById("sort");
 const freshOnlyBox = document.getElementById("fresh-only");
+const resetButton = document.getElementById("reset-filters");
+const activeFilterBox = document.getElementById("active-filters");
+const filterPanel = document.getElementById("filter-panel");
+const filterCount = document.getElementById("filter-count");
 
 // A listing counts as "fresh" if the nursery confirmed it within this many days.
 const FRESH_DAYS = 7;
@@ -59,16 +70,6 @@ function freshnessTier(days) {
   return "stale";
 }
 
-// The long version, used on the nursery card: "Updated 2 days ago".
-function agoLong(days) {
-  if (days === Infinity) return "No date given";
-  if (days === 0) return "Updated today";
-  if (days === 1) return "Updated yesterday";
-  if (days < 14) return "Updated " + days + " days ago";
-  if (days < 60) return "Updated " + Math.round(days / 7) + " weeks ago";
-  return "Updated " + Math.round(days / 30) + " months ago";
-}
-
 // The short version, used in the table where space is tight: "2d", "3w", "4mo".
 function agoShort(days) {
   if (days === Infinity) return "—";
@@ -78,15 +79,22 @@ function agoShort(days) {
   return Math.round(days / 30) + "mo";
 }
 
-// The colours for each band. Kept in one place so the dot, the text and the
-// card badge can never disagree with each other.
+// The long version, used in the expanded detail row: "Confirmed 2 days ago".
+function agoLong(days) {
+  if (days === Infinity) return "No date given";
+  if (days === 0) return "Confirmed today";
+  if (days === 1) return "Confirmed yesterday";
+  if (days < 14) return "Confirmed " + days + " days ago";
+  if (days < 60) return "Confirmed " + Math.round(days / 7) + " weeks ago";
+  return "Confirmed " + Math.round(days / 30) + " months ago";
+}
+
+// The colours for each band. Kept in one place so the dot and the text can
+// never disagree with each other.
 const TIER_STYLE = {
-  fresh:  { dot: "bg-signal-500", text: "text-signal-700 dark:text-signal-400",
-            chip: "bg-signal-50 dark:bg-signal-700/20 ring-signal-600/25" },
-  recent: { dot: "bg-amber-500",   text: "text-amber-700 dark:text-amber-400",
-            chip: "bg-amber-50 dark:bg-amber-950/40 ring-amber-600/20" },
-  stale:  { dot: "bg-ink-400",   text: "text-ink-400 dark:text-stone-400",
-            chip: "bg-ink-50 dark:bg-ink-800 ring-ink-400/25" },
+  fresh:  { dot: "bg-signal-500", text: "text-signal-700 dark:text-signal-400" },
+  recent: { dot: "bg-amber-500",  text: "text-amber-700 dark:text-amber-400" },
+  stale:  { dot: "bg-ink-200 dark:bg-ink-700", text: "text-ink-400 dark:text-stone-400" },
 };
 
 // ---------------------------------------------------------------------------
@@ -151,114 +159,6 @@ function textMatches(text, words) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// 4. The search itself.
-// ---------------------------------------------------------------------------
-
-// For one nursery, decide whether it matches and which plants to show.
-// Returns null when the nursery doesn't match at all.
-function searchNursery(nursery, words) {
-  // The nursery's own details: name, city, state, specialties.
-  const nurseryText = normalize(
-    nursery.name + " " + nursery.city + " " + nursery.state + " " + nursery.specialties.join(" ")
-  );
-
-  // Searching the nursery or city ("Loxahatchee") shows its whole list.
-  if (textMatches(nurseryText, words)) {
-    return { nursery: nursery, plants: nursery.plants.slice(), matchedNursery: true };
-  }
-
-  // Otherwise, plants whose common or botanical name matches.
-  const matchingPlants = nursery.plants.filter(function (plant) {
-    return textMatches(normalize(plant.common + " " + plant.botanical), words);
-  });
-
-  if (matchingPlants.length > 0) {
-    return { nursery: nursery, plants: matchingPlants, matchedNursery: false };
-  }
-
-  return null;
-}
-
-// Search every nursery and keep the ones that matched.
-function runSearch(query) {
-  const words = normalize(query).split(" ").filter(Boolean);
-
-  // Empty search box: show everything, so the page never looks broken.
-  if (words.length === 0) {
-    return NURSERIES.map(function (nursery) {
-      return { nursery: nursery, plants: nursery.plants.slice(), matchedNursery: true };
-    });
-  }
-
-  const hits = [];
-  NURSERIES.forEach(function (nursery) {
-    const hit = searchNursery(nursery, words);
-    if (hit) hits.push(hit);
-  });
-  return hits;
-}
-
-// Drop anything the visitor asked not to see, then put what's left in order.
-function applyControls(hits) {
-  let kept = hits;
-
-  // "Updated this week only" throws away older rows, and then any nursery that
-  // has nothing left to show.
-  if (freshOnlyBox.checked) {
-    kept = kept
-      .map(function (hit) {
-        const freshPlants = hit.plants.filter(function (plant) {
-          return daysSince(plant.updated) <= FRESH_DAYS;
-        });
-        return { nursery: hit.nursery, plants: freshPlants, matchedNursery: hit.matchedNursery };
-      })
-      .filter(function (hit) {
-        return hit.plants.length > 0;
-      });
-  }
-
-  const mode = sortSelect.value;
-
-  // Sort the rows inside each card the same way as the cards themselves, so the
-  // page reads consistently top to bottom.
-  kept.forEach(function (hit) {
-    if (mode === "qty") {
-      hit.plants.sort(function (a, b) { return b.quantity - a.quantity; });
-    } else if (mode === "fresh") {
-      hit.plants.sort(function (a, b) { return daysSince(a.updated) - daysSince(b.updated); });
-    }
-  });
-
-  kept.sort(function (a, b) {
-    if (mode === "name") {
-      return a.nursery.name.localeCompare(b.nursery.name);
-    }
-    if (mode === "qty") {
-      return totalQuantity(b.plants) - totalQuantity(a.plants);
-    }
-    return newestDays(a.plants) - newestDays(b.plants); // freshest first
-  });
-
-  return kept;
-}
-
-// The total number of plants on the rows we're showing.
-function totalQuantity(plants) {
-  return plants.reduce(function (sum, plant) { return sum + plant.quantity; }, 0);
-}
-
-// How many days since this nursery last touched any of the rows we're showing.
-function newestDays(plants) {
-  return plants.reduce(function (best, plant) {
-    return Math.min(best, daysSince(plant.updated));
-  }, Infinity);
-}
-
-// ---------------------------------------------------------------------------
-// 5. Drawing the results.
-// ---------------------------------------------------------------------------
-
 // Text from the data is inserted into the page as HTML, so any stray
 // < or & characters must be neutralized first. This is a standard safety step.
 function escapeHtml(text) {
@@ -269,203 +169,506 @@ function escapeHtml(text) {
     .replace(/"/g, "&quot;");
 }
 
-// Wrap the searched words in <mark> so they appear highlighted.
+// Wrap the searched-for words in <mark> so the visitor can see WHY a row
+// matched — which matters here, because a row can match on the plant, the
+// nursery or the city.
 function highlight(text, words) {
   let safe = escapeHtml(text);
   words.forEach(function (word) {
     if (word.length < 2) return;
-    // "gi" = find every match, ignoring capital letters.
     const pattern = new RegExp("(" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + ")", "gi");
-    safe = safe.replace(pattern, '<mark class="bg-clay-100 text-ink-900 dark:bg-clay-700 dark:text-cream rounded px-0.5">$1</mark>');
+    safe = safe.replace(pattern, '<mark class="bg-clay-100 text-ink-900 dark:bg-clay-700 dark:text-cream rounded-sm px-0.5">$1</mark>');
   });
   return safe;
 }
 
-// The coloured "Updated 2 days ago" badge that sits on the nursery card.
-function freshnessBadge(days) {
-  const style = TIER_STYLE[freshnessTier(days)];
-  return '<span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ring-1 ' +
-      style.chip + " " + style.text + '">' +
-      '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' +
-      escapeHtml(agoLong(days)) +
-    "</span>";
+// Wholesale price, as the trade writes it. A grower who won't publish a price
+// gets "Call" rather than an invented number.
+function priceText(price) {
+  if (price === null || price === undefined) return null;
+  return "$" + price.toFixed(2).replace(/\.00$/, "");
 }
 
-// Build the HTML for a single nursery card.
-function cardHtml(hit, words, index) {
-  const n = hit.nursery;
+// ---------------------------------------------------------------------------
+// 4. Flatten the data into one row per listing.
+//    Done once, when the page loads. Everything below works on this list.
+// ---------------------------------------------------------------------------
+const LISTINGS = [];
 
-  const tags = n.specialties.map(function (s) {
-    return '<span class="text-[11px] uppercase tracking-wide font-medium text-ink-700 dark:text-ink-100 ' +
-      'bg-sand dark:bg-ink-800 px-2.5 py-1 rounded-full">' + escapeHtml(s) + "</span>";
-  }).join("");
-
-  const rows = hit.plants.map(function (plant) {
+NURSERIES.forEach(function (nursery) {
+  nursery.plants.forEach(function (plant) {
     const days = daysSince(plant.updated);
-    const style = TIER_STYLE[freshnessTier(days)];
+    LISTINGS.push({
+      nursery: nursery,
+      common: plant.common,
+      botanical: plant.botanical,
+      size: plant.size,
+      grade: plant.grade || "",
+      quantity: plant.quantity,
+      price: plant.price === undefined ? null : plant.price,
+      updated: plant.updated,
+      days: days,
+      tier: freshnessTier(days),
+      // Searchable text, worked out once so typing stays fast. The plant and
+      // the place go in together, so "clusia loxahatchee" can find a row by
+      // taking one word from each.
+      text: normalize(
+        plant.common + " " + plant.botanical + " " + plant.size + " " +
+        (plant.grade || "") + " " + nursery.name + " " + nursery.city + " " +
+        nursery.state + " " + nursery.specialties.join(" ")
+      ),
+    });
+  });
+});
 
-    return '<tr class="border-b border-ink-50 dark:border-ink-800 last:border-0">' +
-      '<td class="py-2.5 pr-3 align-top">' +
-        '<span class="font-medium">' + highlight(plant.common, words) + "</span>" +
-        '<span class="block italic text-[13px] text-ink-400 dark:text-stone-400">' +
-          highlight(plant.botanical, words) + "</span></td>" +
-      '<td class="py-2.5 pr-3 align-top whitespace-nowrap">' + escapeHtml(plant.size) + "</td>" +
-      '<td class="py-2.5 pr-3 align-top whitespace-nowrap tabular-nums font-medium">' +
-        plant.quantity.toLocaleString() + "</td>" +
-      // The per-row age. The full date is in the tooltip for anyone who wants it.
-      '<td class="py-2.5 align-top whitespace-nowrap text-right">' +
-        '<span class="inline-flex items-center gap-1.5 text-xs ' + style.text + '" ' +
-          'title="Last confirmed ' + escapeHtml(plant.updated || "never") + '">' +
-          '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' +
-          escapeHtml(agoShort(days)) +
-        "</span></td>" +
-    "</tr>";
-  }).join("");
-
-  // When only some plants matched, say so rather than implying it's the full list.
-  const shownNote = hit.matchedNursery
-    ? "Availability"
-    : "Matching availability (" + hit.plants.length + " of " + n.plants.length + " items)";
-
-  return '<article class="card-rise group bg-white dark:bg-ink-900 ring-1 ring-ink-900/5 dark:ring-white/10 ' +
-      'rounded-2xl shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 p-5 sm:p-6" ' +
-      'style="animation-delay:' + (index * 45) + 'ms">' +
-
-    '<div class="flex flex-wrap items-start justify-between gap-3">' +
-      "<div>" +
-        '<h2 class="font-display text-xl font-semibold text-ink-900 dark:text-stone-100">' +
-          highlight(n.name, words) + "</h2>" +
-        '<p class="text-sm text-ink-400 dark:text-stone-400 mt-0.5">' +
-          highlight(n.city + ", " + n.state, words) + "</p>" +
-      "</div>" +
-      freshnessBadge(newestDays(hit.plants)) +
-    "</div>" +
-
-    '<div class="flex flex-wrap gap-1.5 mt-3 mb-4">' + tags + "</div>" +
-
-    '<div class="overflow-x-auto">' +
-    '<table class="w-full text-sm border-collapse">' +
-      '<thead><tr class="text-left text-[11px] uppercase tracking-wide text-ink-400 dark:text-stone-400 ' +
-        'border-b border-ink-100 dark:border-ink-800">' +
-        '<th class="pb-2 pr-3 font-semibold">' + escapeHtml(shownNote) + "</th>" +
-        '<th class="pb-2 pr-3 font-semibold">Size</th>' +
-        '<th class="pb-2 pr-3 font-semibold">Qty</th>' +
-        '<th class="pb-2 font-semibold text-right">Updated</th>' +
-      "</tr></thead>" +
-      "<tbody>" + rows + "</tbody>" +
-    "</table>" +
-    "</div>" +
-
-    '<div class="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-4 pt-4 ' +
-      'border-t border-ink-50 dark:border-ink-800 text-sm">' +
-      '<a class="font-medium text-ink-700 dark:text-stone-300 hover:text-clay-600 dark:hover:text-clay-300" ' +
-        'href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' + escapeHtml(n.phone) + "</a>" +
-      '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' +
-        escapeHtml(n.email) + "</a>" +
-      '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="' + escapeHtml(n.website) +
-        '" target="_blank" rel="noopener">Website</a>' +
-      '<span class="text-ink-400 dark:text-stone-400 ml-auto">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
-    "</div>" +
-  "</article>";
+// Container sizes have a trade order — liners, then gallon sizes smallest
+// first, then field-grown material. Sorting them as plain text would put #100
+// between #10 and #15, which no grower would recognise.
+function sizeRank(size) {
+  const s = size.toLowerCase();
+  if (s.includes("liner")) return 0;
+  if (s.includes("flat")) return 1;
+  const gallons = s.match(/^#(\d+)/);
+  if (gallons) return 10 + Number(gallons[1]);
+  if (s.includes("caliper")) return 2000;
+  if (s.includes("ct")) return 3000;
+  return 4000;
 }
 
-// The message shown when nothing matched. The wording changes depending on
-// whether it was the search or the freshness filter that emptied the page.
-function emptyHtml(query, blamedOnFilter) {
-  const body = blamedOnFilter
-    ? "<p><strong class=\"text-ink-800 dark:text-stone-200\">Nothing updated in the last week</strong></p>" +
-      "<p class=\"mt-1.5\">Untick <em>Updated this week only</em> to see older listings.</p>"
-    : '<p><strong class="text-ink-800 dark:text-stone-200">No matches for &ldquo;' +
-        escapeHtml(query) + '&rdquo;</strong></p>' +
-      "<p class=\"mt-1.5\">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by city.</p>";
+// ---------------------------------------------------------------------------
+// 5. The filters currently switched on.
+//    A Set is a list that can't hold the same value twice — exactly what a
+//    group of tick boxes needs.
+// ---------------------------------------------------------------------------
+const chosen = {
+  size: new Set(),
+  grade: new Set(),
+  city: new Set(),
+};
 
-  return '<div class="bg-white dark:bg-ink-900 border border-dashed border-ink-100 dark:border-ink-700 ' +
-    'rounded-2xl px-5 py-10 text-center text-ink-400 dark:text-stone-400">' + body + "</div>";
+const FACET_LABEL = { size: "Container size", grade: "Grade", city: "City" };
+
+// What value does this listing have for a given facet?
+function facetValue(listing, facet) {
+  if (facet === "size") return listing.size;
+  if (facet === "grade") return listing.grade;
+  return listing.nursery.city;
 }
 
-// Put the results (or a friendly empty message) on the page.
-function render(query) {
-  const words = normalize(query).split(" ").filter(Boolean);
-  const matched = runSearch(query);
-  const hits = applyControls(matched);
+// Does this listing pass every filter EXCEPT the one named?
+// Leaving one facet out is what lets a facet show honest counts for its own
+// options: ticking "#7" must not drop every other size's count to zero.
+function passesFilters(listing, words, except) {
+  if (words.length > 0 && !textMatches(listing.text, words)) return false;
+  if (freshOnlyBox.checked && listing.days > FRESH_DAYS) return false;
 
-  if (hits.length === 0) {
-    countLine.textContent = "";
-    // If the search found something and the filter then removed it all, say so.
-    resultsBox.innerHTML = emptyHtml(query, matched.length > 0);
+  return ["size", "grade", "city"].every(function (facet) {
+    if (facet === except) return true;
+    if (chosen[facet].size === 0) return true;
+    return chosen[facet].has(facetValue(listing, facet));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 6. Sorting.
+// ---------------------------------------------------------------------------
+function sortListings(rows, mode) {
+  const sorted = rows.slice();
+
+  sorted.sort(function (a, b) {
+    if (mode === "qty") return b.quantity - a.quantity;
+    if (mode === "price") {
+      // Rows with no published price go last whichever way you sort.
+      if (a.price === null && b.price === null) return 0;
+      if (a.price === null) return 1;
+      if (b.price === null) return -1;
+      return a.price - b.price;
+    }
+    if (mode === "plant") {
+      return a.common.localeCompare(b.common) ||
+             sizeRank(a.size) - sizeRank(b.size);
+    }
+    if (mode === "nursery") {
+      return a.nursery.name.localeCompare(b.nursery.name) ||
+             a.common.localeCompare(b.common);
+    }
+    return a.days - b.days; // freshest first
+  });
+
+  return sorted;
+}
+
+// ---------------------------------------------------------------------------
+// 7. Drawing the filter rail.
+// ---------------------------------------------------------------------------
+function renderFacet(facet, words) {
+  const box = document.querySelector('[data-facet="' + facet + '"]');
+
+  // Count how many listings each option would give, ignoring this facet's own
+  // ticks so the numbers stay useful while you click.
+  const counts = new Map();
+  LISTINGS.forEach(function (listing) {
+    if (!passesFilters(listing, words, facet)) return;
+    const value = facetValue(listing, facet);
+    if (!value) return;
+    counts.set(value, (counts.get(value) || 0) + 1);
+  });
+
+  // An option already ticked always stays on the list, even at zero, so it can
+  // be un-ticked again.
+  chosen[facet].forEach(function (value) {
+    if (!counts.has(value)) counts.set(value, 0);
+  });
+
+  if (counts.size === 0) {
+    box.innerHTML = "";
     return;
   }
 
-  // Count the plant rows we're actually showing.
-  let plantCount = 0;
-  let freshCount = 0;
-  hits.forEach(function (hit) {
-    plantCount += hit.plants.length;
-    hit.plants.forEach(function (plant) {
-      if (daysSince(plant.updated) <= FRESH_DAYS) freshCount++;
+  let values = Array.from(counts.keys());
+  if (facet === "size") {
+    values.sort(function (a, b) { return sizeRank(a) - sizeRank(b); });
+  } else {
+    values.sort(function (a, b) { return a.localeCompare(b); });
+  }
+
+  const rows = values.map(function (value) {
+    const isOn = chosen[facet].has(value);
+    const count = counts.get(value);
+    return '<li>' +
+      '<label class="flex items-center gap-2 py-0.5 cursor-pointer select-none ' +
+        (count === 0 && !isOn ? "opacity-40" : "") + '">' +
+        '<input type="checkbox" data-filter="' + facet + '" value="' + escapeHtml(value) + '"' +
+          (isOn ? " checked" : "") +
+          ' class="w-3.5 h-3.5 rounded-sm border-ink-200 text-clay-600 focus:ring-clay-500 focus:ring-offset-0">' +
+        '<span class="flex-1 min-w-0 truncate">' + escapeHtml(value) + '</span>' +
+        '<span class="text-[11px] tabular-nums text-ink-400 dark:text-stone-400">' + count + '</span>' +
+      '</label>' +
+    '</li>';
+  }).join("");
+
+  box.innerHTML =
+    '<div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800 last:border-0">' +
+      '<h3 class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400 mb-1.5">' +
+        FACET_LABEL[facet] +
+      '</h3>' +
+      '<ul class="text-[13px] space-y-px max-h-56 overflow-y-auto">' + rows + '</ul>' +
+    '</div>';
+}
+
+// The tags above the table showing what is currently filtered, each one a
+// button that removes itself.
+function renderActiveFilters() {
+  const tags = [];
+
+  if (freshOnlyBox.checked) {
+    tags.push({ facet: "fresh", value: "", label: "Updated this week" });
+  }
+  ["size", "grade", "city"].forEach(function (facet) {
+    chosen[facet].forEach(function (value) {
+      tags.push({ facet: facet, value: value, label: value });
     });
   });
 
-  const nurseryWord = hits.length === 1 ? "nursery" : "nurseries";
-  const itemWord = plantCount === 1 ? "item" : "items";
-  countLine.textContent =
-    hits.length + " " + nurseryWord + " · " + plantCount + " " + itemWord +
-    " · " + freshCount + " updated this week";
+  resetButton.classList.toggle("hidden", tags.length === 0);
 
-  resultsBox.innerHTML = hits.map(function (hit, index) {
-    return cardHtml(hit, words, index);
+  // The count beside "Filter" matters most when the panel is folded shut on a
+  // phone: it is the only sign that results are being narrowed.
+  filterCount.textContent = tags.length > 0 ? tags.length + " on" : "";
+  filterCount.classList.toggle("hidden", tags.length === 0);
+
+  activeFilterBox.innerHTML = tags.map(function (tag) {
+    return '<button type="button" class="filter-tag" ' +
+      'data-remove="' + tag.facet + '" data-value="' + escapeHtml(tag.value) + '">' +
+      escapeHtml(tag.label) +
+      '<span aria-hidden="true" class="text-ink-400">&times;</span>' +
+      '<span class="sr-only">Remove filter</span>' +
+    '</button>';
   }).join("");
 }
 
 // ---------------------------------------------------------------------------
-// 6. The totals in the hero. These describe the whole database, so they are
-//    worked out once and never change as the visitor searches.
+// 8. Drawing the table.
+// ---------------------------------------------------------------------------
+function rowHtml(listing, words, index) {
+  const style = TIER_STYLE[listing.tier];
+  const price = priceText(listing.price);
+  const n = listing.nursery;
+
+  // Size and grade get their own columns on a wide screen. On a phone there
+  // isn't room, so they ride along under the plant name instead.
+  const sizeGradeMobile =
+    '<span class="lg:hidden block text-[11px] text-ink-400 dark:text-stone-400 mt-0.5">' +
+      escapeHtml(listing.size) +
+      (listing.grade ? " · " + escapeHtml(listing.grade) : "") +
+    '</span>';
+
+  const main =
+    '<tr class="listing-row" data-row="' + index + '" tabindex="0" role="button" ' +
+        'aria-expanded="false" aria-controls="detail-' + index + '">' +
+      '<td class="py-2 pl-3 pr-3 align-top">' +
+        '<span class="font-medium text-ink-900 dark:text-stone-100">' +
+          highlight(listing.common, words) + "</span>" +
+        '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' +
+          highlight(listing.botanical, words) + "</span>" +
+        sizeGradeMobile +
+      "</td>" +
+
+      '<td class="py-2 pr-3 align-top">' +
+        '<span class="text-ink-800 dark:text-stone-200">' + highlight(n.name, words) + "</span>" +
+        '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
+          highlight(n.city + ", " + n.state, words) + "</span>" +
+      "</td>" +
+
+      '<td class="hidden lg:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
+        escapeHtml(listing.size) + "</td>" +
+
+      '<td class="hidden lg:table-cell py-2 pr-3 align-top">' +
+        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' +
+          escapeHtml(listing.grade) + "</span></td>" +
+
+      '<td class="py-2 pr-3 align-top text-right tabular-nums font-medium whitespace-nowrap">' +
+        listing.quantity.toLocaleString() + "</td>" +
+
+      '<td class="py-2 pr-3 align-top text-right tabular-nums whitespace-nowrap">' +
+        (price
+          ? '<span class="font-medium text-ink-900 dark:text-stone-100">' + price + "</span>"
+          : '<span class="text-[12px] text-ink-400 dark:text-stone-400">Call</span>') +
+      "</td>" +
+
+      '<td class="py-2 pr-3 align-top text-right whitespace-nowrap">' +
+        '<span class="inline-flex items-center gap-1.5 text-[12px] ' + style.text + '" ' +
+              'title="' + escapeHtml(listing.updated || "no date given") + '">' +
+          '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' +
+          agoShort(listing.days) +
+        "</span></td>" +
+    "</tr>";
+
+  // Hidden until the row is clicked: who to call, and the small print.
+  const detail =
+    '<tr class="detail-row hidden" id="detail-' + index + '">' +
+      '<td colspan="7" class="px-3 pb-3 pt-0">' +
+        '<div class="rounded-md bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
+             'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-1.5">' +
+          '<a class="font-medium text-ink-800 dark:text-stone-200 hover:text-clay-600" ' +
+             'href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' +
+             escapeHtml(n.phone) + "</a>" +
+          '<a class="text-clay-600 dark:text-clay-300 hover:underline" ' +
+             'href="mailto:' + escapeHtml(n.email) + '">' + escapeHtml(n.email) + "</a>" +
+          '<a class="text-clay-600 dark:text-clay-300 hover:underline" ' +
+             'href="' + escapeHtml(n.website) + '" target="_blank" rel="noopener">Website</a>' +
+          '<span class="text-ink-400 dark:text-stone-400">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
+          '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
+          '<span class="ml-auto ' + style.text + '">' + agoLong(listing.days) + "</span>" +
+        "</div>" +
+      "</td>" +
+    "</tr>";
+
+  return main + detail;
+}
+
+function tableHtml(rows, words) {
+  const head =
+    '<thead>' +
+      '<tr class="text-left text-[11px] uppercase tracking-wider text-ink-400 dark:text-stone-400 ' +
+          'bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
+        '<th class="py-2 pl-3 pr-3 font-semibold">Plant</th>' +
+        '<th class="py-2 pr-3 font-semibold">Nursery</th>' +
+        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Size</th>' +
+        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Grade</th>' +
+        '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
+        '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
+        '<th class="py-2 pr-3 font-semibold text-right">Updated</th>' +
+      "</tr>" +
+    "</thead>";
+
+  const body = rows.map(function (listing, index) {
+    return rowHtml(listing, words, index);
+  }).join("");
+
+  return '<div class="overflow-x-auto rounded-md border border-ink-100 dark:border-ink-800 ' +
+              'bg-white dark:bg-ink-900">' +
+    '<table class="w-full text-[13px] border-collapse">' + head +
+      '<tbody>' + body + "</tbody>" +
+    "</table></div>";
+}
+
+// What to show when nothing matched. Says which of the two reasons it was.
+function emptyHtml(query, filtersAreOn) {
+  const message = filtersAreOn
+    ? '<p><strong class="text-ink-800 dark:text-stone-200">Nothing matches these filters</strong></p>' +
+      '<p class="mt-1.5">Remove a filter above, or reset them all.</p>'
+    : '<p><strong class="text-ink-800 dark:text-stone-200">No listings for &ldquo;' +
+      escapeHtml(query) + "&rdquo;</strong></p>" +
+      '<p class="mt-1.5">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by nursery or city.</p>';
+
+  return '<div class="rounded-md border border-dashed border-ink-100 dark:border-ink-700 ' +
+              'bg-white dark:bg-ink-900 px-4 py-10 text-center text-[13px] ' +
+              'text-ink-400 dark:text-stone-400">' + message + "</div>";
+}
+
+// ---------------------------------------------------------------------------
+// 9. Put it all together and draw the page.
+// ---------------------------------------------------------------------------
+function render() {
+  const query = searchBox.value;
+  const words = normalize(query).split(" ").filter(Boolean);
+
+  // The rows that survive the search and every filter.
+  const rows = sortListings(
+    LISTINGS.filter(function (listing) {
+      return passesFilters(listing, words, null);
+    }),
+    sortSelect.value
+  );
+
+  renderFacet("size", words);
+  renderFacet("grade", words);
+  renderFacet("city", words);
+  renderActiveFilters();
+
+  const filtersAreOn =
+    freshOnlyBox.checked ||
+    chosen.size.size > 0 || chosen.grade.size > 0 || chosen.city.size > 0;
+
+  if (rows.length === 0) {
+    countLine.textContent = "";
+    resultsBox.innerHTML = emptyHtml(query, filtersAreOn);
+    return;
+  }
+
+  // Count the distinct nurseries on show, and how many rows are current.
+  const nurseries = new Set();
+  let fresh = 0;
+  rows.forEach(function (listing) {
+    nurseries.add(listing.nursery.id);
+    if (listing.days <= FRESH_DAYS) fresh++;
+  });
+
+  countLine.textContent =
+    rows.length.toLocaleString() + (rows.length === 1 ? " listing" : " listings") +
+    " · " + nurseries.size + (nurseries.size === 1 ? " nursery" : " nurseries") +
+    " · " + fresh + " updated this week";
+
+  resultsBox.innerHTML = tableHtml(rows, words);
+}
+
+// ---------------------------------------------------------------------------
+// 10. The totals in the header. These describe the whole database, so they are
+//     worked out once and never change as the visitor searches.
 // ---------------------------------------------------------------------------
 function renderStats() {
-  let listings = 0;
   let fresh = 0;
-
-  NURSERIES.forEach(function (nursery) {
-    nursery.plants.forEach(function (plant) {
-      listings++;
-      if (daysSince(plant.updated) <= FRESH_DAYS) fresh++;
-    });
+  LISTINGS.forEach(function (listing) {
+    if (listing.days <= FRESH_DAYS) fresh++;
   });
 
   document.getElementById("stat-nurseries").textContent = NURSERIES.length;
-  document.getElementById("stat-listings").textContent = listings.toLocaleString();
+  document.getElementById("stat-listings").textContent = LISTINGS.length.toLocaleString();
   document.getElementById("stat-fresh").textContent = fresh.toLocaleString();
 }
 
 // ---------------------------------------------------------------------------
-// 7. Wire up the controls, then draw the page for the first time.
+// 11. Wire up the controls, then draw the page for the first time.
 // ---------------------------------------------------------------------------
 
 // "input" fires on every keystroke, so results update as you type.
-searchBox.addEventListener("input", function () {
-  render(searchBox.value);
-});
+searchBox.addEventListener("input", render);
+sortSelect.addEventListener("change", render);
+freshOnlyBox.addEventListener("change", render);
 
 clearButton.addEventListener("click", function () {
   searchBox.value = "";
-  render("");
+  render();
   searchBox.focus();
 });
 
-sortSelect.addEventListener("change", function () {
-  render(searchBox.value);
+// The filter rail is folded shut on a phone and open on a laptop. A <summary>
+// toggles its panel when clicked, so the Reset button inside it has to say
+// "this click was for me" or pressing Reset would also fold the panel.
+const WIDE_SCREEN = window.matchMedia("(min-width: 1024px)");
+
+function syncFilterPanel() {
+  filterPanel.open = WIDE_SCREEN.matches;
+}
+
+WIDE_SCREEN.addEventListener("change", syncFilterPanel);
+
+resetButton.addEventListener("click", function (event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  chosen.size.clear();
+  chosen.grade.clear();
+  chosen.city.clear();
+  freshOnlyBox.checked = false;
+  render();
 });
 
-freshOnlyBox.addEventListener("change", function () {
-  render(searchBox.value);
+// One listener on the rail handles every tick box in it, including the ones
+// app.js has not drawn yet.
+document.addEventListener("change", function (event) {
+  const facet = event.target.getAttribute && event.target.getAttribute("data-filter");
+  if (!facet) return;
+
+  if (event.target.checked) {
+    chosen[facet].add(event.target.value);
+  } else {
+    chosen[facet].delete(event.target.value);
+  }
+  render();
 });
 
-// One listener on the container handles all the chips.
+// The removable tags above the table.
+activeFilterBox.addEventListener("click", function (event) {
+  const tag = event.target.closest("[data-remove]");
+  if (!tag) return;
+
+  const facet = tag.getAttribute("data-remove");
+  if (facet === "fresh") {
+    freshOnlyBox.checked = false;
+  } else {
+    chosen[facet].delete(tag.getAttribute("data-value"));
+  }
+  render();
+});
+
+// One listener on the chips row handles all the example searches.
 chipBox.addEventListener("click", function (event) {
   if (!event.target.classList.contains("chip")) return;
   searchBox.value = event.target.textContent.trim();
-  render(searchBox.value);
+  render();
 });
 
+// Clicking (or pressing Enter on) a listing opens the nursery's contact
+// details underneath it.
+function toggleRow(row) {
+  const detail = row.nextElementSibling;
+  if (!detail || !detail.classList.contains("detail-row")) return;
+
+  const nowOpen = detail.classList.toggle("hidden") === false;
+  row.setAttribute("aria-expanded", nowOpen ? "true" : "false");
+  row.classList.toggle("is-open", nowOpen);
+}
+
+resultsBox.addEventListener("click", function (event) {
+  // Let a link inside a row behave like a link.
+  if (event.target.closest("a")) return;
+
+  const row = event.target.closest(".listing-row");
+  if (row) toggleRow(row);
+});
+
+resultsBox.addEventListener("keydown", function (event) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+
+  const row = event.target.closest(".listing-row");
+  if (!row) return;
+
+  event.preventDefault();
+  toggleRow(row);
+});
+
+syncFilterPanel();
 renderStats();
-render("");
+render();

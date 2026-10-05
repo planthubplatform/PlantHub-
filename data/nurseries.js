@@ -13,6 +13,22 @@
   How to add a nursery: copy one { ... } block, paste it below, and edit the
   values. Keep the commas between blocks.
 
+  What each field on a plant row means
+  ------------------------------------
+    common     The name a buyer searches for.        "Clusia"
+    botanical  The Latin name, for exact matching.   "Clusia guttifera"
+    size       The container, in trade shorthand.    "#7", "4 in. liner", "12 ft CT"
+    grade      How the material is graded.           "Full", "Specimen", "Florida Fancy"
+    quantity   Units on hand right now.              1400
+    price      Wholesale per unit, or null for       24.5
+               "call for pricing".
+    updated    The date the nursery confirmed it.    "2026-09-30"
+
+  Price and quantity are both deliberate. Every competing directory hides
+  them behind a login; showing them is most of the reason this site exists.
+  A grower who will not publish a price gets price: null, which the page
+  shows as "Call" — that is honest, and better than an invented number.
+
   The "updated" date on each plant
   --------------------------------
   Every plant row carries the date that nursery last confirmed the line, written
@@ -37,11 +53,11 @@ const NURSERIES = [
     specialties: ["Palms", "Field grown"],
     minOrder: "$750",
     plants: [
-      { common: "Coconut Palm", botanical: "Cocos nucifera 'Maypan'", size: "10-12 ft CT", quantity: 180, updated: "2026-09-29" },
-      { common: "Montgomery Palm", botanical: "Veitchia arecina", size: "8 ft CT", quantity: 240, updated: "2026-09-29" },
-      { common: "Foxtail Palm", botanical: "Wodyetia bifurcata", size: "#45", quantity: 320, updated: "2026-09-28" },
-      { common: "Sabal Palm", botanical: "Sabal palmetto", size: "12 ft CT", quantity: 600, updated: "2026-09-29" },
-      { common: "Areca Palm", botanical: "Dypsis lutescens", size: "#25", quantity: 450, updated: "2026-09-27" }
+      { common: "Coconut Palm", botanical: "Cocos nucifera 'Maypan'", size: "10-12 ft CT", grade: "Matched", quantity: 180, price: null, updated: "2026-09-29" },
+      { common: "Montgomery Palm", botanical: "Veitchia arecina", size: "8 ft CT", grade: "Florida Fancy", quantity: 240, price: 326, updated: "2026-09-29" },
+      { common: "Foxtail Palm", botanical: "Wodyetia bifurcata", size: "#45", grade: "Specimen", quantity: 320, price: 281.5, updated: "2026-09-28" },
+      { common: "Sabal Palm", botanical: "Sabal palmetto", size: "12 ft CT", grade: "Full head", quantity: 600, price: 438, updated: "2026-09-29" },
+      { common: "Areca Palm", botanical: "Dypsis lutescens", size: "#25", grade: "Standard", quantity: 450, price: 112.5, updated: "2026-09-27" }
     ]
   },
   {
@@ -55,11 +71,11 @@ const NURSERIES = [
     specialties: ["Hedge material", "Privacy screens"],
     minOrder: "$500",
     plants: [
-      { common: "Clusia", botanical: "Clusia guttifera", size: "#7", quantity: 1400, updated: "2026-09-30" },
-      { common: "Podocarpus", botanical: "Podocarpus macrophyllus", size: "#15", quantity: 900, updated: "2026-09-30" },
-      { common: "Areca Palm", botanical: "Dypsis lutescens", size: "#15", quantity: 760, updated: "2026-09-29" },
-      { common: "Cocoplum", botanical: "Chrysobalanus icaco 'Red Tip'", size: "#3", quantity: 2200, updated: "2026-09-30" },
-      { common: "Silver Buttonwood", botanical: "Conocarpus erectus var. sericeus", size: "#7", quantity: 640, updated: "2026-09-28" }
+      { common: "Clusia", botanical: "Clusia guttifera", size: "#7", grade: "Full", quantity: 1400, price: 19.25, updated: "2026-09-30" },
+      { common: "Podocarpus", botanical: "Podocarpus macrophyllus", size: "#15", grade: "Multi", quantity: 900, price: 54.75, updated: "2026-09-30" },
+      { common: "Areca Palm", botanical: "Dypsis lutescens", size: "#15", grade: "Standard", quantity: 760, price: null, updated: "2026-09-29" },
+      { common: "Cocoplum", botanical: "Chrysobalanus icaco 'Red Tip'", size: "#3", grade: "Bush", quantity: 2200, price: 9.25, updated: "2026-09-30" },
+      { common: "Silver Buttonwood", botanical: "Conocarpus erectus var. sericeus", size: "#7", grade: "Full / low branched", quantity: 640, price: 21.5, updated: "2026-09-28" }
     ]
   },
   {
@@ -73,11 +89,11 @@ const NURSERIES = [
     specialties: ["Florida natives", "Mitigation stock"],
     minOrder: "$350",
     plants: [
-      { common: "Live Oak", botanical: "Quercus virginiana", size: "3 in. caliper", quantity: 210, updated: "2026-09-08" },
-      { common: "Slash Pine", botanical: "Pinus elliottii", size: "#25", quantity: 340, updated: "2026-09-05" },
-      { common: "Green Buttonwood", botanical: "Conocarpus erectus", size: "#15", quantity: 480, updated: "2026-09-08" },
-      { common: "Firebush", botanical: "Hamelia patens", size: "#3", quantity: 1500, updated: "2026-08-31" },
-      { common: "Saw Palmetto", botanical: "Serenoa repens", size: "#7", quantity: 420, updated: "2026-09-03" }
+      { common: "Live Oak", botanical: "Quercus virginiana", size: "3 in. caliper", grade: "Grade #1", quantity: 210, price: 339.5, updated: "2026-09-08" },
+      { common: "Slash Pine", botanical: "Pinus elliottii", size: "#25", grade: "Specimen", quantity: 340, price: 129.75, updated: "2026-09-05" },
+      { common: "Green Buttonwood", botanical: "Conocarpus erectus", size: "#15", grade: "Multi", quantity: 480, price: null, updated: "2026-09-08" },
+      { common: "Firebush", botanical: "Hamelia patens", size: "#3", grade: "Full", quantity: 1500, price: 8.75, updated: "2026-08-31" },
+      { common: "Saw Palmetto", botanical: "Serenoa repens", size: "#7", grade: "Multi", quantity: 420, price: null, updated: "2026-09-03" }
     ]
   },
   {
@@ -91,11 +107,11 @@ const NURSERIES = [
     specialties: ["Flowering trees", "Color"],
     minOrder: "$400",
     plants: [
-      { common: "Royal Poinciana", botanical: "Delonix regia", size: "#45", quantity: 90, updated: "2026-09-26" },
-      { common: "Tabebuia", botanical: "Handroanthus chrysotrichus", size: "#25", quantity: 150, updated: "2026-09-24" },
-      { common: "Bougainvillea", botanical: "Bougainvillea spectabilis", size: "#7", quantity: 850, updated: "2026-09-26" },
-      { common: "Hibiscus", botanical: "Hibiscus rosa-sinensis", size: "#3", quantity: 1900, updated: "2026-09-21" },
-      { common: "Frangipani", botanical: "Plumeria rubra", size: "#10", quantity: 260, updated: "2026-09-25" }
+      { common: "Royal Poinciana", botanical: "Delonix regia", size: "#45", grade: "Florida Fancy", quantity: 90, price: 200.75, updated: "2026-09-26" },
+      { common: "Tabebuia", botanical: "Handroanthus chrysotrichus", size: "#25", grade: "Specimen", quantity: 150, price: 149.5, updated: "2026-09-24" },
+      { common: "Bougainvillea", botanical: "Bougainvillea spectabilis", size: "#7", grade: "Full / low branched", quantity: 850, price: null, updated: "2026-09-26" },
+      { common: "Hibiscus", botanical: "Hibiscus rosa-sinensis", size: "#3", grade: "Full", quantity: 1900, price: 10, updated: "2026-09-21" },
+      { common: "Frangipani", botanical: "Plumeria rubra", size: "#10", grade: "Standard", quantity: 260, price: 43.25, updated: "2026-09-25" }
     ]
   },
   {
@@ -109,11 +125,11 @@ const NURSERIES = [
     specialties: ["Shade trees", "Street trees"],
     minOrder: "$600",
     plants: [
-      { common: "Live Oak", botanical: "Quercus virginiana", size: "4 in. caliper", quantity: 140, updated: "2026-06-26" },
-      { common: "Gumbo Limbo", botanical: "Bursera simaruba", size: "#45", quantity: 110, updated: "2026-06-12" },
-      { common: "Mahogany", botanical: "Swietenia mahagoni", size: "#30", quantity: 230, updated: "2026-06-26" },
-      { common: "Silver Buttonwood", botanical: "Conocarpus erectus var. sericeus", size: "#25", quantity: 175, updated: "2026-05-29" },
-      { common: "Simpson's Stopper", botanical: "Myrcianthes fragrans", size: "#15", quantity: 380, updated: "2026-06-19" }
+      { common: "Live Oak", botanical: "Quercus virginiana", size: "4 in. caliper", grade: "Grade #1", quantity: 140, price: 247.5, updated: "2026-06-26" },
+      { common: "Gumbo Limbo", botanical: "Bursera simaruba", size: "#45", grade: "Florida Fancy", quantity: 110, price: 276, updated: "2026-06-12" },
+      { common: "Mahogany", botanical: "Swietenia mahagoni", size: "#30", grade: "Standard", quantity: 230, price: 182, updated: "2026-06-26" },
+      { common: "Silver Buttonwood", botanical: "Conocarpus erectus var. sericeus", size: "#25", grade: "Florida Fancy", quantity: 175, price: 158.5, updated: "2026-05-29" },
+      { common: "Simpson's Stopper", botanical: "Myrcianthes fragrans", size: "#15", grade: "Full", quantity: 380, price: 65.75, updated: "2026-06-19" }
     ]
   },
   {
@@ -127,11 +143,11 @@ const NURSERIES = [
     specialties: ["Liners", "Starter plants"],
     minOrder: "$1,000",
     plants: [
-      { common: "Clusia", botanical: "Clusia rosea", size: "4 in. liner", quantity: 9000, updated: "2026-09-28" },
-      { common: "Cocoplum", botanical: "Chrysobalanus icaco", size: "4 in. liner", quantity: 12000, updated: "2026-09-27" },
-      { common: "Podocarpus", botanical: "Podocarpus macrophyllus", size: "4 in. liner", quantity: 7500, updated: "2026-09-28" },
-      { common: "Firebush", botanical: "Hamelia patens", size: "2.5 in. liner", quantity: 15000, updated: "2026-09-25" },
-      { common: "Coontie", botanical: "Zamia integrifolia", size: "4 in. liner", quantity: 4000, updated: "2026-09-27" }
+      { common: "Clusia", botanical: "Clusia rosea", size: "4 in. liner", grade: "Well rooted", quantity: 9000, price: 3, updated: "2026-09-28" },
+      { common: "Cocoplum", botanical: "Chrysobalanus icaco", size: "4 in. liner", grade: "Well rooted", quantity: 12000, price: 2.25, updated: "2026-09-27" },
+      { common: "Podocarpus", botanical: "Podocarpus macrophyllus", size: "4 in. liner", grade: "Well rooted", quantity: 7500, price: 2, updated: "2026-09-28" },
+      { common: "Firebush", botanical: "Hamelia patens", size: "2.5 in. liner", grade: "Shade grown", quantity: 15000, price: 3.25, updated: "2026-09-25" },
+      { common: "Coontie", botanical: "Zamia integrifolia", size: "4 in. liner", grade: "Shade grown", quantity: 4000, price: 2.25, updated: "2026-09-27" }
     ]
   },
   {
@@ -145,11 +161,11 @@ const NURSERIES = [
     specialties: ["Groundcover", "Annuals"],
     minOrder: "$250",
     plants: [
-      { common: "Dwarf Jasmine", botanical: "Trachelospermum asiaticum", size: "#1", quantity: 6500, updated: "2026-09-18" },
-      { common: "Liriope", botanical: "Liriope muscari 'Evergreen Giant'", size: "#1", quantity: 5200, updated: "2026-09-16" },
-      { common: "Perennial Peanut", botanical: "Arachis glabrata", size: "Flat", quantity: 800, updated: "2026-09-18" },
-      { common: "Blue Daze", botanical: "Evolvulus glomeratus", size: "#1", quantity: 3400, updated: "2026-09-12" },
-      { common: "Muhly Grass", botanical: "Muhlenbergia capillaris", size: "#3", quantity: 2100, updated: "2026-09-15" }
+      { common: "Dwarf Jasmine", botanical: "Trachelospermum asiaticum", size: "#1", grade: "Full", quantity: 6500, price: 2.4, updated: "2026-09-18" },
+      { common: "Liriope", botanical: "Liriope muscari 'Evergreen Giant'", size: "#1", grade: "Full", quantity: 5200, price: 2.4, updated: "2026-09-16" },
+      { common: "Perennial Peanut", botanical: "Arachis glabrata", size: "Flat", grade: "Well rooted", quantity: 800, price: 19.25, updated: "2026-09-18" },
+      { common: "Blue Daze", botanical: "Evolvulus glomeratus", size: "#1", grade: "Full", quantity: 3400, price: 2.9, updated: "2026-09-12" },
+      { common: "Muhly Grass", botanical: "Muhlenbergia capillaris", size: "#3", grade: "Full", quantity: 2100, price: null, updated: "2026-09-15" }
     ]
   },
   {
@@ -163,11 +179,11 @@ const NURSERIES = [
     specialties: ["Fruit trees", "Grafted stock"],
     minOrder: "$400",
     plants: [
-      { common: "Mango", botanical: "Mangifera indica 'Glenn'", size: "#15", quantity: 460, updated: "2026-07-31" },
-      { common: "Avocado", botanical: "Persea americana 'Brogdon'", size: "#15", quantity: 380, updated: "2026-07-18" },
-      { common: "Lychee", botanical: "Litchi chinensis 'Mauritius'", size: "#7", quantity: 220, updated: "2026-07-24" },
-      { common: "Key Lime", botanical: "Citrus aurantiifolia", size: "#7", quantity: 540, updated: "2026-07-31" },
-      { common: "Starfruit", botanical: "Averrhoa carambola 'Kari'", size: "#10", quantity: 160, updated: "2026-07-12" }
+      { common: "Mango", botanical: "Mangifera indica 'Glenn'", size: "#15", grade: "Multi", quantity: 460, price: 52.25, updated: "2026-07-31" },
+      { common: "Avocado", botanical: "Persea americana 'Brogdon'", size: "#15", grade: "Multi", quantity: 380, price: 64.25, updated: "2026-07-18" },
+      { common: "Lychee", botanical: "Litchi chinensis 'Mauritius'", size: "#7", grade: "Full / low branched", quantity: 220, price: 26.75, updated: "2026-07-24" },
+      { common: "Key Lime", botanical: "Citrus aurantiifolia", size: "#7", grade: "Full", quantity: 540, price: 22.5, updated: "2026-07-31" },
+      { common: "Starfruit", botanical: "Averrhoa carambola 'Kari'", size: "#10", grade: "Standard", quantity: 160, price: null, updated: "2026-07-12" }
     ]
   },
   {
@@ -181,11 +197,11 @@ const NURSERIES = [
     specialties: ["Large containers", "Landscape ready"],
     minOrder: "$800",
     plants: [
-      { common: "Foxtail Palm", botanical: "Wodyetia bifurcata", size: "#65", quantity: 85, updated: "2026-09-14" },
-      { common: "Royal Palm", botanical: "Roystonea regia", size: "14 ft CT", quantity: 70, updated: "2026-09-11" },
-      { common: "Bismarck Palm", botanical: "Bismarckia nobilis", size: "#100", quantity: 45, updated: "2026-09-14" },
-      { common: "Traveler's Palm", botanical: "Ravenala madagascariensis", size: "#45", quantity: 120, updated: "2026-09-07" },
-      { common: "Bird of Paradise", botanical: "Strelitzia nicolai", size: "#25", quantity: 300, updated: "2026-09-10" }
+      { common: "Foxtail Palm", botanical: "Wodyetia bifurcata", size: "#65", grade: "Specimen", quantity: 85, price: 381.5, updated: "2026-09-14" },
+      { common: "Royal Palm", botanical: "Roystonea regia", size: "14 ft CT", grade: "Matched", quantity: 70, price: 351.25, updated: "2026-09-11" },
+      { common: "Bismarck Palm", botanical: "Bismarckia nobilis", size: "#100", grade: "Specimen", quantity: 45, price: 498.5, updated: "2026-09-14" },
+      { common: "Traveler's Palm", botanical: "Ravenala madagascariensis", size: "#45", grade: "Matched", quantity: 120, price: 250.75, updated: "2026-09-07" },
+      { common: "Bird of Paradise", botanical: "Strelitzia nicolai", size: "#25", grade: "Florida Fancy", quantity: 300, price: 118.75, updated: "2026-09-10" }
     ]
   },
   {
@@ -199,11 +215,11 @@ const NURSERIES = [
     specialties: ["Accent plants", "Tropical foliage"],
     minOrder: "$300",
     plants: [
-      { common: "Bird of Paradise", botanical: "Strelitzia reginae", size: "#7", quantity: 640, updated: "2026-09-29" },
-      { common: "Croton", botanical: "Codiaeum variegatum 'Petra'", size: "#3", quantity: 2400, updated: "2026-09-28" },
-      { common: "Ti Plant", botanical: "Cordyline fruticosa", size: "#3", quantity: 1800, updated: "2026-09-29" },
-      { common: "Agave", botanical: "Agave desmettiana", size: "#7", quantity: 520, updated: "2026-09-26" },
-      { common: "Philodendron Xanadu", botanical: "Thaumatophyllum xanadu", size: "#3", quantity: 3100, updated: "2026-09-28" }
+      { common: "Bird of Paradise", botanical: "Strelitzia reginae", size: "#7", grade: "Full", quantity: 640, price: 19.5, updated: "2026-09-29" },
+      { common: "Croton", botanical: "Codiaeum variegatum 'Petra'", size: "#3", grade: "Full", quantity: 2400, price: 6.5, updated: "2026-09-28" },
+      { common: "Ti Plant", botanical: "Cordyline fruticosa", size: "#3", grade: "Full", quantity: 1800, price: 10.25, updated: "2026-09-29" },
+      { common: "Agave", botanical: "Agave desmettiana", size: "#7", grade: "Full / low branched", quantity: 520, price: null, updated: "2026-09-26" },
+      { common: "Philodendron Xanadu", botanical: "Thaumatophyllum xanadu", size: "#3", grade: "Full / low branched", quantity: 3100, price: 7.5, updated: "2026-09-28" }
     ]
   }
 ];
