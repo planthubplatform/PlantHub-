@@ -60,7 +60,7 @@
              stroke-linecap="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
         </svg>
-        <input id="q" name="q" type="search" autocomplete="off" autofocus
+        <input id="q" name="q" type="search" autocomplete="off"
                placeholder="Search a plant, nursery or city"
                class="w-full rounded-full pl-14 pr-28 py-4 text-base
                       bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700
@@ -134,6 +134,14 @@
       </ul>
     </nav>
   </main>
+
+  <script>
+    // On a computer, put the cursor straight in the search box. Not on a
+    // phone: there it would pop the keyboard up over the page.
+    if (window.matchMedia("(min-width: 1024px)").matches) {
+      document.getElementById("q").focus();
+    }
+  </script>
 
   <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
     Early prototype. Directory listings are sample data and do not describe real businesses.

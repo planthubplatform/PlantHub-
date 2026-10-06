@@ -66,7 +66,7 @@
           id="search"
           placeholder="Search a plant, nursery or city"
           autocomplete="off"
-          class="w-full rounded-full pl-11 pr-20 py-2.5 text-sm
+          class="w-full rounded-full pl-11 pr-20 py-2.5 text-base sm:text-sm
                  bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700 shadow-sm
                  placeholder:text-ink-400 dark:placeholder:text-stone-500
                  focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-transparent transition">
@@ -193,6 +193,12 @@
             <div data-facet="grades" class="facet"></div>
             <div data-facet="photos" class="facet"></div>
             <div data-facet="city"   class="facet"></div>
+
+            <!-- Phones only: the panel covers the results, so this closes it
+                 and jumps to them. app.js keeps the number up to date. -->
+            <div class="lg:hidden p-3">
+              <button type="button" id="show-results" class="auth-button">Show listings</button>
+            </div>
           </div>
         </details>
       </aside>

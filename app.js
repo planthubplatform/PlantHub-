@@ -35,6 +35,7 @@ const resetButton = document.getElementById("reset-filters");
 const activeFilterBox = document.getElementById("active-filters");
 const filterPanel = document.getElementById("filter-panel");
 const filterCount = document.getElementById("filter-count");
+const showResultsButton = document.getElementById("show-results");
 
 // A listing counts as "fresh" if the nursery confirmed it within this many days.
 const FRESH_DAYS = 7;
@@ -401,7 +402,7 @@ function renderFacet(facet, words) {
     const isOn = chosen[facet].has(value);
     const count = counts.get(value);
     return '<li>' +
-      '<label class="flex items-center gap-2 py-0.5 cursor-pointer select-none ' +
+      '<label class="flex items-center gap-2 py-1.5 lg:py-0.5 cursor-pointer select-none ' +
         (count === 0 && !isOn ? "opacity-40" : "") + '">' +
         '<input type="checkbox" data-filter="' + facet + '" value="' + escapeHtml(value) + '"' +
           (isOn ? " checked" : "") +
@@ -496,11 +497,17 @@ function rowHtml(listing, words, index) {
   const specs = specText(listing);
   const grades = listing.grades.join(", ");
 
-  // Container, specs and grade get their own columns on a wide screen. On a
-  // phone there isn't room, so they ride along under the plant name instead.
+  // Container, specs and grade get their own columns on a wide screen (1280px
+  // and up). Below that there isn't room, so they ride along under the plant name.
   const detailsMobile =
-    '<span class="lg:hidden block text-[11px] text-ink-400 dark:text-stone-400 mt-0.5">' +
+    '<span class="xl:hidden block text-[11px] text-ink-400 dark:text-stone-400 mt-0.5">' +
       escapeHtml([listing.container, specs, grades].filter(Boolean).join(" · ")) +
+    '</span>';
+
+  // On a phone the nursery column is hidden too, so its name goes here.
+  const nurseryMobile =
+    '<span class="sm:hidden block text-[12px] text-ink-700 dark:text-stone-300 mt-1">' +
+      highlight(n.name, words) + " · " + highlight(n.city, words) +
     '</span>';
 
   const main =
@@ -511,22 +518,22 @@ function rowHtml(listing, words, index) {
           highlight(listing.common, words) + "</span>" + photoBadge(listing) +
         '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' +
           highlight(listing.botanical, words) + "</span>" +
-        detailsMobile +
+        nurseryMobile + detailsMobile +
       "</td>" +
 
-      '<td class="py-2 pr-3 align-top">' +
+      '<td class="hidden sm:table-cell py-2 pr-3 align-top">' +
         '<span class="text-ink-800 dark:text-stone-200">' + highlight(n.name, words) + "</span>" +
         '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
           highlight(n.city + ", " + n.state, words) + "</span>" +
       "</td>" +
 
-      '<td class="hidden lg:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
+      '<td class="hidden xl:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
         escapeHtml(listing.container) + "</td>" +
 
-      '<td class="hidden lg:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
+      '<td class="hidden xl:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
         '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(specs) + "</span></td>" +
 
-      '<td class="hidden lg:table-cell py-2 pr-3 align-top">' +
+      '<td class="hidden xl:table-cell py-2 pr-3 align-top">' +
         '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(grades) + "</span></td>" +
 
       '<td class="py-2 pr-3 align-top text-right tabular-nums font-medium whitespace-nowrap">' +
@@ -552,7 +559,7 @@ function rowHtml(listing, words, index) {
       '<td colspan="8" class="px-3 pb-3 pt-0">' +
         '<div class="rounded-md bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
              'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-1.5">' +
-          '<a class="font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html">' +
+          '<a class="w-full sm:w-auto py-1 sm:py-0 font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html">' +
             "Sign in to order or contact this grower</a>" +
           '<span class="text-ink-400 dark:text-stone-400">' + MIN_ORDER + " minimum order · pay by bank transfer (ACH)</span>" +
           '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
@@ -570,10 +577,10 @@ function tableHtml(rows, words) {
       '<tr class="text-left text-[11px] uppercase tracking-wider text-ink-400 dark:text-stone-400 ' +
           'bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
         '<th class="py-2 pl-3 pr-3 font-semibold">Plant</th>' +
-        '<th class="py-2 pr-3 font-semibold">Nursery</th>' +
-        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Container</th>' +
-        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Specs</th>' +
-        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Grade</th>' +
+        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">Nursery</th>' +
+        '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Container</th>' +
+        '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Specs</th>' +
+        '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Grade</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Updated</th>' +
@@ -624,6 +631,10 @@ function render() {
   TICK_FACETS.forEach(function (facet) { renderFacet(facet, words); });
   renderSpecCounts(words);
   const filtersAreOn = renderActiveFilters();
+
+  showResultsButton.textContent = rows.length === 0
+    ? "No listings match"
+    : "Show " + rows.length + (rows.length === 1 ? " listing" : " listings");
 
   if (rows.length === 0) {
     countLine.textContent = "";
@@ -699,6 +710,11 @@ function syncFilterPanel() {
 }
 
 WIDE_SCREEN.addEventListener("change", syncFilterPanel);
+
+showResultsButton.addEventListener("click", function () {
+  filterPanel.open = false;
+  countLine.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 resetButton.addEventListener("click", function (event) {
   event.preventDefault();

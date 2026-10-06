@@ -176,13 +176,10 @@ table {
   table-layout: auto;
 }
 
-/* On a narrow phone the columns would squeeze until every nursery name wrapped
-   over three lines, which makes the rows tall and the table hard to scan. A
-   floor width stops the squeezing; the table scrolls sideways inside its box
-   instead, which is what every trade catalogue does on a phone. */
-#results table {
-  min-width: 30rem;   /* 480px */
-}
+/* On a phone the table keeps four columns — plant, quantity, price, updated —
+   and everything else (nursery, container, specs, grade) rides along under
+   the plant name. That fits a phone screen without sideways scrolling, and
+   the numbers a buyer compares stay lined up in columns. */
 
 /* Anyone who has asked their system to reduce motion gets no transitions. */
 @media (prefers-reduced-motion: reduce) {
@@ -406,3 +403,12 @@ table {
    week", which is about freshness and so gets the green. */
 .facet input[type="checkbox"] { accent-color: #a95c2d; }
 #fresh-only { accent-color: #16a34a; }
+
+/* Phones and tablets zoom the whole page in when you tap a box whose text is
+   smaller than 16px, and don't zoom back out. On any touch screen, boxes get 16px text. */
+@media (max-width: 639px), (pointer: coarse) {
+  .spec-input, .spec-unit, #sort, #search { font-size: 16px; }
+}
+
+/* When "Show listings" scrolls down to the results, leave a little room above. */
+#count { scroll-margin-top: 0.75rem; }
