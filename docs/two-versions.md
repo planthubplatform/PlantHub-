@@ -8,7 +8,7 @@ something different alongside it.
 | Where | Branch | What it is |
 |---|---|---|
 | `C:\Users\Kekers\Projects\PlantHub` | `main` | The published site. This is what the live link shows. |
-| `C:\Users\Kekers\Projects\PlantHub-designB` | `design-b` | The experiment. Local only — not published. |
+| `C:\Users\Kekers\Projects\PlantHub-designB` | `design-b` | The experiment. On GitHub, but not on the live site. |
 
 Both folders are the same project. Git keeps them in step; they just have
 different versions open at the same time.
@@ -16,6 +16,32 @@ different versions open at the same time.
 There is also a **tag** called `v1-trade-table` on the design that went live on
 4 October. A tag is a permanent bookmark — it never moves, whatever else
 happens. `git checkout v1-trade-table` always brings that exact version back.
+
+## More than one machine on `design-b`
+
+`design-b` is on GitHub. The Mac, the Windows PC and Claude Code cloud
+sessions can all commit to it, so the rule is:
+
+**Pull before you start, push when you stop.**
+
+```bash
+git pull origin design-b
+```
+
+If two places commit without pulling in between, the second push is refused.
+That is safe, not lost work: run the pull, then push again.
+
+The Windows `PlantHub-designB` folder made its own `design-b` before the
+branch was on GitHub. Before committing there, point it at the real one:
+
+```bash
+git fetch origin
+git branch -u origin/design-b
+git status
+```
+
+`git status` should say "up to date with 'origin/design-b'". If it says
+"diverged", stop and ask before doing anything else.
 
 ## Day to day
 
