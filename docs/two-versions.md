@@ -74,6 +74,50 @@ git push
 Do that only once you've decided. Until then the live link keeps showing the
 trade-table design, no matter what happens in the other folder.
 
+## Working from the MacBook (or any second machine)
+
+The Windows PC is where this was set up, but nothing ties the work to it.
+
+**First time only.** Install GitHub Desktop from https://desktop.github.com and
+sign in — that also sorts out the permission to push. Then File → Clone
+Repository → `planthubplatform/PlantHub-` → Clone. It lands in
+`~/Documents/GitHub/PlantHub-`.
+
+**Check whether `design-b` is on GitHub.** Open the Current Branch dropdown. If
+`design-b` is listed, pick it and you are ready. If it isn't — it was created
+on the Windows PC and never published — make it here instead: New Branch, name
+it `design-b`, base it on `main`, then press Publish branch. It holds nothing
+unique, so nothing is lost by creating it on this machine.
+
+**Run the site to see your changes.** In Terminal:
+
+    cd ~/Documents/GitHub/PlantHub-
+    python3 serve.py
+
+Then open the address it prints. On a Mac the command is `python3`, not
+`python`.
+
+**Save your work.** In GitHub Desktop: write a summary, Commit, then Push
+origin. Pushing is what makes the work visible on the other machine.
+
+**Before starting on the other machine again**, pull first, or the two copies
+drift apart:
+
+    git pull
+
+### Editing without installing anything
+
+On the repo page on github.com, press `.` — a full editor opens in the
+browser, and the branch picker is at the bottom left. Fine for text and small
+fixes. It cannot show you the rendered page, so it is poor for design work.
+
+### A warning about having both machines going
+
+If `design-b` was created separately on two machines, the two will not match,
+and pushing from the second one will be refused. The fix is to keep whichever
+copy has real work on it and recreate the other from `main`. Avoid the problem
+by only committing to `design-b` from one machine until it is published.
+
 ## If you decide against it
 
 Delete the branch and the folder:
