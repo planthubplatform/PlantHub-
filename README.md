@@ -33,6 +33,7 @@ PORT=5174 python serve.py
 |---|---|
 | `index.html` | The front page: sign in, the wordmark, a search box, and five round links into the site. |
 | `directory.html` | The plant directory: filters, the listing table, footer. A front-page search lands here. |
+| `signin.html` | Sign in, with "create an account" below. A preview: nothing is saved or sent yet. |
 | `soon.html` | The "coming soon" page behind the sections that aren't built yet. |
 | `theme.js` | The colors and fonts, shared by every page. |
 | `styles.css` | The few styles Tailwind classes can't say cleanly. |
@@ -46,7 +47,8 @@ PORT=5174 python serve.py
   size, grade, quantity on hand, price, and how long ago the nursery confirmed
   it. Click a row for the phone number and minimum order.
 - Filter down the left by container size, grade and city, each with a count.
-  Nothing is behind a login.
+  No account is needed to search today. Buyer and seller accounts are on
+  the way (`signin.html` is a preview).
 - Search by common name, botanical name, nursery name, or city. Partial words
   work (`palm` finds Foxtail Palm), and small typos still match (`clusa` finds
   Clusia). Matching text is highlighted so you can see why a row came back.

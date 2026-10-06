@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<!--
+  signin.html — log in, and below it, create an account.
+
+  PROTOTYPE ONLY. There is no account system yet: neither form sends anything
+  anywhere. Pressing a button just shows a note saying accounts aren't live.
+  When real accounts arrive (see the roadmap in README.md), these forms get
+  wired to that service and the note goes away.
+
+  Account types come from the owner, 6 October 2026: buyer, seller,
+  landscaper and personal. What each one can do is still to be decided,
+  page by page, so this file only records the choice.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="page py-4">
+    <a href="index.html" class="font-display font-semibold text-xl tracking-tight inline-flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+      PlantHub<span class="w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+    </a>
+  </header>
+
+  <main class="page flex-1 flex flex-col items-center py-8">
+    <div class="w-full max-w-md">
+
+      <!-- ===== Log in =================================================== -->
+      <section class="auth-card" aria-labelledby="login-title">
+        <h1 id="login-title" class="font-display font-semibold text-3xl tracking-tight">Sign in</h1>
+        <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">Welcome back.</p>
+
+        <form id="login-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label class="auth-label" for="login-email">Email</label>
+            <input class="auth-input" id="login-email" type="email" autocomplete="email" required>
+          </div>
+          <div>
+            <div class="flex items-baseline justify-between">
+              <label class="auth-label" for="login-password">Password</label>
+              <a href="#" class="auth-link text-[13px]" data-not-live>Forgot password?</a>
+            </div>
+            <input class="auth-input" id="login-password" type="password" autocomplete="current-password" required>
+          </div>
+          <button type="submit" class="auth-button">Sign in</button>
+        </form>
+      </section>
+
+      <!-- ===== Create an account ======================================== -->
+      <section class="auth-card mt-6" aria-labelledby="create-title">
+        <h2 id="create-title" class="font-display font-semibold text-2xl tracking-tight">New to PlantHub? Create an account</h2>
+
+        <form id="create-form" class="mt-5 space-y-4" novalidate>
+          <!-- The account types. Each is a radio button styled as a tile. -->
+          <fieldset>
+            <legend class="auth-label">I'm signing up as a</legend>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <label class="type-tile">
+                <input type="radio" name="type" value="buyer" class="sr-only" required>
+                <span class="type-name">Buyer</span>
+                <span class="type-note">Garden centers and trade buyers</span>
+              </label>
+              <label class="type-tile">
+                <input type="radio" name="type" value="seller" class="sr-only">
+                <span class="type-name">Seller</span>
+                <span class="type-note">Nurseries and growers</span>
+              </label>
+              <label class="type-tile">
+                <input type="radio" name="type" value="landscaper" class="sr-only">
+                <span class="type-name">Landscaper</span>
+                <span class="type-note">Contractors buying for jobs</span>
+              </label>
+              <label class="type-tile">
+                <input type="radio" name="type" value="personal" class="sr-only">
+                <span class="type-name">Personal</span>
+                <span class="type-note">Growing for yourself</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div>
+            <label class="auth-label" for="create-name">Name</label>
+            <input class="auth-input" id="create-name" type="text" autocomplete="name" required>
+          </div>
+          <div>
+            <label class="auth-label" for="create-email">Email</label>
+            <input class="auth-input" id="create-email" type="email" autocomplete="email" required>
+          </div>
+          <div>
+            <label class="auth-label" for="create-password">Password</label>
+            <input class="auth-input" id="create-password" type="password" autocomplete="new-password" required>
+          </div>
+          <button type="submit" class="auth-button">Create account</button>
+        </form>
+      </section>
+
+      <!-- Shown when either form is sent, since nothing is wired up yet. -->
+      <p id="not-live" role="status" hidden
+         class="mt-6 rounded-lg border border-clay-300 bg-clay-50 dark:bg-ink-900 dark:border-clay-700 px-4 py-3 text-sm text-clay-700 dark:text-clay-300">
+        Accounts aren't live yet. This page is a preview, and nothing you type here is saved or sent.
+      </p>
+    </div>
+  </main>
+
+  <script>
+    // No account system yet: stop every form and link from going anywhere,
+    // clear the password boxes, and say so.
+    const notLive = document.getElementById("not-live");
+    function showNotLive(event) {
+      event.preventDefault();
+      document.querySelectorAll('input[type="password"]').forEach(function (box) { box.value = ""; });
+      notLive.hidden = false;
+      notLive.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+    document.querySelectorAll("form").forEach(function (form) { form.addEventListener("submit", showNotLive); });
+    document.querySelectorAll("[data-not-live]").forEach(function (link) { link.addEventListener("click", showNotLive); });
+  </script>
+</body>
+</html>
