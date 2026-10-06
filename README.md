@@ -44,17 +44,23 @@ PORT=5174 python serve.py
 
 ## What it does today
 
-- One row per listing, the way the trade reads it: plant, nursery, container
-  size, grade, quantity on hand, price, and how long ago the nursery confirmed
-  it. Click a row for the phone number and minimum order.
-- Filter down the left by container size, grade and city, each with a count.
-  Everything is open to browse without an account. An account is only
-  needed to place an order or to list plants (`signin.html` and
-  `signup.html` are previews).
+- One row per listing, the way the trade reads it: plant, nursery, container,
+  specs, grade, exact quantity on hand, price, and how long ago the nursery
+  confirmed it. A camera marks listings with photos. Click a row for the
+  $250 minimum order and a "sign in to order or contact" link.
+- Filter down the left the four ways the trade describes stock, each option
+  with a count: container size (a pick list such as 3G / 10" or Field Grown),
+  specs (the minimum caliper, height, spread or clear trunk), grade and
+  features (Florida Fancy, Staked, ...), and photos. City too.
+  Everything is open to browse without an account, prices included. An
+  account is needed to order, to contact a grower, or to list plants
+  (`signin.html` and `signup.html` are previews).
 - Search by common name, botanical name, nursery name, or city. Partial words
   work (`palm` finds Foxtail Palm), and small typos still match (`clusa` finds
   Clusia). Matching text is highlighted so you can see why a row came back.
-- Sort by freshest, most in stock, lowest price, plant or nursery.
+- Freshest first by default, and it stays that way however you filter.
+  Among equally fresh listings, ones with photos come first. You can also
+  sort by most in stock, lowest price, plant or nursery.
 - An empty search shows every listing.
 - Fills the screen on a desktop and stacks into one column on a phone, where
   the filter panel starts folded shut. The site's width is set once, by

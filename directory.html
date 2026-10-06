@@ -172,11 +172,53 @@
               </label>
             </div>
 
-            <!-- Three facet groups, each built by app.js from the data itself,
-                 so they can never list a size nobody stocks. -->
-            <div data-facet="size"  class="facet"></div>
-            <div data-facet="grade" class="facet"></div>
-            <div data-facet="city"  class="facet"></div>
+            <!-- The four ways a listing is described. A value belongs to ONE
+                 of them only. app.js draws the tick-box lists and every count.
+                 1. Container size: a pick list. -->
+            <div data-facet="container" class="facet"></div>
+
+            <!-- 2. Specs: the smallest the buyer will accept. Listings that
+                 don't give a measurement drop out once a minimum is set. -->
+            <div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400 mb-1.5">
+                Specs <span class="normal-case tracking-normal font-normal">(at least)</span>
+              </h3>
+              <div class="space-y-1.5 text-[13px]">
+                <div class="flex items-center gap-2">
+                  <label for="spec-caliper" class="flex-1">Caliper</label>
+                  <input id="spec-caliper" data-spec="caliper" type="number" min="0" step="any" inputmode="decimal" placeholder="min"
+                         class="spec-input">
+                  <span class="spec-unit-fixed">in</span>
+                  <span data-spec-count="caliper" class="w-6 text-right text-[11px] tabular-nums text-ink-400 dark:text-stone-400"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="spec-height" class="flex-1">Height</label>
+                  <input id="spec-height" data-spec="height" type="number" min="0" step="any" inputmode="decimal" placeholder="min"
+                         class="spec-input">
+                  <select data-spec-unit="height" aria-label="Height unit" class="spec-unit"><option value="ft">ft</option><option value="in">in</option></select>
+                  <span data-spec-count="height" class="w-6 text-right text-[11px] tabular-nums text-ink-400 dark:text-stone-400"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="spec-spread" class="flex-1">Spread</label>
+                  <input id="spec-spread" data-spec="spread" type="number" min="0" step="any" inputmode="decimal" placeholder="min"
+                         class="spec-input">
+                  <select data-spec-unit="spread" aria-label="Spread unit" class="spec-unit"><option value="ft">ft</option><option value="in">in</option></select>
+                  <span data-spec-count="spread" class="w-6 text-right text-[11px] tabular-nums text-ink-400 dark:text-stone-400"></span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <label for="spec-clearTrunk" class="flex-1">Clear trunk</label>
+                  <input id="spec-clearTrunk" data-spec="clearTrunk" type="number" min="0" step="any" inputmode="decimal" placeholder="min"
+                         class="spec-input">
+                  <span class="spec-unit-fixed">ft</span>
+                  <span data-spec-count="clearTrunk" class="w-6 text-right text-[11px] tabular-nums text-ink-400 dark:text-stone-400"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 3. Grade and features, 4. Photos, and where the nursery is. -->
+            <div data-facet="grades" class="facet"></div>
+            <div data-facet="photos" class="facet"></div>
+            <div data-facet="city"   class="facet"></div>
           </div>
         </details>
       </aside>
@@ -222,7 +264,8 @@
         <p>
           Every listing shows the date the nursery last confirmed it. No ads, no paywall,
           no paid placement — results are never reordered by who pays.
-          Everything here is open to browse; an account is only needed to place an order or list plants.
+          Everything here, prices included, is open to browse. An account is needed to order,
+          to contact a grower, or to list plants.
         </p>
       </div>
     </div>

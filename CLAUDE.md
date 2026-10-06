@@ -63,8 +63,28 @@ Rules that are easy to break:
 - **6 Oct 2026 — Front page:** Sign in top right, PlantHub in the middle, search below, then five round links: Plant Directory, Plant Transport, Plant Encyclopedia (beginner friendly), Plant News, Plant Doc ("my plant is sick, help").
 - **6 Oct 2026 — Accounts are coming.** Sign in opens a log-in page with "Create an account" below.
 - **6 Oct 2026 — Sign-up flow.** "Who are you?" → **Buyer** or **Seller**. Then "Ok, but who?" → Buyer: **Landscaper** or **Personal**; Seller: **Grower** or **Transporter**. Then name, email, password. No one-line descriptions under the choices.
-- **6 Oct 2026 — Tax exempt landscapers.** Landscapers can tick "Are you tax exempt?", attach a tax exempt form or resale certificate, and type in the certificate number. PlantHub asks for a new certificate **every year**, so it records the expiration date too.
-- **6 Oct 2026 — No account needed to look.** Without an account, people can see everything (including price and quantity). They can't place orders or list plants.
+- **6 Oct 2026 — Tax exempt landscapers (PARKED).** `signup.html` lets landscapers tick "Are you tax exempt?", attach a certificate, and enter its number and expiration date (renewed yearly). This was built ahead of the sales-tax decision. **Do not extend it** until a Florida CPA signs off.
+- **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
+
+### Operating model (locked 6 Oct 2026, from the operating-model session)
+
+- PlantHub is an **agent on 3% commission, paid by the grower**.
+- **ACH only.** No cards, no card fields anywhere.
+- Buyer **pays in full at checkout**. No net 30/60, no grower-set terms.
+- **$250 minimum order.**
+- **Freshness is the default sort**, and stays the sort inside filtered results. It is the product's whole differentiator.
+- Growers list **exact counts**, never "100+" buckets.
+
+### Listing and filter model (locked 6 Oct 2026)
+
+Four separate facets, in the trade's own words. **A value never appears in two facets.** Every option shows a count.
+
+1. **Container size** — a pick list, not a number: Liners, Bare Root, 5" Quart, 1G / 6", 3G / 10", 15G / 17", 45G / 28", 100G / 36", 60" Box, 108" Box, Field Grown, Grow Bags.
+2. **Specs** — numbers; the buyer enters the minimum: Caliper (in), Height (ft or in), Spread (ft or in), Clear Trunk (ft).
+3. **Grade and features** — tick boxes: Florida Fancy, Grade #1, Grade #2, Specimen, Single Leader, Standard, Balled and Burlapped, Staked, Multi, Seedling.
+4. **Photos** — yes/no. Listings with photos rank above those without; in the directory that means "among equally fresh listings", so freshness still leads.
+
+The lists live at the top of section 4 in `app.js` (`CONTAINERS`, `SPECS`, `GRADES`). The data format is described at the top of `data/nurseries.js`.
 - What each account type can do beyond that is **not decided**. Review it page by page.
 
 ## Open questions
@@ -74,12 +94,15 @@ it is decided.
 
 - What does each account type (landscaper, personal, grower, transporter) do once signed in?
 - Where do garden centers and other trade buyers who aren't landscapers sign up?
-- Can landscapers who install plants buy tax exempt at all? In Florida a contractor who installs plants into a customer's property may owe the tax themselves. Check with an accountant before relying on it.
-- Where certificate files are stored, and who can see them (they hold business tax details).
 - The front-page search only searches wholesale listings. What should a Personal user's search find?
-- Commission rate and payment method.
-- Pay at checkout, or net terms (pay later)?
 - Who maintains grower profiles?
 - How freight is priced, and who is liable for plants that arrive dead.
-- When payment is released to the grower.
 - Do "no ads, no paywall, no paid placement" (directory footer) still hold?
+- Should "photos rank above" ever beat freshness? Today photos only break ties between equally fresh listings.
+
+### Do not build yet (undecided)
+
+- **Sales tax treatment.** Needs a Florida CPA. Includes whether installing landscapers can buy tax exempt, and where certificate files would be stored.
+- **When funds release** to the grower: when the payment clears, or when delivery is confirmed.
+- **Short count / wrong grade credits.**
+- **Whether a grower approves carriers** opt-in or opt-out.

@@ -182,15 +182,50 @@ function highlight(text, words) {
   return safe;
 }
 
-// Wholesale price, as the trade writes it. A grower who won't publish a price
-// gets "Call" rather than an invented number.
+// Wholesale price, as the trade writes it: "$19.25", "$326".
+// Every listing has one, because buyers pay in full at checkout.
 function priceText(price) {
-  if (price === null || price === undefined) return null;
   return "$" + price.toFixed(2).replace(/\.00$/, "");
 }
 
 // ---------------------------------------------------------------------------
-// 4. Flatten the data into one row per listing.
+// 4. The trade's vocabulary.
+//    Every listing is described four separate ways, and these lists are the
+//    allowed values. A value lives in ONE list only: "Field Grown" is a
+//    container, never a grade. The filter rail shows them in this order.
+// ---------------------------------------------------------------------------
+
+// 1. Container size: a pick list, not a number. Gallon sizes carry their
+//    matching pot width ("3G / 10\"") because growers use both names.
+const CONTAINERS = [
+  'Liners', 'Bare Root', '5" Quart',
+  '1G / 6"', '3G / 10"', '15G / 17"', '45G / 28"', '100G / 36"',
+  '60" Box', '108" Box', 'Field Grown', 'Grow Bags',
+];
+
+// 2. Specs: measurements. The buyer types the smallest they'll accept.
+//    Height and spread can be typed in feet or inches; the data is in feet.
+const SPECS = [
+  { key: "caliper",    label: "Caliper",     unit: "in", short: "cal" },
+  { key: "height",     label: "Height",      unit: "ft", short: "ht",  either: true },
+  { key: "spread",     label: "Spread",      unit: "ft", short: "spr", either: true },
+  { key: "clearTrunk", label: "Clear trunk", unit: "ft", short: "CT" },
+];
+
+// 3. Grade and features: tick boxes. A listing can have several.
+const GRADES = [
+  'Florida Fancy', 'Grade #1', 'Grade #2', 'Specimen', 'Single Leader',
+  'Standard', 'Balled and Burlapped', 'Staked', 'Multi', 'Seedling',
+];
+
+// 4. Photos: yes or no.
+const PHOTO_OPTIONS = ["With photos", "No photos"];
+
+// Every order goes through PlantHub, paid in full by bank transfer (ACH).
+const MIN_ORDER = "$250";
+
+// ---------------------------------------------------------------------------
+// 5. Flatten the data into one row per listing.
 //    Done once, when the page loads. Everything below works on this list.
 // ---------------------------------------------------------------------------
 const LISTINGS = [];
@@ -198,14 +233,20 @@ const LISTINGS = [];
 NURSERIES.forEach(function (nursery) {
   nursery.plants.forEach(function (plant) {
     const days = daysSince(plant.updated);
+    const grades = plant.grades || [];
     LISTINGS.push({
       nursery: nursery,
       common: plant.common,
       botanical: plant.botanical,
-      size: plant.size,
-      grade: plant.grade || "",
+      container: plant.container,
+      caliper: plant.caliper,
+      height: plant.height,
+      spread: plant.spread,
+      clearTrunk: plant.clearTrunk,
+      grades: grades,
+      photos: plant.photos || 0,
       quantity: plant.quantity,
-      price: plant.price === undefined ? null : plant.price,
+      price: plant.price,
       updated: plant.updated,
       days: days,
       tier: freshnessTier(days),
@@ -213,93 +254,135 @@ NURSERIES.forEach(function (nursery) {
       // the place go in together, so "clusia loxahatchee" can find a row by
       // taking one word from each.
       text: normalize(
-        plant.common + " " + plant.botanical + " " + plant.size + " " +
-        (plant.grade || "") + " " + nursery.name + " " + nursery.city + " " +
+        plant.common + " " + plant.botanical + " " + plant.container + " " +
+        grades.join(" ") + " " + nursery.name + " " + nursery.city + " " +
         nursery.state + " " + nursery.specialties.join(" ")
       ),
     });
   });
 });
 
-// Container sizes have a trade order — liners, then gallon sizes smallest
-// first, then field-grown material. Sorting them as plain text would put #100
-// between #10 and #15, which no grower would recognise.
-function sizeRank(size) {
-  const s = size.toLowerCase();
-  if (s.includes("liner")) return 0;
-  if (s.includes("flat")) return 1;
-  const gallons = s.match(/^#(\d+)/);
-  if (gallons) return 10 + Number(gallons[1]);
-  if (s.includes("caliper")) return 2000;
-  if (s.includes("ct")) return 3000;
-  return 4000;
+// A measurement as the trade writes it: feet as 12', anything under a foot
+// in inches as 6".
+function feetText(feet) {
+  if (feet < 1) return Math.round(feet * 12) + '"';
+  return (Math.round(feet * 10) / 10) + "'";
+}
+
+// The specs a listing has, shortest form: 3" cal · 12' ht · 6' spr · 5' CT
+function specText(listing) {
+  return SPECS.filter(function (spec) {
+    return listing[spec.key] !== undefined;
+  }).map(function (spec) {
+    const value = listing[spec.key];
+    const text = spec.unit === "in" ? value + '"' : feetText(value);
+    return text + " " + spec.short;
+  }).join(" · ");
 }
 
 // ---------------------------------------------------------------------------
-// 5. The filters currently switched on.
+// 6. The filters currently switched on.
 //    A Set is a list that can't hold the same value twice — exactly what a
-//    group of tick boxes needs.
+//    group of tick boxes needs. Ticking two boxes in one group means
+//    "either of these".
 // ---------------------------------------------------------------------------
+const TICK_FACETS = ["container", "grades", "photos", "city"];
+
 const chosen = {
-  size: new Set(),
-  grade: new Set(),
+  container: new Set(),
+  grades: new Set(),
+  photos: new Set(),
   city: new Set(),
 };
 
-const FACET_LABEL = { size: "Container size", grade: "Grade", city: "City" };
+// The smallest acceptable value for each spec, in the data's own unit
+// (inches for caliper, feet for the rest). null means "no minimum".
+const minimum = { caliper: null, height: null, spread: null, clearTrunk: null };
 
-// What value does this listing have for a given facet?
-function facetValue(listing, facet) {
-  if (facet === "size") return listing.size;
-  if (facet === "grade") return listing.grade;
-  return listing.nursery.city;
+const FACET_LABEL = {
+  container: "Container size",
+  grades: "Grade and features",
+  photos: "Photos",
+  city: "City",
+};
+
+// The full list of options a facet offers, in order. Container, grade and
+// photo options always show, even at zero, so a buyer can see the whole
+// vocabulary. Cities come from the data.
+function facetOptions(facet) {
+  if (facet === "container") return CONTAINERS;
+  if (facet === "grades") return GRADES;
+  if (facet === "photos") return PHOTO_OPTIONS;
+  return Array.from(new Set(LISTINGS.map(function (l) { return l.nursery.city; }))).sort();
+}
+
+// Which of a facet's values does this listing have? Always a list, because a
+// listing can carry several grades.
+function facetValues(listing, facet) {
+  if (facet === "container") return [listing.container];
+  if (facet === "grades") return listing.grades;
+  if (facet === "photos") return [listing.photos > 0 ? "With photos" : "No photos"];
+  return [listing.nursery.city];
+}
+
+// Does this listing meet the minimum for one spec? A listing that never
+// gave that measurement can't prove it meets it, so it drops out.
+function meetsSpec(listing, key) {
+  if (minimum[key] === null) return true;
+  return listing[key] !== undefined && listing[key] >= minimum[key];
 }
 
 // Does this listing pass every filter EXCEPT the one named?
-// Leaving one facet out is what lets a facet show honest counts for its own
-// options: ticking "#7" must not drop every other size's count to zero.
+// Leaving one filter out is what lets it show honest counts for its own
+// options: ticking "3G" must not drop every other size's count to zero.
 function passesFilters(listing, words, except) {
   if (words.length > 0 && !textMatches(listing.text, words)) return false;
   if (freshOnlyBox.checked && listing.days > FRESH_DAYS) return false;
 
-  return ["size", "grade", "city"].every(function (facet) {
-    if (facet === except) return true;
-    if (chosen[facet].size === 0) return true;
-    return chosen[facet].has(facetValue(listing, facet));
+  const ticksOk = TICK_FACETS.every(function (facet) {
+    if (facet === except || chosen[facet].size === 0) return true;
+    return facetValues(listing, facet).some(function (value) {
+      return chosen[facet].has(value);
+    });
+  });
+  if (!ticksOk) return false;
+
+  return SPECS.every(function (spec) {
+    return spec.key === except || meetsSpec(listing, spec.key);
   });
 }
 
 // ---------------------------------------------------------------------------
-// 6. Sorting.
+// 7. Sorting.
+//    Freshest first is the default, and it stays the order however the
+//    results are filtered: it is the reason to use this site. Where two
+//    listings are equally fresh, the one with photos goes first.
 // ---------------------------------------------------------------------------
 function sortListings(rows, mode) {
   const sorted = rows.slice();
 
+  function photosFirst(a, b) {
+    return (b.photos > 0) - (a.photos > 0);
+  }
+
   sorted.sort(function (a, b) {
-    if (mode === "qty") return b.quantity - a.quantity;
-    if (mode === "price") {
-      // Rows with no published price go last whichever way you sort.
-      if (a.price === null && b.price === null) return 0;
-      if (a.price === null) return 1;
-      if (b.price === null) return -1;
-      return a.price - b.price;
-    }
-    if (mode === "plant") {
-      return a.common.localeCompare(b.common) ||
-             sizeRank(a.size) - sizeRank(b.size);
-    }
-    if (mode === "nursery") {
-      return a.nursery.name.localeCompare(b.nursery.name) ||
-             a.common.localeCompare(b.common);
-    }
-    return a.days - b.days; // freshest first
+    let order = 0;
+    if (mode === "qty") order = b.quantity - a.quantity;
+    else if (mode === "price") order = a.price - b.price;
+    else if (mode === "plant") order = a.common.localeCompare(b.common) ||
+      CONTAINERS.indexOf(a.container) - CONTAINERS.indexOf(b.container);
+    else if (mode === "nursery") order = a.nursery.name.localeCompare(b.nursery.name) ||
+      a.common.localeCompare(b.common);
+    else order = a.days - b.days; // freshest first
+
+    return order || photosFirst(a, b) || a.days - b.days;
   });
 
   return sorted;
 }
 
 // ---------------------------------------------------------------------------
-// 7. Drawing the filter rail.
+// 8. Drawing the filter rail.
 // ---------------------------------------------------------------------------
 function renderFacet(facet, words) {
   const box = document.querySelector('[data-facet="' + facet + '"]');
@@ -307,32 +390,15 @@ function renderFacet(facet, words) {
   // Count how many listings each option would give, ignoring this facet's own
   // ticks so the numbers stay useful while you click.
   const counts = new Map();
+  facetOptions(facet).forEach(function (value) { counts.set(value, 0); });
   LISTINGS.forEach(function (listing) {
     if (!passesFilters(listing, words, facet)) return;
-    const value = facetValue(listing, facet);
-    if (!value) return;
-    counts.set(value, (counts.get(value) || 0) + 1);
+    facetValues(listing, facet).forEach(function (value) {
+      if (counts.has(value)) counts.set(value, counts.get(value) + 1);
+    });
   });
 
-  // An option already ticked always stays on the list, even at zero, so it can
-  // be un-ticked again.
-  chosen[facet].forEach(function (value) {
-    if (!counts.has(value)) counts.set(value, 0);
-  });
-
-  if (counts.size === 0) {
-    box.innerHTML = "";
-    return;
-  }
-
-  let values = Array.from(counts.keys());
-  if (facet === "size") {
-    values.sort(function (a, b) { return sizeRank(a) - sizeRank(b); });
-  } else {
-    values.sort(function (a, b) { return a.localeCompare(b); });
-  }
-
-  const rows = values.map(function (value) {
+  const rows = Array.from(counts.keys()).map(function (value) {
     const isOn = chosen[facet].has(value);
     const count = counts.get(value);
     return '<li>' +
@@ -348,12 +414,29 @@ function renderFacet(facet, words) {
   }).join("");
 
   box.innerHTML =
-    '<div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800 last:border-0">' +
+    '<div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800">' +
       '<h3 class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400 mb-1.5">' +
         FACET_LABEL[facet] +
       '</h3>' +
-      '<ul class="text-[13px] space-y-px max-h-56 overflow-y-auto">' + rows + '</ul>' +
+      // The fixed lists show in full; only the city list, which grows with
+      // the data, gets a scroll bar.
+      '<ul class="text-[13px] space-y-px' + (facet === "city" ? " max-h-56 overflow-y-auto" : "") + '">' + rows + '</ul>' +
     '</div>';
+}
+
+// The spec boxes are fixed in directory.html; only their counts change.
+// Each count is how many listings have that measurement and meet the
+// minimum, given everything else that's switched on.
+function renderSpecCounts(words) {
+  SPECS.forEach(function (spec) {
+    let count = 0;
+    LISTINGS.forEach(function (listing) {
+      if (!passesFilters(listing, words, spec.key)) return;
+      if (listing[spec.key] === undefined) return;
+      if (meetsSpec(listing, spec.key)) count++;
+    });
+    document.querySelector('[data-spec-count="' + spec.key + '"]').textContent = count;
+  });
 }
 
 // The tags above the table showing what is currently filtered, each one a
@@ -364,10 +447,15 @@ function renderActiveFilters() {
   if (freshOnlyBox.checked) {
     tags.push({ facet: "fresh", value: "", label: "Updated this week" });
   }
-  ["size", "grade", "city"].forEach(function (facet) {
+  TICK_FACETS.forEach(function (facet) {
     chosen[facet].forEach(function (value) {
       tags.push({ facet: facet, value: value, label: value });
     });
+  });
+  SPECS.forEach(function (spec) {
+    if (minimum[spec.key] === null) return;
+    const value = spec.unit === "in" ? minimum[spec.key] + '"' : feetText(minimum[spec.key]);
+    tags.push({ facet: "spec", value: spec.key, label: spec.label + " ≥ " + value });
   });
 
   resetButton.classList.toggle("hidden", tags.length === 0);
@@ -385,22 +473,35 @@ function renderActiveFilters() {
       '<span class="sr-only">Remove filter</span>' +
     '</button>';
   }).join("");
+
+  return tags.length > 0;
 }
 
 // ---------------------------------------------------------------------------
-// 8. Drawing the table.
+// 9. Drawing the table.
 // ---------------------------------------------------------------------------
+
+// A small camera after the plant name when the listing has photos.
+function photoBadge(listing) {
+  if (!listing.photos) return "";
+  const label = listing.photos + (listing.photos === 1 ? " photo" : " photos");
+  return '<svg class="inline-block w-3.5 h-3.5 ml-1 -mt-0.5 text-ink-400 dark:text-stone-400" viewBox="0 0 24 24" ' +
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'role="img" aria-label="' + label + '"><title>' + label + '</title>' +
+    '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+}
+
 function rowHtml(listing, words, index) {
   const style = TIER_STYLE[listing.tier];
-  const price = priceText(listing.price);
   const n = listing.nursery;
+  const specs = specText(listing);
+  const grades = listing.grades.join(", ");
 
-  // Size and grade get their own columns on a wide screen. On a phone there
-  // isn't room, so they ride along under the plant name instead.
-  const sizeGradeMobile =
+  // Container, specs and grade get their own columns on a wide screen. On a
+  // phone there isn't room, so they ride along under the plant name instead.
+  const detailsMobile =
     '<span class="lg:hidden block text-[11px] text-ink-400 dark:text-stone-400 mt-0.5">' +
-      escapeHtml(listing.size) +
-      (listing.grade ? " · " + escapeHtml(listing.grade) : "") +
+      escapeHtml([listing.container, specs, grades].filter(Boolean).join(" · ")) +
     '</span>';
 
   const main =
@@ -408,10 +509,10 @@ function rowHtml(listing, words, index) {
         'aria-expanded="false" aria-controls="detail-' + index + '">' +
       '<td class="py-2 pl-3 pr-3 align-top">' +
         '<span class="font-medium text-ink-900 dark:text-stone-100">' +
-          highlight(listing.common, words) + "</span>" +
+          highlight(listing.common, words) + "</span>" + photoBadge(listing) +
         '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' +
           highlight(listing.botanical, words) + "</span>" +
-        sizeGradeMobile +
+        detailsMobile +
       "</td>" +
 
       '<td class="py-2 pr-3 align-top">' +
@@ -421,19 +522,19 @@ function rowHtml(listing, words, index) {
       "</td>" +
 
       '<td class="hidden lg:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
-        escapeHtml(listing.size) + "</td>" +
+        escapeHtml(listing.container) + "</td>" +
+
+      '<td class="hidden lg:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
+        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(specs) + "</span></td>" +
 
       '<td class="hidden lg:table-cell py-2 pr-3 align-top">' +
-        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' +
-          escapeHtml(listing.grade) + "</span></td>" +
+        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(grades) + "</span></td>" +
 
       '<td class="py-2 pr-3 align-top text-right tabular-nums font-medium whitespace-nowrap">' +
         listing.quantity.toLocaleString() + "</td>" +
 
       '<td class="py-2 pr-3 align-top text-right tabular-nums whitespace-nowrap">' +
-        (price
-          ? '<span class="font-medium text-ink-900 dark:text-stone-100">' + price + "</span>"
-          : '<span class="text-[12px] text-ink-400 dark:text-stone-400">Call</span>') +
+        '<span class="font-medium text-ink-900 dark:text-stone-100">' + priceText(listing.price) + "</span>" +
       "</td>" +
 
       '<td class="py-2 pr-3 align-top text-right whitespace-nowrap">' +
@@ -444,20 +545,17 @@ function rowHtml(listing, words, index) {
         "</span></td>" +
     "</tr>";
 
-  // Hidden until the row is clicked: who to call, and the small print.
+  // Hidden until the row is clicked: the small print, and the way to order.
+  // Prices are public, but ordering and contacting a grower need an account,
+  // so the phone and email stay out of the page until sign-in exists.
   const detail =
     '<tr class="detail-row hidden" id="detail-' + index + '">' +
-      '<td colspan="7" class="px-3 pb-3 pt-0">' +
+      '<td colspan="8" class="px-3 pb-3 pt-0">' +
         '<div class="rounded-md bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
              'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-1.5">' +
-          '<a class="font-medium text-ink-800 dark:text-stone-200 hover:text-clay-600" ' +
-             'href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' +
-             escapeHtml(n.phone) + "</a>" +
-          '<a class="text-clay-600 dark:text-clay-300 hover:underline" ' +
-             'href="mailto:' + escapeHtml(n.email) + '">' + escapeHtml(n.email) + "</a>" +
-          '<a class="text-clay-600 dark:text-clay-300 hover:underline" ' +
-             'href="' + escapeHtml(n.website) + '" target="_blank" rel="noopener">Website</a>' +
-          '<span class="text-ink-400 dark:text-stone-400">Min. order ' + escapeHtml(n.minOrder) + "</span>" +
+          '<a class="font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html">' +
+            "Sign in to order or contact this grower</a>" +
+          '<span class="text-ink-400 dark:text-stone-400">' + MIN_ORDER + " minimum order · pay by bank transfer (ACH)</span>" +
           '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
           '<span class="ml-auto ' + style.text + '">' + agoLong(listing.days) + "</span>" +
         "</div>" +
@@ -474,7 +572,8 @@ function tableHtml(rows, words) {
           'bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
         '<th class="py-2 pl-3 pr-3 font-semibold">Plant</th>' +
         '<th class="py-2 pr-3 font-semibold">Nursery</th>' +
-        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Size</th>' +
+        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Container</th>' +
+        '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Specs</th>' +
         '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Grade</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
@@ -508,7 +607,7 @@ function emptyHtml(query, filtersAreOn) {
 }
 
 // ---------------------------------------------------------------------------
-// 9. Put it all together and draw the page.
+// 10. Put it all together and draw the page.
 // ---------------------------------------------------------------------------
 function render() {
   const query = searchBox.value;
@@ -522,14 +621,9 @@ function render() {
     sortSelect.value
   );
 
-  renderFacet("size", words);
-  renderFacet("grade", words);
-  renderFacet("city", words);
-  renderActiveFilters();
-
-  const filtersAreOn =
-    freshOnlyBox.checked ||
-    chosen.size.size > 0 || chosen.grade.size > 0 || chosen.city.size > 0;
+  TICK_FACETS.forEach(function (facet) { renderFacet(facet, words); });
+  renderSpecCounts(words);
+  const filtersAreOn = renderActiveFilters();
 
   if (rows.length === 0) {
     countLine.textContent = "";
@@ -554,7 +648,7 @@ function render() {
 }
 
 // ---------------------------------------------------------------------------
-// 10. The totals in the header. These describe the whole database, so they are
+// 11. The totals in the header. These describe the whole database, so they are
 //     worked out once and never change as the visitor searches.
 // ---------------------------------------------------------------------------
 function renderStats() {
@@ -569,7 +663,7 @@ function renderStats() {
 }
 
 // ---------------------------------------------------------------------------
-// 11. Wire up the controls, then draw the page for the first time.
+// 12. Wire up the controls, then draw the page for the first time.
 // ---------------------------------------------------------------------------
 
 // "input" fires on every keystroke, so results update as you type.
@@ -582,6 +676,33 @@ clearButton.addEventListener("click", function () {
   render();
   searchBox.focus();
 });
+
+// Read one spec box (and its ft/in choice, if it has one) into `minimum`,
+// always stored in the data's unit.
+function readSpec(key) {
+  const box = document.querySelector('[data-spec="' + key + '"]');
+  const unitBox = document.querySelector('[data-spec-unit="' + key + '"]');
+  const value = parseFloat(box.value);
+  if (isNaN(value) || value <= 0) {
+    minimum[key] = null;
+  } else {
+    minimum[key] = unitBox && unitBox.value === "in" ? value / 12 : value;
+  }
+}
+
+document.querySelectorAll("[data-spec], [data-spec-unit]").forEach(function (box) {
+  box.addEventListener("input", function () {
+    readSpec(box.getAttribute("data-spec") || box.getAttribute("data-spec-unit"));
+    render();
+  });
+});
+
+function clearSpec(key) {
+  document.querySelector('[data-spec="' + key + '"]').value = "";
+  const unitBox = document.querySelector('[data-spec-unit="' + key + '"]');
+  if (unitBox) unitBox.value = "ft";
+  minimum[key] = null;
+}
 
 // The filter rail is folded shut on a phone and open on a laptop. A <summary>
 // toggles its panel when clicked, so the Reset button inside it has to say
@@ -598,9 +719,8 @@ resetButton.addEventListener("click", function (event) {
   event.preventDefault();
   event.stopPropagation();
 
-  chosen.size.clear();
-  chosen.grade.clear();
-  chosen.city.clear();
+  TICK_FACETS.forEach(function (facet) { chosen[facet].clear(); });
+  SPECS.forEach(function (spec) { clearSpec(spec.key); });
   freshOnlyBox.checked = false;
   render();
 });
@@ -627,6 +747,8 @@ activeFilterBox.addEventListener("click", function (event) {
   const facet = tag.getAttribute("data-remove");
   if (facet === "fresh") {
     freshOnlyBox.checked = false;
+  } else if (facet === "spec") {
+    clearSpec(tag.getAttribute("data-value"));
   } else {
     chosen[facet].delete(tag.getAttribute("data-value"));
   }
@@ -640,8 +762,7 @@ chipBox.addEventListener("click", function (event) {
   render();
 });
 
-// Clicking (or pressing Enter on) a listing opens the nursery's contact
-// details underneath it.
+// Clicking (or pressing Enter on) a listing opens its details underneath it.
 function toggleRow(row) {
   const detail = row.nextElementSibling;
   if (!detail || !detail.classList.contains("detail-row")) return;
