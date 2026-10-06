@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
-  index.html — the page itself.
+  directory.html — the plant directory. Both the front page's search box and
+  its "Plant Directory" circle land here.
   HTML describes WHAT is on the page (headings, boxes, text).
   The look comes from Tailwind CSS (loaded below, no install needed — it's a
   single <script> tag) plus a few extras in styles.css, and the search
@@ -18,7 +19,7 @@
   <meta charset="UTF-8">
   <!-- Tells phones to use their real width instead of pretending to be a desktop. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlantHub — Wholesale Plant Availability, Palm Beach County</title>
+  <title>Plant Directory — PlantHub</title>
   <meta name="description" content="Wholesale plant availability for Palm Beach County. Container size, grade, quantity on hand, price, and the date each nursery last confirmed the listing.">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -39,91 +40,64 @@
 </head>
 <body class="bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
 
-  <!-- ===== Working header ============================================
-       Not a hero. A trade user lands here to work, so this band is just the
-       wordmark, what the site is, and the totals — then the search box. -->
-  <header class="bg-ink-900 text-cream">
-    <div class="page flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3.5">
+  <!-- ===== Header ======================================================
+       The same light look as the front page: the wordmark (back to the front
+       page), a search box, and Sign in. A search typed on the front page
+       lands here with the box already filled in.
+       On a phone the search box drops to its own line under the other two. -->
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
 
-      <div class="flex items-baseline gap-3">
-        <!-- The wordmark. The green dot is the same dot that marks a fresh
-             listing in the table below — the logo is the promise. -->
-        <!-- Clicking it goes back to the front page (index.html). -->
-        <a href="index.html" class="font-display font-semibold text-xl tracking-tight flex items-center gap-2 hover:text-clay-100">
-          PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-400" aria-hidden="true"></span>
-        </a>
-        <h1 class="text-[13px] text-cream/60 border-l border-white/15 pl-3">
-          Wholesale plant availability — Palm Beach County
-        </h1>
+      <!-- The green dot is the same dot that marks a fresh listing below. -->
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+
+      <div class="relative order-last sm:order-none w-full sm:w-auto sm:flex-1 sm:max-w-2xl">
+        <label class="sr-only" for="search">Search for a plant</label>
+        <!-- Magnifying glass, drawn with SVG so it stays crisp at any size. -->
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400 pointer-events-none"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input
+          type="search"
+          id="search"
+          placeholder="Search a plant, nursery or city"
+          autocomplete="off"
+          class="w-full rounded-full pl-11 pr-20 py-2.5 text-sm
+                 bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700 shadow-sm
+                 placeholder:text-ink-400 dark:placeholder:text-stone-500
+                 focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-transparent transition">
+        <!-- Shown only while there is something to clear (app.js decides). -->
+        <button type="button" id="clear"
+          class="hidden absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-full text-[13px] font-medium
+                 text-ink-400 hover:text-clay-700 dark:hover:text-clay-300 transition">
+          Clear
+        </button>
       </div>
 
-      <!-- Totals for the whole database, filled in by app.js. -->
-      <dl class="flex items-center gap-x-6 text-[13px] text-cream/50">
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-cream tabular-nums" id="stat-nurseries">—</dd>
-          <dt>nurseries</dt>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-cream tabular-nums" id="stat-listings">—</dd>
-          <dt>listings</dt>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-signal-400 tabular-nums" id="stat-fresh">—</dd>
-          <dt>updated this week</dt>
-        </div>
-      </dl>
-    </div>
-
-    <!-- ===== Search bar ============================================== -->
-    <div class="border-t border-white/10 bg-ink-800">
-      <div class="page py-3">
-        <div class="flex flex-col sm:flex-row gap-2">
-          <div class="relative flex-1 min-w-0">
-            <label class="sr-only" for="search">Search for a plant</label>
-            <!-- Magnifying glass, drawn with SVG so it stays crisp at any size. -->
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40 pointer-events-none"
-                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
-            </svg>
-            <input
-              type="search"
-              id="search"
-              placeholder="Plant, botanical name, nursery or city — try clusia, live oak, Wodyetia"
-              autocomplete="off"
-              class="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-ink-950/60 text-cream
-                     placeholder:text-cream/35 border border-white/15
-                     focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-clay-500 transition">
-          </div>
-          <button type="button" id="clear"
-            class="px-4 py-2 text-sm font-medium rounded-md border border-white/15
-                   text-cream/80 hover:text-cream hover:border-clay-500 transition">
-            Clear
-          </button>
-        </div>
-
-        <!-- Quick example searches, so a first-time visitor isn't staring at a blank box. -->
-        <div class="flex flex-wrap items-center gap-1.5 mt-2.5" id="chips">
-          <span class="text-[11px] uppercase tracking-wider text-cream/35 mr-1">Common searches</span>
-          <button type="button" class="chip">clusia</button>
-          <button type="button" class="chip">live oak</button>
-          <button type="button" class="chip">foxtail palm</button>
-          <button type="button" class="chip">podocarpus</button>
-          <button type="button" class="chip">Loxahatchee</button>
-        </div>
-      </div>
+      <a href="signin.html"
+         class="ml-auto text-sm font-medium px-4 py-2 rounded-full border border-ink-200 dark:border-ink-700
+                text-ink-800 dark:text-stone-200 hover:border-clay-500 hover:text-clay-700
+                dark:hover:text-clay-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-500 transition">
+        Sign in
+      </a>
     </div>
   </header>
 
-  <!-- Prices and quantities on this page are invented. Saying so once, loudly,
-       at the top — not only in the footer. -->
-  <div class="bg-clay-100 dark:bg-clay-700/25 border-b border-clay-300/50 text-[13px] text-clay-700 dark:text-clay-100">
+  <!-- Prices and quantities on this page are invented. Saying so at the top,
+       not only in the footer. -->
+  <div class="border-b border-clay-300/50 bg-clay-50 dark:bg-clay-700/20 text-[13px] text-clay-700 dark:text-clay-100">
     <div class="page py-2">
       <strong class="font-semibold">Sample data.</strong>
-      Every nursery, quantity, price and contact detail below is invented for testing.
-      None of it describes a real business.
+      Every nursery, quantity and price below is invented for testing. None of it describes a real business.
     </div>
   </div>
+
+  <!-- The page's heading, for screen readers and search engines. -->
+  <h1 class="sr-only">Plant directory: wholesale plant availability, Palm Beach County</h1>
 
   <main class="page py-5">
     <div class="lg:flex lg:items-start lg:gap-6">

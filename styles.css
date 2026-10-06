@@ -11,7 +11,7 @@
 
   What's left in here:
     1. The page width — one place that decides how wide the site is.
-    2. The example-search "chips", the filter tags, and the filter lists.
+    2. The filter tags and the filter lists.
     3. The listing table: row rules, hover, and the expanded detail row.
     4. Dense-table reading comfort (tabular numbers, no text ballooning).
 */
@@ -45,32 +45,9 @@
 }
 
 /* ---------------------------------------------------------------------------
-   2. Chips and filter tags
-   The chips sit on the dark search bar; the filter tags sit on the light page
-   above the table. Neither is green — they aren't freshness.
+   2. Filter tags
+   The filter tags sit above the table. They aren't green — they aren't freshness.
 --------------------------------------------------------------------------- */
-.chip {
-  padding: 0.125rem 0.625rem;
-  font-size: 0.8125rem;
-  border-radius: 0.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(250, 246, 239, 0.75);
-  cursor: pointer;
-  transition: border-color 0.12s ease, background-color 0.12s ease, color 0.12s ease;
-}
-
-.chip:hover {
-  border-color: #c2703c;
-  background: rgba(194, 112, 60, 0.18);
-  color: #faf6ef;
-}
-
-.chip:focus-visible {
-  outline: 2px solid #c2703c;
-  outline-offset: 2px;
-}
-
 /* A filter currently switched on, shown above the table. Click to remove. */
 .filter-tag {
   display: inline-flex;
@@ -209,7 +186,6 @@ table {
 
 /* Anyone who has asked their system to reduce motion gets no transitions. */
 @media (prefers-reduced-motion: reduce) {
-  .chip,
   .filter-tag,
   .listing-row {
     transition: none;

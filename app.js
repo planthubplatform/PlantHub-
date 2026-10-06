@@ -27,7 +27,6 @@
 // ---------------------------------------------------------------------------
 const searchBox = document.getElementById("search");
 const clearButton = document.getElementById("clear");
-const chipBox = document.getElementById("chips");
 const resultsBox = document.getElementById("results");
 const countLine = document.getElementById("count");
 const sortSelect = document.getElementById("sort");
@@ -611,6 +610,7 @@ function emptyHtml(query, filtersAreOn) {
 // ---------------------------------------------------------------------------
 function render() {
   const query = searchBox.value;
+  clearButton.classList.toggle("hidden", query === "");
   const words = normalize(query).split(" ").filter(Boolean);
 
   // The rows that survive the search and every filter.
@@ -648,22 +648,7 @@ function render() {
 }
 
 // ---------------------------------------------------------------------------
-// 11. The totals in the header. These describe the whole database, so they are
-//     worked out once and never change as the visitor searches.
-// ---------------------------------------------------------------------------
-function renderStats() {
-  let fresh = 0;
-  LISTINGS.forEach(function (listing) {
-    if (listing.days <= FRESH_DAYS) fresh++;
-  });
-
-  document.getElementById("stat-nurseries").textContent = NURSERIES.length;
-  document.getElementById("stat-listings").textContent = LISTINGS.length.toLocaleString();
-  document.getElementById("stat-fresh").textContent = fresh.toLocaleString();
-}
-
-// ---------------------------------------------------------------------------
-// 12. Wire up the controls, then draw the page for the first time.
+// 11. Wire up the controls, then draw the page for the first time.
 // ---------------------------------------------------------------------------
 
 // "input" fires on every keystroke, so results update as you type.
@@ -755,13 +740,6 @@ activeFilterBox.addEventListener("click", function (event) {
   render();
 });
 
-// One listener on the chips row handles all the example searches.
-chipBox.addEventListener("click", function (event) {
-  if (!event.target.classList.contains("chip")) return;
-  searchBox.value = event.target.textContent.trim();
-  render();
-});
-
 // Clicking (or pressing Enter on) a listing opens its details underneath it.
 function toggleRow(row) {
   const detail = row.nextElementSibling;
@@ -796,5 +774,4 @@ const startQuery = new URLSearchParams(window.location.search).get("q");
 if (startQuery) searchBox.value = startQuery;
 
 syncFilterPanel();
-renderStats();
 render();

@@ -46,7 +46,7 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | File | What it is |
 |---|---|
 | `index.html` | Front page: Sign in, the PlantHub wordmark, search, five round section links. |
-| `directory.html` + `app.js` + `data/nurseries.js` | The plant directory (the trade listing table). Reads `?q=` from the front-page search. |
+| `directory.html` + `app.js` + `data/nurseries.js` | The plant directory: the trade listing table that used to be the whole site. Light header like the front page (logo home, search, Sign in). Both the front-page search and the "Plant Directory" circle land here; it reads `?q=`. |
 | `signin.html` | Sign in, with a "Create an account" button below. Preview only: nothing is saved or sent. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Preview only. |
 | `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
