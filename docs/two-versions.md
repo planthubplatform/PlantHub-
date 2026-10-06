@@ -83,11 +83,10 @@ sign in — that also sorts out the permission to push. Then File → Clone
 Repository → `planthubplatform/PlantHub-` → Clone. It lands in
 `~/Documents/GitHub/PlantHub-`.
 
-**Check whether `design-b` is on GitHub.** Open the Current Branch dropdown. If
-`design-b` is listed, pick it and you are ready. If it isn't — it was created
-on the Windows PC and never published — make it here instead: New Branch, name
-it `design-b`, base it on `main`, then press Publish branch. It holds nothing
-unique, so nothing is lost by creating it on this machine.
+**Pick `design-b`.** It is on GitHub, with all the overhaul work on it. Press
+Fetch origin, then choose `design-b` from the Current Branch dropdown. **Do
+not create a new `design-b`** if it doesn't show up straight away: fetch again.
+A new one would start empty and clash with the real one.
 
 **Run the site to see your changes.** In Terminal:
 
@@ -113,10 +112,10 @@ fixes. It cannot show you the rendered page, so it is poor for design work.
 
 ### A warning about having both machines going
 
-If `design-b` was created separately on two machines, the two will not match,
-and pushing from the second one will be refused. The fix is to keep whichever
-copy has real work on it and recreate the other from `main`. Avoid the problem
-by only committing to `design-b` from one machine until it is published.
+If a machine made its own `design-b` before fetching the real one, the two will
+not match, and pushing from it will be refused. Keep the GitHub copy — it has
+the real work — and point that machine at it (see "More than one machine"
+above). Ask before deleting anything.
 
 ## If you decide against it
 
