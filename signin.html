@@ -7,9 +7,8 @@
   When real accounts arrive (see the roadmap in README.md), these forms get
   wired to that service and the note goes away.
 
-  Account types come from the owner, 6 October 2026: buyer, seller,
-  landscaper and personal. What each one can do is still to be decided,
-  page by page, so this file only records the choice.
+  Creating an account happens on signup.html, which asks who you are one
+  step at a time.
 -->
 <html lang="en">
 <head>
@@ -56,55 +55,15 @@
         </form>
       </section>
 
-      <!-- ===== Create an account ======================================== -->
-      <section class="auth-card mt-6" aria-labelledby="create-title">
-        <h2 id="create-title" class="font-display font-semibold text-2xl tracking-tight">New to PlantHub? Create an account</h2>
-
-        <form id="create-form" class="mt-5 space-y-4" novalidate>
-          <!-- The account types. Each is a radio button styled as a tile. -->
-          <fieldset>
-            <legend class="auth-label">I'm signing up as a</legend>
-            <div class="mt-2 grid grid-cols-2 gap-2">
-              <label class="type-tile">
-                <input type="radio" name="type" value="buyer" class="sr-only" required>
-                <span class="type-name">Buyer</span>
-                <span class="type-note">Garden centers and trade buyers</span>
-              </label>
-              <label class="type-tile">
-                <input type="radio" name="type" value="seller" class="sr-only">
-                <span class="type-name">Seller</span>
-                <span class="type-note">Nurseries and growers</span>
-              </label>
-              <label class="type-tile">
-                <input type="radio" name="type" value="landscaper" class="sr-only">
-                <span class="type-name">Landscaper</span>
-                <span class="type-note">Contractors buying for jobs</span>
-              </label>
-              <label class="type-tile">
-                <input type="radio" name="type" value="personal" class="sr-only">
-                <span class="type-name">Personal</span>
-                <span class="type-note">Growing for yourself</span>
-              </label>
-            </div>
-          </fieldset>
-
-          <div>
-            <label class="auth-label" for="create-name">Name</label>
-            <input class="auth-input" id="create-name" type="text" autocomplete="name" required>
-          </div>
-          <div>
-            <label class="auth-label" for="create-email">Email</label>
-            <input class="auth-input" id="create-email" type="email" autocomplete="email" required>
-          </div>
-          <div>
-            <label class="auth-label" for="create-password">Password</label>
-            <input class="auth-input" id="create-password" type="password" autocomplete="new-password" required>
-          </div>
-          <button type="submit" class="auth-button">Create account</button>
-        </form>
+      <!-- ===== Create an account ========================================
+           Just a way in. The questions (who are you, which kind) are on
+           signup.html, one step at a time. -->
+      <section class="auth-card mt-6 text-center" aria-labelledby="create-title">
+        <h2 id="create-title" class="font-display font-semibold text-2xl tracking-tight">New to PlantHub?</h2>
+        <a href="signup.html" class="auth-button auth-button-outline mt-4 inline-block">Create an account</a>
       </section>
 
-      <!-- Shown when either form is sent, since nothing is wired up yet. -->
+      <!-- Shown when the form is sent, since nothing is wired up yet. -->
       <p id="not-live" role="status" hidden
          class="mt-6 rounded-lg border border-clay-300 bg-clay-50 dark:bg-ink-900 dark:border-clay-700 px-4 py-3 text-sm text-clay-700 dark:text-clay-300">
         Accounts aren't live yet. This page is a preview, and nothing you type here is saved or sent.
@@ -113,7 +72,7 @@
   </main>
 
   <script>
-    // No account system yet: stop every form and link from going anywhere,
+    // No account system yet: stop the form and "forgot" link from going anywhere,
     // clear the password boxes, and say so.
     const notLive = document.getElementById("not-live");
     function showNotLive(event) {

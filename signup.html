@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<!--
+  signup.html — create an account, one question at a time.
+
+    1. "Who are you?"     Buyer  or  Seller
+    2. "Ok, but who?"     Buyer  -> Landscaper or Personal
+                          Seller -> Grower or Transporter
+    3. Your details       Name, email, password. Landscapers also get the
+                          tax-exempt questions.
+
+  Each step is a <section data-step="..."> below. Only one shows at a time.
+  The step lives in the address after the # (signup.html#seller), so the
+  browser's Back button walks back through the questions.
+
+  PROTOTYPE ONLY. There is no account system yet. Nothing typed or attached
+  here is saved or sent; pressing "Create account" just says so.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create an account — PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="page flex items-center justify-between py-4">
+    <a href="index.html" class="font-display font-semibold text-xl tracking-tight inline-flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+      PlantHub<span class="w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+    </a>
+    <a href="signin.html" class="text-sm auth-link">Already have an account? Sign in</a>
+  </header>
+
+  <main class="page flex-1 flex flex-col items-center justify-center pb-16">
+
+    <!-- ===== Step 1: Who are you? ======================================== -->
+    <section data-step="who" class="step">
+      <h1 class="step-title">Who are you?</h1>
+      <div class="choice-row">
+        <a href="#buyer" class="door">
+          <span class="door-circle">
+            <!-- A shopping basket. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1.5 10h-13z"/><path d="M8 9l4-5 4 5"/><path d="M9 13v3M15 13v3"/></svg>
+          </span>
+          <span class="door-label">Buyer</span>
+        </a>
+        <a href="#seller" class="door">
+          <span class="door-circle">
+            <!-- A price tag. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/></svg>
+          </span>
+          <span class="door-label">Seller</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- ===== Step 2a: Buyer, but who? ==================================== -->
+    <section data-step="buyer" class="step" hidden>
+      <h1 class="step-title">Ok, but who?</h1>
+      <div class="choice-row">
+        <a href="#landscaper" class="door">
+          <span class="door-circle">
+            <!-- A shovel. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 10l6-6"/><path d="M18 2l4 4"/><path d="M14 10l-2-2-6 6c-2 2-2 5 0 6s4 2 6 0l6-6z"/></svg>
+          </span>
+          <span class="door-label">Landscaper</span>
+        </a>
+        <a href="#personal" class="door">
+          <span class="door-circle">
+            <!-- A house. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>
+          </span>
+          <span class="door-label">Personal</span>
+        </a>
+      </div>
+      <a href="#who" class="step-back">Back</a>
+    </section>
+
+    <!-- ===== Step 2b: Seller, but who? =================================== -->
+    <section data-step="seller" class="step" hidden>
+      <h1 class="step-title">Ok, but who?</h1>
+      <div class="choice-row">
+        <a href="#grower" class="door">
+          <span class="door-circle">
+            <!-- A sprout. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21v-9"/><path d="M12 12c0-4 3-7 8-7 0 5-3 7-8 7z"/><path d="M12 14c0-3-2.5-5-7-5 0 4 2.5 5 7 5z"/><path d="M7 21h10"/></svg>
+          </span>
+          <span class="door-label">Grower</span>
+        </a>
+        <a href="#transporter" class="door">
+          <span class="door-circle">
+            <!-- A truck. -->
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v10H2z"/><path d="M13 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+          </span>
+          <span class="door-label">Transporter</span>
+        </a>
+      </div>
+      <a href="#who" class="step-back">Back</a>
+    </section>
+
+    <!-- ===== Step 3: Your details ========================================
+         One form for every account type. The tax-exempt part only shows
+         for landscapers. -->
+    <section data-step="details" class="step w-full max-w-md" hidden>
+      <div class="auth-card">
+        <h1 class="font-display font-semibold text-2xl tracking-tight">
+          Create your <span id="type-name">PlantHub</span> account
+        </h1>
+
+        <form id="signup-form" class="mt-6 space-y-4" novalidate>
+          <div>
+            <label class="auth-label" for="name">Name</label>
+            <input class="auth-input" id="name" type="text" autocomplete="name">
+          </div>
+          <div>
+            <label class="auth-label" for="email">Email</label>
+            <input class="auth-input" id="email" type="email" autocomplete="email">
+          </div>
+          <div>
+            <label class="auth-label" for="password">Password</label>
+            <input class="auth-input" id="password" type="password" autocomplete="new-password">
+          </div>
+
+          <!-- ----- Landscapers only: tax exempt ------------------------- -->
+          <div id="tax-block" hidden class="pt-2 border-t border-ink-100 dark:border-ink-800">
+            <label class="flex items-center gap-3 pt-3 cursor-pointer">
+              <input id="tax-exempt" type="checkbox" class="w-5 h-5 accent-clay-600">
+              <span class="font-medium">Are you tax exempt?</span>
+            </label>
+
+            <!-- Opens when the box is ticked. -->
+            <div id="tax-details" hidden class="mt-4 space-y-4">
+              <div>
+                <label class="auth-label" for="tax-file">Tax exempt form or resale certificate</label>
+                <input id="tax-file" type="file" accept=".pdf,.jpg,.jpeg,.png"
+                       class="mt-1.5 block w-full text-sm file:mr-3 file:rounded-full file:border-0
+                              file:px-4 file:py-2 file:font-medium file:bg-sand file:text-ink-900
+                              dark:file:bg-ink-800 dark:file:text-stone-100">
+                <p class="mt-1 text-[13px] text-ink-400 dark:text-stone-400">PDF or photo.</p>
+              </div>
+              <div>
+                <label class="auth-label" for="tax-number">Certificate number</label>
+                <input class="auth-input" id="tax-number" type="text" autocomplete="off">
+              </div>
+              <div>
+                <label class="auth-label" for="tax-expires">Expiration date</label>
+                <input class="auth-input" id="tax-expires" type="date">
+              </div>
+              <p class="rounded-lg bg-sand dark:bg-ink-900 px-3 py-2.5 text-[13px] text-ink-700 dark:text-stone-300">
+                Certificates have to be renewed every year, so we'll ask you
+                for the new one each year before it runs out.
+              </p>
+            </div>
+          </div>
+
+          <p id="form-error" role="alert" hidden class="text-sm text-clay-700 dark:text-clay-300"></p>
+
+          <button type="submit" class="auth-button">Create account</button>
+        </form>
+      </div>
+
+      <p id="not-live" role="status" hidden
+         class="mt-4 rounded-lg border border-clay-300 bg-clay-50 dark:bg-ink-900 dark:border-clay-700 px-4 py-3 text-sm text-clay-700 dark:text-clay-300">
+        Accounts aren't live yet. This page is a preview, and nothing you type or attach here is saved or sent.
+      </p>
+
+      <div class="text-center"><a id="details-back" href="#who" class="step-back">Back</a></div>
+    </section>
+  </main>
+
+  <script>
+    // The four account types that end at the details form, and which
+    // question to go back to from each.
+    const ACCOUNT_TYPES = {
+      landscaper:  { name: "Landscaper",  back: "#buyer" },
+      personal:    { name: "Personal",    back: "#buyer" },
+      grower:      { name: "Grower",      back: "#seller" },
+      transporter: { name: "Transporter", back: "#seller" },
+    };
+
+    const steps = document.querySelectorAll(".step");
+    const taxBlock = document.getElementById("tax-block");
+    const taxBox = document.getElementById("tax-exempt");
+    const taxDetails = document.getElementById("tax-details");
+    const errorBox = document.getElementById("form-error");
+
+    // Show the step named after the # in the address.
+    function showStep() {
+      const key = location.hash.slice(1) || "who";
+      const type = ACCOUNT_TYPES[key];
+      const stepName = type ? "details" : (key === "buyer" || key === "seller" ? key : "who");
+
+      steps.forEach(function (step) { step.hidden = step.dataset.step !== stepName; });
+
+      if (type) {
+        document.getElementById("type-name").textContent = type.name;
+        document.getElementById("details-back").setAttribute("href", type.back);
+        taxBlock.hidden = key !== "landscaper";
+      }
+      document.getElementById("not-live").hidden = true;
+      errorBox.hidden = true;
+      window.scrollTo(0, 0);
+    }
+
+    // Ticking "tax exempt" opens the certificate questions.
+    taxBox.addEventListener("change", function () {
+      taxDetails.hidden = !taxBox.checked;
+    });
+
+    // No account system yet. Check the tax-exempt answers are complete,
+    // then say it isn't live and clear the password and the attachment.
+    document.getElementById("signup-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      if (!taxBlock.hidden && taxBox.checked) {
+        const missing = [];
+        if (!document.getElementById("tax-file").files.length) missing.push("attach your certificate");
+        if (!document.getElementById("tax-number").value.trim()) missing.push("enter the certificate number");
+        if (!document.getElementById("tax-expires").value) missing.push("enter the expiration date");
+        if (missing.length) {
+          errorBox.textContent = "To sign up as tax exempt, please " + missing.join(", ") + ".";
+          errorBox.hidden = false;
+          return;
+        }
+      }
+      errorBox.hidden = true;
+
+      document.getElementById("password").value = "";
+      document.getElementById("tax-file").value = "";
+      document.getElementById("not-live").hidden = false;
+    });
+
+    window.addEventListener("hashchange", showStep);
+    showStep();
+  </script>
+</body>
+</html>

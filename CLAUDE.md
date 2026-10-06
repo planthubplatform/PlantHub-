@@ -47,7 +47,8 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 |---|---|
 | `index.html` | Front page: Sign in, the PlantHub wordmark, search, five round section links. |
 | `directory.html` + `app.js` + `data/nurseries.js` | The plant directory (the trade listing table). Reads `?q=` from the front-page search. |
-| `signin.html` | Sign in, with "create an account" below. Preview only: nothing is saved or sent. |
+| `signin.html` | Sign in, with a "Create an account" button below. Preview only: nothing is saved or sent. |
+| `signup.html` | Create an account, one question per screen (steps after `#`). Preview only. |
 | `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
@@ -60,16 +61,21 @@ Rules that are easy to break:
 ## Decisions made
 
 - **6 Oct 2026 — Front page:** Sign in top right, PlantHub in the middle, search below, then five round links: Plant Directory, Plant Transport, Plant Encyclopedia (beginner friendly), Plant News, Plant Doc ("my plant is sick, help").
-- **6 Oct 2026 — Accounts are coming.** Sign in opens a log-in page with "create an account" below. Account types: **Buyer, Seller, Landscaper, Personal**. The old promise "nothing is hidden behind a login" is withdrawn.
-- What each account type can see and do is **not decided**. Review it page by page.
+- **6 Oct 2026 — Accounts are coming.** Sign in opens a log-in page with "Create an account" below.
+- **6 Oct 2026 — Sign-up flow.** "Who are you?" → **Buyer** or **Seller**. Then "Ok, but who?" → Buyer: **Landscaper** or **Personal**; Seller: **Grower** or **Transporter**. Then name, email, password. No one-line descriptions under the choices.
+- **6 Oct 2026 — Tax exempt landscapers.** Landscapers can tick "Are you tax exempt?", attach a tax exempt form or resale certificate, and type in the certificate number. PlantHub asks for a new certificate **every year**, so it records the expiration date too.
+- **6 Oct 2026 — No account needed to look.** Without an account, people can see everything (including price and quantity). They can't place orders or list plants.
+- What each account type can do beyond that is **not decided**. Review it page by page.
 
 ## Open questions
 
 Being worked out in the roadblocks review. Replace each with the answer once
 it is decided.
 
-- What can someone do without an account? Do quantity and price stay public?
-- What does each account type (buyer, seller, landscaper, personal) see and do?
+- What does each account type (landscaper, personal, grower, transporter) do once signed in?
+- Where do garden centers and other trade buyers who aren't landscapers sign up?
+- Can landscapers who install plants buy tax exempt at all? In Florida a contractor who installs plants into a customer's property may owe the tax themselves. Check with an accountant before relying on it.
+- Where certificate files are stored, and who can see them (they hold business tax details).
 - The front-page search only searches wholesale listings. What should a Personal user's search find?
 - Commission rate and payment method.
 - Pay at checkout, or net terms (pay later)?
