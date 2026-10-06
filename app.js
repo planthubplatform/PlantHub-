@@ -669,6 +669,11 @@ resultsBox.addEventListener("keydown", function (event) {
   toggleRow(row);
 });
 
+// A search typed on the front page arrives in the address, as
+// directory.html?q=clusia. Put it in the box so the results start filtered.
+const startQuery = new URLSearchParams(window.location.search).get("q");
+if (startQuery) searchBox.value = startQuery;
+
 syncFilterPanel();
 renderStats();
 render();

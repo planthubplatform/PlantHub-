@@ -215,3 +215,77 @@ table {
     transition: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Front page doors (index.html)
+   The five round icons under the search box. Clay, not green, on hover:
+   green is kept for freshness.
+--------------------------------------------------------------------------- */
+.door {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  width: 6.5rem;
+  text-align: center;
+  border-radius: 1rem;
+  outline: none;
+}
+
+.door-circle {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 9999px;
+  background: #fff;
+  border: 1px solid #d6e0db;          /* ink-100 */
+  color: #1b3328;                     /* ink-700 */
+  box-shadow: 0 1px 2px rgb(11 23 16 / 0.06);
+  transition: transform 150ms, border-color 150ms, color 150ms, background 150ms;
+}
+
+.door-circle svg {
+  width: 2rem;
+  height: 2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.door-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #24402f;                     /* ink-600 */
+}
+
+.door:hover .door-circle,
+.door:focus-visible .door-circle {
+  transform: translateY(-2px);
+  border-color: #c2703c;              /* clay-500 */
+  color: #a95c2d;                     /* clay-600 */
+  background: #fbf1e9;                /* clay-50 */
+}
+
+.door:focus-visible .door-circle { box-shadow: 0 0 0 3px #e0a877; } /* clay-300 */
+
+@media (prefers-color-scheme: dark) {
+  .door-circle { background: #122117; border-color: #24402f; color: #d6e0db; }
+  .door-label { color: #d6e0db; }
+  .door:hover .door-circle,
+  .door:focus-visible .door-circle { background: #1b3328; color: #e0a877; }
+}
+
+@media (min-width: 640px) {
+  .door { width: 8.5rem; }            /* every label fits on one line */
+  .door-circle { width: 5rem; height: 5rem; }
+}
+
+@media (max-width: 639px) {
+  .door { width: 5.5rem; }
+  .door-circle { width: 4rem; height: 4rem; }
+  .door-circle svg { width: 1.75rem; height: 1.75rem; }
+}

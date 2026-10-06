@@ -11,7 +11,7 @@ Loxahatchee / Palm Beach County area.
 
 ## How to run it
 
-Double-click `index.html`, or open it in any browser. Nothing to install.
+Double-click `index.html` (the front page), or open it in any browser. Nothing to install.
 
 If you prefer a local web address (needed later for some features), run this in the
 project folder and then visit the address it prints, normally http://localhost:5173 :
@@ -31,8 +31,11 @@ PORT=5174 python serve.py
 
 | File | What it does |
 |---|---|
-| `index.html` | The page: search box, results area, footer. |
-| `styles.css` | How it looks. Colors are set once at the top and reused. |
+| `index.html` | The front page: sign in, the wordmark, a search box, and five round links into the site. |
+| `directory.html` | The plant directory: filters, the listing table, footer. A front-page search lands here. |
+| `soon.html` | The "coming soon" page behind the sections that aren't built yet. |
+| `theme.js` | The colors and fonts, shared by every page. |
+| `styles.css` | The few styles Tailwind classes can't say cleanly. |
 | `app.js` | The search: filters the data and draws the results. |
 | `serve.py` | Puts the site on a local web address for testing. |
 | `data/nurseries.js` | The nursery listings. Edit this to add or change listings. |

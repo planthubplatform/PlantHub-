@@ -1,288 +1,142 @@
 <!DOCTYPE html>
 <!--
-  index.html — the page itself.
-  HTML describes WHAT is on the page (headings, boxes, text).
-  The look comes from Tailwind CSS (loaded below, no install needed — it's a
-  single <script> tag) plus a few extras in styles.css, and the search
-  behaviour comes from app.js.
+  index.html — the front page.
 
-  The shape of this page is deliberate. Every wholesale plant directory in the
-  trade — PlantANT, Betrock — puts a filter rail on the left and ONE DENSE
-  TABLE on the right, a row per listing, because a buyer sourcing thirty items
-  compares listings, not nurseries. Cards are what consumer sites use. We match
-  the trade's shape, and then show the three columns the others hide behind a
-  login: quantity, price, and the date the listing was last confirmed.
+  Deliberately empty: a sign-in link, the wordmark, one search box, and five
+  round doors into the rest of the site. The search box hands whatever is
+  typed to the plant directory (directory.html), which does the real work.
+
+  Each round door is an <a> with an icon drawn in SVG. To add, remove or
+  reorder a door, copy or move one <li> in the "Doors" list below.
 -->
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <!-- Tells phones to use their real width instead of pretending to be a desktop. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PlantHub — Wholesale Plant Availability, Palm Beach County</title>
-  <meta name="description" content="Wholesale plant availability for Palm Beach County. Container size, grade, quantity on hand, price, and the date each nursery last confirmed the listing.">
+  <title>PlantHub</title>
+  <meta name="description" content="Find plants, the nurseries that grow them, how to move them, and how to keep them alive. South Florida.">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 
-  <!-- Two typefaces: Fraunces for the wordmark only, Inter for everything
-       else. Keeping the serif to the logo is what separates a trade tool from
-       a garden-centre brochure. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Tailwind CSS, loaded straight from a CDN: no npm, no build step. -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    /*
-      PlantHub's colours, with one rule behind them:
-
-        GREEN MEANS FRESH. Nothing else.
-
-      Green ("signal") is spent only where the page is telling you how recently
-      a nursery confirmed a listing. Everything else is built from ink (a
-      near-black green), cream, sand and clay. If green were also the buttons,
-      the links and the tags, it would stop meaning anything, and freshness is
-      the one thing this site has that the competition doesn't.
-    */
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            // Near-black greens: surfaces and text.
-            ink: {
-              50:  '#eef2f0',
-              100: '#d6e0db',
-              200: '#bccdc4',
-              400: '#4a6b5a',
-              600: '#24402f',
-              700: '#1b3328',
-              800: '#122117',
-              900: '#0b1710',
-              950: '#060f0a',
-            },
-            // Reserved for freshness. Do not use for decoration.
-            signal: {
-              50:  '#eafaf0',
-              400: '#4ade80',
-              500: '#22c55e',
-              600: '#16a34a',
-              700: '#15803d',
-            },
-            // The warm accent: links, focus rings, highlights.
-            clay: {
-              50:  '#fbf1e9',
-              100: '#f4ddcb',
-              300: '#e0a877',
-              500: '#c2703c',
-              600: '#a95c2d',
-              700: '#8a4a22',
-            },
-            cream: '#faf6ef',
-            sand:  '#f2e9dc',
-          },
-          fontFamily: {
-            display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
-            sans:    ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-          },
-        },
-      },
-    };
-  </script>
-
+  <script src="theme.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
 
-  <!-- ===== Working header ============================================
-       Not a hero. A trade user lands here to work, so this band is just the
-       wordmark, what the site is, and the totals — then the search box. -->
-  <header class="bg-ink-900 text-cream">
-    <div class="page flex flex-wrap items-center justify-between gap-x-8 gap-y-3 py-3.5">
-
-      <div class="flex items-baseline gap-3">
-        <!-- The wordmark. The green dot is the same dot that marks a fresh
-             listing in the table below — the logo is the promise. -->
-        <span class="font-display font-semibold text-xl tracking-tight flex items-center gap-2">
-          PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-400" aria-hidden="true"></span>
-        </span>
-        <h1 class="text-[13px] text-cream/60 border-l border-white/15 pl-3">
-          Wholesale plant availability — Palm Beach County
-        </h1>
-      </div>
-
-      <!-- Totals for the whole database, filled in by app.js. -->
-      <dl class="flex items-center gap-x-6 text-[13px] text-cream/50">
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-cream tabular-nums" id="stat-nurseries">—</dd>
-          <dt>nurseries</dt>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-cream tabular-nums" id="stat-listings">—</dd>
-          <dt>listings</dt>
-        </div>
-        <div class="flex items-baseline gap-1.5">
-          <dd class="font-semibold text-signal-400 tabular-nums" id="stat-fresh">—</dd>
-          <dt>updated this week</dt>
-        </div>
-      </dl>
-    </div>
-
-    <!-- ===== Search bar ============================================== -->
-    <div class="border-t border-white/10 bg-ink-800">
-      <div class="page py-3">
-        <div class="flex flex-col sm:flex-row gap-2">
-          <div class="relative flex-1 min-w-0">
-            <label class="sr-only" for="search">Search for a plant</label>
-            <!-- Magnifying glass, drawn with SVG so it stays crisp at any size. -->
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cream/40 pointer-events-none"
-                 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
-            </svg>
-            <input
-              type="search"
-              id="search"
-              placeholder="Plant, botanical name, nursery or city — try clusia, live oak, Wodyetia"
-              autocomplete="off"
-              class="w-full pl-9 pr-3 py-2 text-sm rounded-md bg-ink-950/60 text-cream
-                     placeholder:text-cream/35 border border-white/15
-                     focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-clay-500 transition">
-          </div>
-          <button type="button" id="clear"
-            class="px-4 py-2 text-sm font-medium rounded-md border border-white/15
-                   text-cream/80 hover:text-cream hover:border-clay-500 transition">
-            Clear
-          </button>
-        </div>
-
-        <!-- Quick example searches, so a first-time visitor isn't staring at a blank box. -->
-        <div class="flex flex-wrap items-center gap-1.5 mt-2.5" id="chips">
-          <span class="text-[11px] uppercase tracking-wider text-cream/35 mr-1">Common searches</span>
-          <button type="button" class="chip">clusia</button>
-          <button type="button" class="chip">live oak</button>
-          <button type="button" class="chip">foxtail palm</button>
-          <button type="button" class="chip">podocarpus</button>
-          <button type="button" class="chip">Loxahatchee</button>
-        </div>
-      </div>
-    </div>
+  <!-- ===== Top bar: just Sign in, on the right ======================== -->
+  <header class="page flex justify-end py-4">
+    <a href="soon.html#sign-in"
+       class="text-sm font-medium px-4 py-2 rounded-full border border-ink-200 dark:border-ink-700
+              text-ink-800 dark:text-stone-200 hover:border-clay-500 hover:text-clay-700
+              dark:hover:text-clay-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-500 transition">
+      Sign in
+    </a>
   </header>
 
-  <!-- Prices and quantities on this page are invented. Saying so once, loudly,
-       at the top — not only in the footer. -->
-  <div class="bg-clay-100 dark:bg-clay-700/25 border-b border-clay-300/50 text-[13px] text-clay-700 dark:text-clay-100">
-    <div class="page py-2">
-      <strong class="font-semibold">Sample data.</strong>
-      Every nursery, quantity, price and contact detail below is invented for testing.
-      None of it describes a real business.
-    </div>
-  </div>
+  <!-- ===== The middle of the page ===================================== -->
+  <main class="page flex-1 flex flex-col items-center justify-center pb-16">
 
-  <main class="page py-5">
-    <div class="lg:flex lg:items-start lg:gap-6">
+    <!-- The wordmark, big. The green dot is the same one that marks a fresh
+         listing in the directory — green still means fresh, nothing else. -->
+    <h1 class="font-display font-semibold tracking-tight text-5xl sm:text-7xl flex items-center gap-3">
+      PlantHub<span class="shrink-0 w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-signal-500" aria-hidden="true"></span>
+    </h1>
+    <p class="mt-3 text-ink-400 dark:text-stone-400 text-center">
+      Find it, move it, grow it. South Florida.
+    </p>
 
-      <!-- ===== Filter rail ===========================================
-           The trade expects filters down the left with a count beside each
-           one — that is how PlantANT and every grower catalogue works. The
-           difference is that ours aren't locked behind a subscription.
-           app.js fills each list; the markup here is just the frame. -->
-      <aside class="lg:w-56 lg:shrink-0 mb-4 lg:mb-0">
-        <!-- A <details> element: a box the browser can fold shut. On a phone it
-             starts shut, because three facet lists would otherwise push every
-             result off the screen. On a laptop app.js opens it on load. -->
-        <details id="filter-panel"
-                 class="lg:sticky lg:top-4 rounded-md border border-ink-100 dark:border-ink-800
-                        bg-white dark:bg-ink-900">
+    <!-- The search box. A plain form: pressing Enter opens
+         directory.html?q=whatever-was-typed, and the directory picks it up. -->
+    <form action="directory.html" method="get" role="search" class="mt-8 w-full max-w-2xl">
+      <label class="sr-only" for="q">Search for a plant</label>
+      <div class="relative">
+        <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400 pointer-events-none"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input id="q" name="q" type="search" autocomplete="off" autofocus
+               placeholder="Search a plant, nursery or city"
+               class="w-full rounded-full pl-14 pr-28 py-4 text-base
+                      bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700
+                      shadow-sm placeholder:text-ink-400 dark:placeholder:text-stone-500
+                      focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-transparent transition">
+        <button type="submit"
+                class="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2.5 rounded-full text-sm font-semibold
+                       bg-ink-900 text-cream dark:bg-cream dark:text-ink-900
+                       hover:bg-ink-700 dark:hover:bg-sand focus:outline-none focus-visible:ring-2 focus-visible:ring-clay-500 transition">
+          Search
+        </button>
+      </div>
+    </form>
 
-          <summary class="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
-                          text-[11px] font-semibold uppercase tracking-wider
-                          text-ink-400 dark:text-stone-400">
-            <span>Filter</span>
-            <!-- How many filters are on, so a shut panel still says so. -->
-            <span id="filter-count"
-                  class="hidden text-[11px] font-semibold normal-case tracking-normal
-                         text-clay-700 dark:text-clay-300 bg-sand dark:bg-ink-800
-                         rounded-sm px-1.5"></span>
+    <!-- ===== Doors: one round icon per part of the site =================
+         Only the directory exists today; the others open soon.html, which
+         says what each one will be. -->
+    <nav aria-label="Sections" class="mt-12 w-full max-w-3xl">
+      <ul class="flex flex-wrap justify-center gap-x-6 gap-y-8 sm:gap-x-2">
 
-            <button type="button" id="reset-filters"
-              class="ml-auto text-[12px] font-medium normal-case tracking-normal
-                     text-clay-600 dark:text-clay-300 hover:underline hidden">
-              Reset
-            </button>
-            <svg class="lg:hidden w-4 h-4 shrink-0 transition-transform" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
-          </summary>
+        <li>
+          <a href="directory.html" class="door">
+            <span class="door-circle">
+              <!-- A storefront: nurseries and what they have. -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v10h16V10"/><path d="M3 10l2-6h14l2 6"/><path d="M3 10a3 3 0 0 0 6 0a3 3 0 0 0 6 0a3 3 0 0 0 6 0"/><path d="M10 20v-5h4v5"/></svg>
+            </span>
+            <span class="door-label">Plant Directory</span>
+          </a>
+        </li>
 
-          <div class="border-t border-ink-100 dark:border-ink-800">
-            <!-- Freshness earns the green: it is the one filter about how
-                 current a listing is. -->
-            <div class="px-3 py-2.5 border-b border-ink-100 dark:border-ink-800">
-              <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input type="checkbox" id="fresh-only"
-                       class="w-3.5 h-3.5 rounded-sm border-ink-200 text-signal-600 focus:ring-signal-500 focus:ring-offset-0">
-                <span>Updated this week</span>
-              </label>
-            </div>
+        <li>
+          <a href="soon.html#transport" class="door">
+            <span class="door-circle">
+              <!-- A truck. -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v10H2z"/><path d="M13 9h4l4 4v3h-8"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+            </span>
+            <span class="door-label">Plant Transport</span>
+          </a>
+        </li>
 
-            <!-- Three facet groups, each built by app.js from the data itself,
-                 so they can never list a size nobody stocks. -->
-            <div data-facet="size"  class="facet"></div>
-            <div data-facet="grade" class="facet"></div>
-            <div data-facet="city"  class="facet"></div>
-          </div>
-        </details>
-      </aside>
+        <li>
+          <a href="soon.html#encyclopedia" class="door">
+            <span class="door-circle">
+              <!-- An open book. -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6c-2-1.5-5-2-8-1.5V19c3-.5 6 0 8 1.5"/><path d="M12 6c2-1.5 5-2 8-1.5V19c-3-.5-6 0-8 1.5"/><path d="M12 6v14.5"/></svg>
+            </span>
+            <span class="door-label">Plant Encyclopedia</span>
+          </a>
+        </li>
 
-      <!-- ===== Results =============================================== -->
-      <section class="min-w-0 flex-1">
+        <li>
+          <a href="soon.html#news" class="door">
+            <span class="door-circle">
+              <!-- A newspaper. -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13v14H6a2 2 0 0 1-2-2z"/><path d="M17 9h3v8a2 2 0 0 1-2 2"/><path d="M7 9h7M7 12h7M7 15h4"/></svg>
+            </span>
+            <span class="door-label">Plant News</span>
+          </a>
+        </li>
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-2.5">
-          <p class="text-[13px] text-ink-400 dark:text-stone-400" id="count"></p>
+        <li>
+          <a href="soon.html#doc" class="door">
+            <span class="door-circle">
+              <!-- A leaf with a medical cross: something's wrong, help. -->
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 10 5 20 4c-1 10-6 15-15 15z"/><path d="M5 19l6-6"/><path d="M14 8v4M12 10h4"/></svg>
+            </span>
+            <span class="door-label">Plant Doc</span>
+          </a>
+        </li>
 
-          <div class="flex items-center gap-2">
-            <label class="text-[13px] text-ink-400 dark:text-stone-400" for="sort">Sort</label>
-            <select id="sort"
-              class="text-[13px] font-medium px-2.5 py-1.5 rounded-md border border-ink-100 dark:border-ink-700
-                     bg-white dark:bg-ink-900 text-ink-800 dark:text-stone-200
-                     focus:outline-none focus:ring-2 focus:ring-clay-500 transition">
-              <option value="fresh">Freshest first</option>
-              <option value="qty">Most in stock</option>
-              <option value="price">Lowest price</option>
-              <option value="plant">Plant A–Z</option>
-              <option value="nursery">Nursery A–Z</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Any filters currently on, shown as removable tags. -->
-        <div id="active-filters" class="flex flex-wrap gap-1.5 mb-2.5 empty:hidden"></div>
-
-        <!-- app.js fills this with the listing table. It starts empty on purpose. -->
-        <div id="results"></div>
-      </section>
-    </div>
+      </ul>
+    </nav>
   </main>
 
-  <footer class="border-t border-ink-100 dark:border-ink-800 mt-8">
-    <div class="page py-7">
-      <div class="max-w-3xl space-y-2 text-[13px] text-ink-400 dark:text-stone-400">
-        <p>
-          <strong class="text-ink-700 dark:text-stone-300">Sample data.</strong>
-          The nurseries, availability, prices and contact details on this page are
-          invented for testing and do not describe real businesses.
-        </p>
-        <p>
-          Every listing shows the date the nursery last confirmed it. No ads, no paywall,
-          no paid placement — results are never reordered by who pays, and nothing is
-          hidden behind a login.
-        </p>
-      </div>
-    </div>
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Early prototype. Directory listings are sample data and do not describe real businesses.
   </footer>
-
-  <!-- Order matters: the data must load before the code that uses it. -->
-  <script src="data/nurseries.js"></script>
-  <script src="app.js"></script>
 </body>
 </html>
