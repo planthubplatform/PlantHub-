@@ -23,6 +23,15 @@
     PH.deleteAccount()
     PH.resetDemo()              wipe everything back to the demo accounts
 
+    PH.nurseries()              every nursery with its listings, including
+                                whatever growers have changed in this browser
+    PH.myNursery()              the signed-in grower's own nursery
+    PH.saveNursery({ ... })     change its name, city or specialties
+    PH.saveListing({ ... })     add a listing, or change one (give its id)
+    PH.removeListing(id)
+    PH.confirmListing(id)       "still accurate": stamps it with today's date
+    PH.confirmAll()
+
   Functions that can fail return { ok: true, ... } or { ok: false, error }.
 */
 
@@ -31,6 +40,12 @@ const PH = (function () {
   // ---- 1. Where things are kept ------------------------------------------
   const USERS_KEY = "planthub.users";
   const SESSION_KEY = "planthub.session";
+  // Listings a grower has changed, as { nurseryId: { plants, profile } }.
+  // A nursery that isn't in here still shows its sample listings.
+  const INVENTORY_KEY = "planthub.inventory";
+  // Nurseries made by growers who signed up here (the sample ones live in
+  // data/nurseries.js).
+  const NURSERIES_KEY = "planthub.nurseries";
 
   const ACCOUNT_TYPES = {
     landscaper:  { name: "Landscaper",  side: "Buyer" },
@@ -62,9 +77,16 @@ const PH = (function () {
       return memory[key] || null;
     }
   }
+  // Returns false when the browser would not keep it, which in practice
+  // means its storage is full (photos are the only big thing we store).
   function write(key, value) {
     memory[key] = value;
-    try { localStorage.setItem(key, JSON.stringify(value)); } catch (error) { /* kept in memory only */ }
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (error) {
+      return false;
+    }
   }
   function remove(key) {
     delete memory[key];
@@ -141,7 +163,7 @@ const PH = (function () {
       name: name,
       email: email,
       password: details.password,
-      created: new Date().toISOString().slice(0, 10),
+      created: today(),
     };
     if (details.taxExempt) user.taxExempt = details.taxExempt;
 
@@ -219,6 +241,16 @@ const PH = (function () {
   function deleteAccount() {
     const user = signedInRecord();
     if (!user) return { ok: false, error: "You are signed out." };
+    // A nursery this grower created goes with them. Sample nurseries stay.
+    if (user.nurseryId) {
+      const extras = read(NURSERIES_KEY) || [];
+      if (extras.some(function (nursery) { return nursery.id === user.nurseryId; })) {
+        write(NURSERIES_KEY, extras.filter(function (nursery) { return nursery.id !== user.nurseryId; }));
+        const inventory = read(INVENTORY_KEY) || {};
+        delete inventory[user.nurseryId];
+        write(INVENTORY_KEY, inventory);
+      }
+    }
     write(USERS_KEY, users().filter(function (other) { return other.id !== user.id; }));
     remove(SESSION_KEY);
     return { ok: true };
@@ -226,10 +258,185 @@ const PH = (function () {
 
   function resetDemo() {
     remove(SESSION_KEY);
+    remove(INVENTORY_KEY);
+    remove(NURSERIES_KEY);
     write(USERS_KEY, seedUsers());
   }
 
-  // ---- 5. The account corner of every page ---------------------------------
+  // ---- 5. Nurseries and their listings -----------------------------------
+  // The sample nurseries come from data/nurseries.js (the NURSERIES list).
+  // Whatever a grower changes here is kept separately and laid on top, so
+  // the sample file is never altered and "Reset the preview" undoes it all.
+
+  // Today as "2026-10-09", by the clock on this computer.
+  function today() {
+    const now = new Date();
+    return now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+  }
+
+  function sampleNurseries() {
+    return typeof NURSERIES === "undefined" ? [] : NURSERIES;
+  }
+
+  function nurseries() {
+    const inventory = read(INVENTORY_KEY) || {};
+    const extras = read(NURSERIES_KEY) || [];
+
+    return sampleNurseries().concat(extras).map(function (nursery) {
+      const changed = inventory[nursery.id] || {};
+      const copy = Object.assign({}, nursery, changed.profile || {});
+      // Sample listings have no id of their own, so they get one from
+      // their place in the list.
+      copy.plants = changed.plants || (nursery.plants || []).map(function (plant, index) {
+        return Object.assign({ id: nursery.id + "-" + (index + 1) }, plant);
+      });
+      return copy;
+    });
+  }
+
+  function findNursery(id) {
+    return nurseries().find(function (nursery) { return nursery.id === id; }) || null;
+  }
+
+  // The signed-in grower's nursery. A grower who signed up here has none
+  // yet, so the first call makes an empty one in their name.
+  function myNursery() {
+    const user = signedInRecord();
+    if (!user || user.type !== "grower") return null;
+
+    if (user.nurseryId) {
+      const found = findNursery(user.nurseryId);
+      if (found) return found;
+    }
+
+    const nursery = {
+      id: "nursery-" + Date.now().toString(36),
+      name: user.business || user.name,
+      city: "",
+      state: "FL",
+      phone: user.phone || "",
+      email: user.email,
+      website: "",
+      specialties: [],
+      plants: [],
+    };
+    write(NURSERIES_KEY, (read(NURSERIES_KEY) || []).concat([nursery]));
+    user.nurseryId = nursery.id;
+    saveUser(user);
+    return findNursery(nursery.id);
+  }
+
+  // Keep a change to one nursery. `change` gets that nursery's saved record
+  // ({ plants, profile }) to alter.
+  function changeMyNursery(change) {
+    const nursery = myNursery();
+    if (!nursery) return { ok: false, error: "Sign in with a grower account to manage inventory." };
+
+    const inventory = read(INVENTORY_KEY) || {};
+    const record = inventory[nursery.id] || {};
+    if (!record.plants) record.plants = nursery.plants;
+    const problem = change(record, nursery);
+    if (problem) return problem;
+
+    inventory[nursery.id] = record;
+    if (!write(INVENTORY_KEY, inventory)) {
+      return { ok: false, error: "This browser's storage is full. Remove a few photos and try again." };
+    }
+    return { ok: true, nursery: findNursery(nursery.id) };
+  }
+
+  function saveNursery(details) {
+    const name = String(details.name || "").trim();
+    const city = String(details.city || "").trim();
+    if (!name) return { ok: false, field: "nursery-name", error: "Enter the nursery's name." };
+    if (!city) return { ok: false, field: "nursery-city", error: "Enter the city, so buyers nearby can find you." };
+
+    return changeMyNursery(function (record) {
+      record.profile = {
+        name: name,
+        city: city,
+        specialties: String(details.specialties || "").split(",").map(function (word) { return word.trim(); }).filter(Boolean),
+      };
+    });
+  }
+
+  // A number typed into a form, or undefined when the box was left empty.
+  function optionalNumber(value) {
+    if (value === "" || value === null || value === undefined) return undefined;
+    const number = Number(value);
+    return isNaN(number) ? NaN : number;
+  }
+
+  // Add a listing, or change the one with the given id. Either way it is
+  // stamped with today's date: touching a listing is confirming it.
+  function saveListing(details) {
+    const common = String(details.common || "").trim();
+    const quantity = Number(details.quantity);
+    const price = Number(details.price);
+
+    if (!common) return { ok: false, field: "common", error: "Enter the plant's common name." };
+    if (!details.container) return { ok: false, field: "container", error: "Choose a container size." };
+    if (details.quantity === "" || !Number.isInteger(quantity) || quantity < 0) {
+      return { ok: false, field: "quantity", error: "Enter the exact number you have, as a whole number." };
+    }
+    if (!(price > 0)) return { ok: false, field: "price", error: "Enter the wholesale price per plant." };
+
+    const specs = {};
+    const specNames = { caliper: "Caliper", height: "Height", spread: "Spread", clearTrunk: "Clear trunk" };
+    for (const key in specNames) {
+      const number = optionalNumber(details[key]);
+      if (number === undefined) continue;
+      if (isNaN(number) || number <= 0) return { ok: false, field: key, error: specNames[key] + " must be a number above zero, or left empty." };
+      specs[key] = number;
+    }
+
+    return changeMyNursery(function (record) {
+      const photoList = Array.isArray(details.photoList) ? details.photoList : null;
+      const existing = record.plants.find(function (plant) { return plant.id === details.id; });
+
+      const plant = Object.assign({
+        id: existing ? existing.id : "listing-" + Date.now().toString(36),
+        common: common,
+        botanical: String(details.botanical || "").trim(),
+        container: details.container,
+      }, specs, {
+        grades: (details.grades || []).slice(),
+        // A listing's photo count is the pictures added here; a sample
+        // listing that was never given any keeps the count it came with.
+        photos: photoList ? photoList.length : (existing ? existing.photos || 0 : 0),
+        quantity: quantity,
+        price: Math.round(price * 100) / 100,
+        updated: today(),
+      });
+      if (photoList) plant.photoList = photoList;
+
+      record.plants = existing
+        ? record.plants.map(function (other) { return other.id === plant.id ? plant : other; })
+        : [plant].concat(record.plants);
+    });
+  }
+
+  function removeListing(id) {
+    return changeMyNursery(function (record) {
+      record.plants = record.plants.filter(function (plant) { return plant.id !== id; });
+    });
+  }
+
+  function confirmListing(id) {
+    return changeMyNursery(function (record) {
+      record.plants = record.plants.map(function (plant) {
+        return plant.id === id ? Object.assign({}, plant, { updated: today() }) : plant;
+      });
+    });
+  }
+
+  function confirmAll() {
+    return changeMyNursery(function (record) {
+      record.plants = record.plants.map(function (plant) { return Object.assign({}, plant, { updated: today() }); });
+    });
+  }
+
+  // ---- 6. The account corner of every page ---------------------------------
   // A page marks where the corner goes with <div data-account-corner></div>.
   // Signed out it holds "Sign in"; signed in, the person's name (a link to
   // their account) and "Sign out".
@@ -290,6 +497,14 @@ const PH = (function () {
     deleteAccount: deleteAccount,
     resetDemo: resetDemo,
     nextPage: nextPage,
+    today: today,
+    nurseries: nurseries,
+    myNursery: myNursery,
+    saveNursery: saveNursery,
+    saveListing: saveListing,
+    removeListing: removeListing,
+    confirmListing: confirmListing,
+    confirmAll: confirmAll,
     escapeHtml: escapeHtml,
   };
 })();

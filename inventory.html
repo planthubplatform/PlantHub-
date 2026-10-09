@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<!--
+  inventory.html — a grower's own listings.
+
+  This is the page the whole site leans on: buyers come for listings that
+  are current, and this is where a grower keeps them current. So the page
+  is built around one action, "still accurate", which stamps a listing with
+  today's date. It can be done for everything at once (the big button), for
+  one row, or by changing a row's quantity or price, since touching a
+  listing is confirming it.
+
+  Also here: add a listing, edit every field of one, remove one, and the
+  nursery's own name and city.
+
+  PROTOTYPE ONLY. store.js keeps the changes in this browser and lays them
+  over the sample data, so the directory shows them straight away. Signed
+  out? The page sends you to signin.html and comes back afterwards.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your inventory — PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+
+    <!-- ===== Signed in, but not as a grower ============================== -->
+    <section id="not-grower" hidden class="mx-auto max-w-xl auth-card text-center">
+      <h1 class="font-display font-semibold text-2xl tracking-tight">Inventory is for growers</h1>
+      <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">
+        You're signed in with a <span id="not-grower-type"></span> account, which has no listings to manage.
+      </p>
+      <div class="mt-5 flex flex-wrap justify-center gap-3">
+        <a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>
+        <a href="account.html" class="auth-button auth-button-outline account-button-small">Your account</a>
+      </div>
+    </section>
+
+    <!-- ===== The grower's page =========================================== -->
+    <div id="grower-page" hidden class="space-y-6">
+
+      <!-- Title and the nursery it belongs to. -->
+      <section class="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
+        <div class="min-w-0">
+          <h1 class="font-display font-semibold text-3xl tracking-tight">Your inventory</h1>
+          <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">
+            <span id="nursery-line"></span>
+            <button type="button" id="nursery-edit" class="auth-link ml-1">Edit nursery details</button>
+          </p>
+        </div>
+        <a id="buyer-view" href="directory.html" class="auth-link text-sm">See your listings as buyers do</a>
+      </section>
+
+      <!-- Nursery name and city. Folded away unless the city is missing,
+           because buyers search by city and a listing needs one. -->
+      <section id="nursery-card" hidden class="auth-card" aria-labelledby="nursery-title">
+        <h2 id="nursery-title" class="font-display font-semibold text-xl tracking-tight">Nursery details</h2>
+        <p id="nursery-needed" hidden class="mt-1 text-sm text-ink-700 dark:text-stone-300">
+          Start here: buyers search by city, so your nursery needs one before you add listings.
+        </p>
+        <form id="nursery-form" class="mt-5 space-y-4" novalidate>
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label class="auth-label" for="nursery-name">Nursery name</label>
+              <input class="auth-input" id="nursery-name" type="text" autocomplete="organization">
+            </div>
+            <div>
+              <label class="auth-label" for="nursery-city">City</label>
+              <input class="auth-input" id="nursery-city" type="text" autocomplete="address-level2">
+            </div>
+            <div>
+              <label class="auth-label" for="nursery-specialties">What you grow <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+              <input class="auth-input" id="nursery-specialties" type="text" placeholder="Palms, Hedges">
+              <p class="auth-hint">Separate with commas.</p>
+            </div>
+          </div>
+          <p id="nursery-error" role="alert" hidden class="auth-error"></p>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" class="auth-button account-button-small">Save nursery details</button>
+            <button type="button" id="nursery-cancel" class="auth-button auth-button-outline account-button-small">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== Freshness: the one-tap confirm ==========================
+           Green is used here because this is exactly what green means on
+           this site: how recently a listing was confirmed. -->
+      <section class="auth-card flex flex-wrap items-center justify-between gap-x-8 gap-y-4" aria-labelledby="fresh-title">
+        <div class="min-w-0">
+          <h2 id="fresh-title" class="font-semibold text-lg flex items-center gap-2">
+            <span id="fresh-dot" class="shrink-0 w-2.5 h-2.5 rounded-full"></span>
+            <span id="fresh-headline"></span>
+          </h2>
+          <p id="fresh-detail" class="mt-1 text-sm text-ink-700 dark:text-stone-300"></p>
+        </div>
+        <button type="button" id="confirm-all" class="auth-button account-button-small">Everything is still accurate</button>
+      </section>
+
+      <!-- ===== Add or edit a listing =====================================
+           One form does both. It is folded away until "Add a listing" or a
+           row's "Edit" is pressed. -->
+      <section id="listing-card" hidden class="auth-card" aria-labelledby="listing-title">
+        <h2 id="listing-title" class="font-display font-semibold text-xl tracking-tight">Add a listing</h2>
+        <form id="listing-form" class="mt-5 space-y-5" novalidate>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="f-common">Common name</label>
+              <input class="auth-input" id="f-common" type="text" placeholder="Clusia" autocomplete="off">
+            </div>
+            <div>
+              <label class="auth-label" for="f-botanical">Botanical name <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+              <input class="auth-input" id="f-botanical" type="text" placeholder="Clusia guttifera" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label class="auth-label" for="f-container">Container size</label>
+              <!-- The choices are filled in from CONTAINERS in shared.js. -->
+              <select class="auth-input" id="f-container"></select>
+            </div>
+            <div>
+              <label class="auth-label" for="f-quantity">Quantity on hand</label>
+              <input class="auth-input" id="f-quantity" type="number" min="0" step="1" inputmode="numeric">
+              <p class="auth-hint">The exact count, not "100+".</p>
+            </div>
+            <div>
+              <label class="auth-label" for="f-price">Wholesale price, each ($)</label>
+              <input class="auth-input" id="f-price" type="number" min="0" step="0.01" inputmode="decimal">
+            </div>
+          </div>
+
+          <fieldset>
+            <legend class="auth-label">Specs <span class="font-normal text-ink-400 dark:text-stone-400">(fill in only what you measured)</span></legend>
+            <div class="mt-1 grid gap-4 grid-cols-2 sm:grid-cols-4">
+              <div>
+                <label class="auth-hint block" for="f-caliper">Caliper, inches</label>
+                <input class="auth-input" id="f-caliper" type="number" min="0" step="0.25" inputmode="decimal">
+              </div>
+              <div>
+                <label class="auth-hint block" for="f-height">Height, feet</label>
+                <input class="auth-input" id="f-height" type="number" min="0" step="0.5" inputmode="decimal">
+              </div>
+              <div>
+                <label class="auth-hint block" for="f-spread">Spread, feet</label>
+                <input class="auth-input" id="f-spread" type="number" min="0" step="0.5" inputmode="decimal">
+              </div>
+              <div>
+                <label class="auth-hint block" for="f-clearTrunk">Clear trunk, feet</label>
+                <input class="auth-input" id="f-clearTrunk" type="number" min="0" step="0.5" inputmode="decimal">
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="auth-label">Grade and features</legend>
+            <!-- The tick boxes are filled in from GRADES in shared.js. -->
+            <div id="f-grades" class="mt-2 flex flex-wrap gap-2"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend class="auth-label">Photos <span class="font-normal text-ink-400 dark:text-stone-400">(up to 5)</span></legend>
+            <p id="sample-photo-note" hidden class="auth-hint"></p>
+            <div id="photo-list" class="mt-2 flex flex-wrap gap-3"></div>
+            <label class="mt-3 inline-block auth-button auth-button-outline account-button-small cursor-pointer" for="f-photos" id="photo-add">Add photos</label>
+            <input id="f-photos" type="file" accept="image/*" multiple class="sr-only">
+            <p class="auth-hint">Listings with photos rank above equally fresh ones without.</p>
+          </fieldset>
+
+          <p id="listing-error" role="alert" hidden class="auth-error"></p>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" class="auth-button account-button-small">Save listing</button>
+            <button type="button" id="listing-cancel" class="auth-button auth-button-outline account-button-small">Cancel</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== The listings ============================================== -->
+      <section aria-labelledby="list-title">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h2 id="list-title" class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400"></h2>
+          <button type="button" id="add-listing" class="auth-button account-button-small">Add a listing</button>
+        </div>
+        <div id="listings" class="inventory-list"></div>
+      </section>
+    </div>
+  </main>
+
+  <!-- A short message that appears after a change, then fades. -->
+  <p id="toast" role="status" aria-live="polite" class="toast" hidden></p>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: your changes are saved only in this browser. Listings here are sample data, not real stock.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. Who is here?
+    // -----------------------------------------------------------------------
+    const user = PH.currentUser();
+    let nursery = null;
+
+    if (!user) {
+      location.replace("signin.html?next=inventory.html");
+    } else if (user.type !== "grower") {
+      document.getElementById("not-grower-type").textContent = user.typeName.toLowerCase();
+      document.getElementById("not-grower").hidden = false;
+    } else {
+      nursery = PH.myNursery();
+      document.getElementById("grower-page").hidden = false;
+    }
+
+    const MAX_PHOTOS = 5;
+    const $ = function (id) { return document.getElementById(id); };
+
+    // -----------------------------------------------------------------------
+    // 2. Small helpers.
+    // -----------------------------------------------------------------------
+    function showError(box, message) { box.textContent = message; box.hidden = false; }
+
+    // The message at the bottom of the screen: "Saved."
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.hidden = false;
+      clearTimeout(box.timer);
+      box.timer = setTimeout(function () { box.hidden = true; }, 2800);
+    }
+
+    // "2026-10-09" -> "9 Oct"
+    function shortDate(isoDate) {
+      const date = new Date(isoDate + "T12:00:00");
+      return isNaN(date) ? isoDate : date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    }
+
+    function plural(count, word) { return count + " " + word + (count === 1 ? "" : "s"); }
+
+    // Apply a change through the store, then redraw. Returns the store's answer.
+    function apply(result, message) {
+      if (result.ok) {
+        nursery = result.nursery;
+        draw();
+        if (message) toast(message);
+      }
+      return result;
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. Draw the page from the nursery.
+    // -----------------------------------------------------------------------
+    function draw() {
+      drawNurseryLine();
+      drawFreshness();
+      drawListings();
+    }
+
+    function drawNurseryLine() {
+      const place = nursery.city ? nursery.city + ", " + nursery.state : "no city yet";
+      $("nursery-line").textContent = nursery.name + " · " + place + ".";
+      $("buyer-view").href = "directory.html?q=" + encodeURIComponent(nursery.name);
+      $("buyer-view").hidden = !nursery.plants.length;
+
+      // No city: open the details form and hold back adding listings.
+      const needsCity = !nursery.city;
+      if (needsCity) openNurseryForm();
+      $("nursery-needed").hidden = !needsCity;
+      $("nursery-cancel").hidden = needsCity;
+      $("add-listing").disabled = needsCity;
+    }
+
+    function drawFreshness() {
+      const plants = nursery.plants;
+      const fresh = plants.filter(function (plant) { return daysSince(plant.updated) <= FRESH_DAYS; }).length;
+      const oldest = plants.reduce(function (most, plant) { return Math.max(most, daysSince(plant.updated)); }, 0);
+      const allFresh = plants.length > 0 && fresh === plants.length;
+
+      $("fresh-dot").className = "shrink-0 w-2.5 h-2.5 rounded-full " + (allFresh ? TIER_STYLE.fresh.dot : fresh ? TIER_STYLE.recent.dot : TIER_STYLE.stale.dot);
+      $("confirm-all").disabled = !plants.length;
+
+      if (!plants.length) {
+        $("fresh-headline").textContent = "No listings yet";
+        $("fresh-detail").textContent = "Add your first listing below. Buyers see how recently each one was confirmed, and the freshest come first.";
+      } else if (allFresh) {
+        $("fresh-headline").textContent = plants.length === 1 ? "Your listing is confirmed this week" : "All " + plants.length + " listings confirmed this week";
+        $("fresh-detail").textContent = "Buyers see the freshest listings first. Confirm again within " + FRESH_DAYS + " days to stay there.";
+      } else {
+        $("fresh-headline").textContent = fresh + " of " + plural(plants.length, "listing") + " confirmed this week";
+        $("fresh-detail").textContent = "The oldest was " + agoLong(oldest).toLowerCase() + ". Buyers see the freshest listings first, so older ones sink.";
+      }
+    }
+
+    // One listing, as a row: the plant, quantity and price you can change
+    // in place, how fresh it is, and what you can do with it.
+    function rowHtml(plant) {
+      const days = daysSince(plant.updated);
+      const style = TIER_STYLE[freshnessTier(days)];
+      const small = [plant.container, specText(plant), (plant.grades || []).join(", ")].filter(Boolean).join(" · ");
+      const photos = plant.photos ? " · " + plural(plant.photos, "photo") : "";
+      const id = escapeHtml(plant.id);
+
+      return (
+        '<article class="inventory-row" data-id="' + id + '">' +
+          '<div class="min-w-0">' +
+            '<p class="font-medium">' + escapeHtml(plant.common) + "</p>" +
+            (plant.botanical ? '<p class="italic text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(plant.botanical) + "</p>" : "") +
+            '<p class="mt-0.5 text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(small + photos) + "</p>" +
+            (plant.quantity === 0 ? '<p class="mt-1 text-[13px] font-medium text-clay-700 dark:text-clay-300">None left: hidden from buyers until the quantity is above zero.</p>' : "") +
+          "</div>" +
+
+          '<label class="inventory-field">' +
+            '<span class="inventory-field-label">Qty</span>' +
+            '<input class="auth-input inventory-input" type="number" min="0" step="1" inputmode="numeric" ' +
+                   'data-quick="quantity" value="' + plant.quantity + '" aria-label="Quantity of ' + escapeHtml(plant.common) + '">' +
+          "</label>" +
+
+          '<label class="inventory-field">' +
+            '<span class="inventory-field-label">Price $</span>' +
+            '<input class="auth-input inventory-input" type="number" min="0" step="0.01" inputmode="decimal" ' +
+                   'data-quick="price" value="' + plant.price.toFixed(2) + '" aria-label="Price of ' + escapeHtml(plant.common) + '">' +
+          "</label>" +
+
+          '<p class="inventory-fresh ' + style.text + '" title="' + escapeHtml(plant.updated || "no date") + '">' +
+            '<span class="w-2 h-2 rounded-full ' + style.dot + '"></span>' + agoLong(days) +
+          "</p>" +
+
+          '<div class="inventory-actions">' +
+            '<button type="button" class="row-button row-button-main" data-do="confirm"' + (days === 0 ? " disabled" : "") + ">Still accurate</button>" +
+            '<button type="button" class="row-button" data-do="edit">Edit</button>' +
+            '<button type="button" class="row-button" data-do="remove">Remove</button>' +
+          "</div>" +
+
+          // Takes the place of the buttons when "Remove" is pressed.
+          '<div class="inventory-confirm" hidden>' +
+            '<span class="text-sm text-clay-700 dark:text-clay-300">Remove this listing?</span>' +
+            '<button type="button" class="row-button row-button-danger" data-do="remove-yes">Yes, remove</button>' +
+            '<button type="button" class="row-button" data-do="remove-no">Keep</button>' +
+          "</div>" +
+
+          '<p class="inventory-row-error auth-error" role="alert" hidden></p>' +
+        "</article>"
+      );
+    }
+
+    function drawListings() {
+      const plants = nursery.plants;
+      $("list-title").textContent = plural(plants.length, "listing");
+      $("listings").innerHTML = plants.length
+        ? plants.map(rowHtml).join("")
+        : '<p class="auth-card text-sm text-ink-700 dark:text-stone-300">Nothing listed yet. Press "Add a listing" to put your first plant in front of buyers.</p>';
+    }
+
+    function findPlant(id) {
+      return nursery.plants.find(function (plant) { return plant.id === id; });
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. Nursery details.
+    // -----------------------------------------------------------------------
+    function openNurseryForm() {
+      $("nursery-name").value = nursery.name;
+      $("nursery-city").value = nursery.city;
+      $("nursery-specialties").value = (nursery.specialties || []).join(", ");
+      $("nursery-error").hidden = true;
+      $("nursery-card").hidden = false;
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. The add / edit form.
+    // -----------------------------------------------------------------------
+    let editingId = null;      // the listing being edited, or null when adding
+    let formPhotos = null;     // pictures in the form; null = left untouched
+
+    function drawFormPhotos() {
+      const list = formPhotos || [];
+      $("photo-list").innerHTML = list.map(function (photo, index) {
+        return (
+          '<figure class="photo-thumb">' +
+            '<img src="' + photo.src + '" alt="Photo ' + (index + 1) + '">' +
+            '<figcaption>added ' + escapeHtml(shortDate(photo.added)) + "</figcaption>" +
+            '<button type="button" data-photo="' + index + '" aria-label="Remove photo ' + (index + 1) + '">&times;</button>' +
+          "</figure>"
+        );
+      }).join("");
+      $("photo-add").hidden = list.length >= MAX_PHOTOS;
+    }
+
+    function openListingForm(plant) {
+      editingId = plant ? plant.id : null;
+      formPhotos = plant && plant.photoList ? plant.photoList.slice() : null;
+
+      $("listing-title").textContent = plant ? "Edit " + plant.common : "Add a listing";
+      $("f-common").value = plant ? plant.common : "";
+      $("f-botanical").value = plant ? plant.botanical || "" : "";
+      $("f-container").value = plant ? plant.container : "";
+      $("f-quantity").value = plant ? plant.quantity : "";
+      $("f-price").value = plant ? plant.price.toFixed(2) : "";
+      SPECS.forEach(function (spec) {
+        $("f-" + spec.key).value = plant && plant[spec.key] !== undefined ? plant[spec.key] : "";
+      });
+      document.querySelectorAll("#f-grades input").forEach(function (box) {
+        box.checked = !!plant && (plant.grades || []).includes(box.value);
+      });
+
+      // A sample listing can claim photos without any pictures behind it.
+      const samplePhotos = plant && !plant.photoList && plant.photos ? plant.photos : 0;
+      $("sample-photo-note").hidden = !samplePhotos;
+      $("sample-photo-note").textContent = samplePhotos
+        ? "This sample listing counts " + plural(samplePhotos, "photo") + " with no pictures stored. Adding your own replaces that count."
+        : "";
+
+      drawFormPhotos();
+      $("listing-error").hidden = true;
+      $("listing-card").hidden = false;
+      $("listing-card").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("f-common").focus({ preventScroll: true });
+    }
+
+    function closeListingForm() {
+      $("listing-card").hidden = true;
+      editingId = null;
+      formPhotos = null;
+    }
+
+    // Shrink a chosen picture before keeping it: the browser's storage is
+    // small, and a thumbnail is all this page shows.
+    function shrinkPhoto(file) {
+      return new Promise(function (resolve) {
+        const image = new Image();
+        image.onload = function () {
+          const scale = Math.min(1, 320 / Math.max(image.width, image.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(image.width * scale);
+          canvas.height = Math.round(image.height * scale);
+          canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(image.src);
+          // The date is when it was added here, never when it was taken.
+          resolve({ src: canvas.toDataURL("image/jpeg", 0.7), added: PH.today() });
+        };
+        image.onerror = function () { resolve(null); };
+        image.src = URL.createObjectURL(file);
+      });
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. Wire everything up (growers only).
+    // -----------------------------------------------------------------------
+    if (nursery) {
+      // Fill the pick list and the tick boxes from the shared vocabulary.
+      $("f-container").innerHTML = '<option value="">Choose…</option>' + CONTAINERS.map(function (name) {
+        return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + "</option>";
+      }).join("");
+      $("f-grades").innerHTML = GRADES.map(function (grade) {
+        return '<label class="grade-tick"><input type="checkbox" value="' + escapeHtml(grade) + '"><span>' + escapeHtml(grade) + "</span></label>";
+      }).join("");
+
+      draw();
+
+      // ---- Nursery details ----
+      $("nursery-edit").addEventListener("click", openNurseryForm);
+      $("nursery-cancel").addEventListener("click", function () { $("nursery-card").hidden = true; });
+      $("nursery-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+        const result = PH.saveNursery({
+          name: $("nursery-name").value,
+          city: $("nursery-city").value,
+          specialties: $("nursery-specialties").value,
+        });
+        if (!result.ok) {
+          showError($("nursery-error"), result.error);
+          if (result.field) $(result.field).focus();
+          return;
+        }
+        $("nursery-card").hidden = true;
+        apply(result, "Nursery details saved.");
+      });
+
+      // ---- One tap for everything ----
+      $("confirm-all").addEventListener("click", function () {
+        apply(PH.confirmAll(), "Everything confirmed today.");
+      });
+
+      // ---- Add / edit form ----
+      $("add-listing").addEventListener("click", function () { openListingForm(null); });
+      $("listing-cancel").addEventListener("click", closeListingForm);
+
+      $("f-photos").addEventListener("change", async function (event) {
+        const room = MAX_PHOTOS - (formPhotos || []).length;
+        const files = Array.from(event.target.files).slice(0, room);
+        const added = (await Promise.all(files.map(shrinkPhoto))).filter(Boolean);
+        formPhotos = (formPhotos || []).concat(added);
+        event.target.value = "";
+        drawFormPhotos();
+      });
+
+      $("photo-list").addEventListener("click", function (event) {
+        const button = event.target.closest("[data-photo]");
+        if (!button) return;
+        formPhotos.splice(Number(button.dataset.photo), 1);
+        drawFormPhotos();
+      });
+
+      $("listing-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+        const details = {
+          id: editingId,
+          common: $("f-common").value,
+          botanical: $("f-botanical").value,
+          container: $("f-container").value,
+          quantity: $("f-quantity").value,
+          price: $("f-price").value,
+          grades: Array.from(document.querySelectorAll("#f-grades input:checked")).map(function (box) { return box.value; }),
+          photoList: formPhotos,
+        };
+        SPECS.forEach(function (spec) { details[spec.key] = $("f-" + spec.key).value; });
+
+        const wasEditing = !!editingId;
+        const result = PH.saveListing(details);
+        if (!result.ok) {
+          showError($("listing-error"), result.error);
+          if (result.field) $("f-" + result.field).focus();
+          return;
+        }
+        closeListingForm();
+        apply(result, wasEditing ? "Listing saved and confirmed today." : "Listing added. Buyers can see it now.");
+      });
+
+      // ---- Buttons on a row ----
+      $("listings").addEventListener("click", function (event) {
+        const button = event.target.closest("[data-do]");
+        if (!button) return;
+        const row = button.closest(".inventory-row");
+        const id = row.dataset.id;
+        const action = button.dataset.do;
+
+        if (action === "confirm") apply(PH.confirmListing(id), "Confirmed today.");
+        if (action === "edit") openListingForm(findPlant(id));
+        if (action === "remove" || action === "remove-no") {
+          row.querySelector(".inventory-actions").hidden = action === "remove";
+          row.querySelector(".inventory-confirm").hidden = action !== "remove";
+        }
+        if (action === "remove-yes") {
+          if (editingId === id) closeListingForm();
+          apply(PH.removeListing(id), "Listing removed.");
+        }
+      });
+
+      // ---- Quantity and price, changed right in the row ----
+      // Fires when the box is left or Enter is pressed. A bad number is
+      // refused, said so on the row, and the old value put back.
+      $("listings").addEventListener("change", function (event) {
+        const box = event.target.closest("[data-quick]");
+        if (!box) return;
+        const row = box.closest(".inventory-row");
+        const plant = findPlant(row.dataset.id);
+
+        const details = Object.assign({}, plant);
+        details[box.dataset.quick] = box.value;
+
+        const result = PH.saveListing(details);
+        if (!result.ok) {
+          box.value = plant[box.dataset.quick];
+          showError(row.querySelector(".inventory-row-error"), result.error);
+          return;
+        }
+        apply(result, (box.dataset.quick === "price" ? "Price" : "Quantity") + " saved and confirmed today.");
+      });
+
+      // Enter in a row's box saves it, like leaving the box does.
+      $("listings").addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && event.target.closest("[data-quick]")) event.target.blur();
+      });
+    }
+  </script>
+</body>
+</html>

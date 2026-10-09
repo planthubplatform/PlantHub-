@@ -64,7 +64,9 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 |---|---|
 | `index.html` | Front page: Sign in, the PlantHub wordmark, search, five round section links. |
 | `directory.html` + `app.js` + `data/nurseries.js` | The plant directory: the trade listing table that used to be the whole site. Light header like the front page (logo home, search, Sign in). Both the front-page search and the "Plant Directory" circle land here; it reads `?q=`. |
-| `store.js` | The pretend back end. Keeps mock accounts in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Every page that has a header loads it. |
+| `shared.js` | What every page showing a listing needs: the freshness date helpers, price and measurement text, and the trade's vocabulary (`CONTAINERS`, `SPECS`, `GRADES`). Load it before `app.js`. |
+| `store.js` | The pretend back end. Keeps mock accounts and growers' listing changes in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Pages read nurseries through `PH.nurseries()`, never `NURSERIES` directly. |
+| `inventory.html` | A grower's own listings: one-tap "still accurate" (all, or one row), quantity and price edited in the row, add / edit / remove, photos, and the nursery's name and city. Growers only. |
 | `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
 | `account.html` | The signed-in person's page: details, password, sign out, delete. Sends signed-out visitors to sign in first. |
@@ -85,6 +87,7 @@ Rules that are easy to break:
 - **6 Oct 2026 — Tax exempt landscapers (PARKED).** `signup.html` lets landscapers tick "Are you tax exempt?", attach a certificate, and enter its number and expiration date (renewed yearly). This was built ahead of the sales-tax decision. **Do not extend it** until a Florida CPA signs off.
 - **8 Oct 2026 — Build every page as a working mock.** No real data, clients or users. Each page is fully clickable against pretend data kept in the browser by `store.js`; no server, no real payments, no real email. One page at a time, reviewed by the owner before the next. Pages that need an account send signed-out visitors to `signin.html?next=<page>`.
 - **8 Oct 2026 — Sample nurseries are named "Sample Grower 01 (Palms)" and so on**, so none can pass for a real business. Demo accounts (one per account type) are defined at the top of `store.js`.
+- **8 Oct 2026 — Touching a listing confirms it.** Any save on `inventory.html` (a new quantity, a new price, a full edit) stamps the listing with today's date, the same as pressing "still accurate". A listing at quantity 0 stays in the grower's inventory but is hidden from the directory.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
 ### Operating model (locked 6 Oct 2026, from the operating-model session)
@@ -138,7 +141,7 @@ Four separate facets, in the trade's own words. **A value never appears in two f
 3. **Grade and features** — tick boxes: Florida Fancy, Grade #1, Grade #2, Specimen, Single Leader, Standard, Balled and Burlapped, Staked, Multi, Seedling.
 4. **Photos** — yes/no. Listings with photos rank above those without; in the directory that means "among equally fresh listings", so freshness still leads. Each photo is timestamped on upload; label it "added", never "taken".
 
-The lists live at the top of section 4 in `app.js` (`CONTAINERS`, `SPECS`, `GRADES`). The data format is described at the top of `data/nurseries.js`.
+The lists live in section 3 of `shared.js` (`CONTAINERS`, `SPECS`, `GRADES`). The data format is described at the top of `data/nurseries.js`.
 - What each account type can do beyond that is **not decided**. Review it page by page.
 
 ## Open questions

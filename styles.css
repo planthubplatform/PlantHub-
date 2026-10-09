@@ -520,3 +520,156 @@ table {
 @media (max-width: 639px) {
   .corner-text { display: none; }
 }
+
+/* ---------------------------------------------------------------------------
+   Grower inventory (inventory.html)
+   Each listing is a row on a wide screen and a small card on a phone.
+--------------------------------------------------------------------------- */
+.inventory-list {
+  background: #fff;
+  border: 1px solid #d6e0db;          /* ink-100 */
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.inventory-list > .auth-card { border: 0; }
+
+.inventory-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+.inventory-row + .inventory-row { border-top: 1px solid #d6e0db; }
+.inventory-row > :first-child,
+.inventory-fresh,
+.inventory-actions,
+.inventory-confirm,
+.inventory-row-error { grid-column: 1 / -1; }
+
+/* Quantity and price: a small label over a box you can type in. */
+.inventory-field { display: block; }
+.inventory-field-label {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #4a6b5a;
+}
+.inventory-input { margin-top: 0.25rem; padding: 0.5rem 0.625rem; font-variant-numeric: tabular-nums; }
+
+.inventory-fresh { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; }
+
+.inventory-actions,
+.inventory-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.inventory-actions[hidden],
+.inventory-confirm[hidden],
+#photo-add[hidden] { display: none; }
+
+/* On a wide screen the same pieces sit in one line. */
+@media (min-width: 1024px) {
+  .inventory-row { grid-template-columns: minmax(0, 1fr) 6.5rem 7.5rem 11rem 17rem; }
+  .inventory-row > :first-child,
+  .inventory-fresh,
+  .inventory-actions,
+  .inventory-confirm { grid-column: auto; }
+  .inventory-actions,
+  .inventory-confirm { justify-content: flex-end; }
+  /* The remove question takes the buttons' place, in the last column. */
+  .inventory-confirm { grid-column: 5; }
+}
+
+/* The small buttons on a row. */
+.row-button {
+  border: 1px solid #bccdc4;          /* ink-200 */
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: border-color 150ms, color 150ms, background 150ms;
+}
+.row-button:hover { border-color: #c2703c; color: #8a4a22; }
+.row-button:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; }
+.row-button:disabled { opacity: 0.45; cursor: default; border-color: #d6e0db; color: inherit; }
+.row-button-main { background: #0b1710; border-color: #0b1710; color: #faf6ef; }
+.row-button-main:hover { background: #1b3328; border-color: #1b3328; color: #faf6ef; }
+.row-button-main:disabled { background: transparent; color: inherit; }
+.row-button-danger { background: #8a4a22; border-color: #8a4a22; color: #faf6ef; }
+.row-button-danger:hover { background: #a95c2d; color: #faf6ef; }
+
+.auth-button:disabled { opacity: 0.45; cursor: default; }
+
+/* Grade tick boxes drawn as pills: the whole pill is the target. */
+.grade-tick { cursor: pointer; }
+.grade-tick input { position: absolute; opacity: 0; width: 0; height: 0; }
+.grade-tick span {
+  display: inline-block;
+  border: 1px solid #bccdc4;
+  border-radius: 9999px;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  transition: border-color 150ms, background 150ms;
+}
+.grade-tick:hover span { border-color: #c2703c; }
+.grade-tick input:checked + span { background: #0b1710; border-color: #0b1710; color: #faf6ef; }
+.grade-tick input:focus-visible + span { box-shadow: 0 0 0 2px #c2703c; }
+
+/* A photo in the listing form, with the day it was added and a remove X. */
+.photo-thumb { position: relative; width: 6rem; }
+.photo-thumb img { width: 6rem; height: 6rem; object-fit: cover; border-radius: 0.5rem; border: 1px solid #d6e0db; }
+.photo-thumb figcaption { margin-top: 0.25rem; font-size: 0.6875rem; color: #4a6b5a; text-align: center; }
+.photo-thumb button {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  background: #0b1710;
+  color: #faf6ef;
+  line-height: 1;
+}
+.photo-thumb button:hover { background: #8a4a22; }
+
+/* "Saved." at the bottom of the screen for a moment. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 2rem);
+  background: #0b1710;
+  color: #faf6ef;
+  border-radius: 9999px;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 6px 20px rgba(11, 23, 16, 0.25);
+  z-index: 20;
+}
+.toast[hidden] { display: none; }
+
+@media (prefers-color-scheme: dark) {
+  .inventory-list { background: #122117; border-color: #24402f; }
+  .inventory-row + .inventory-row { border-top-color: #24402f; }
+  .inventory-field-label { color: #bccdc4; }
+  .row-button { border-color: #24402f; }
+  .row-button:hover { border-color: #c2703c; color: #e0a877; }
+  .row-button:disabled { border-color: #24402f; }
+  .row-button-main { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
+  .row-button-main:hover { background: #f2e9dc; border-color: #f2e9dc; color: #0b1710; }
+  .row-button-main:disabled { background: transparent; border-color: #24402f; color: inherit; }
+  .row-button-danger { background: #c2703c; border-color: #c2703c; color: #0b1710; }
+  .row-button-danger:hover { background: #e0a877; color: #0b1710; }
+  .grade-tick span { border-color: #24402f; }
+  .grade-tick input:checked + span { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
+  .photo-thumb img { border-color: #24402f; }
+  .photo-thumb figcaption { color: #bccdc4; }
+  .photo-thumb button { background: #faf6ef; color: #0b1710; }
+  .toast { background: #faf6ef; color: #0b1710; }
+}
+
+/* A hidden card stays hidden even when a layout class sets its display. */
+.auth-card[hidden] { display: none; }

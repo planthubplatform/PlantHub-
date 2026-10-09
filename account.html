@@ -50,9 +50,15 @@
       </section>
 
       <!-- ===== Where to go ================================================ -->
+      <!-- Growers only: the way to their listings. -->
+      <section id="inventory-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-ink-700 dark:text-stone-300">Keep your listings current: add plants, change counts and prices, confirm what's still accurate.</p>
+        <a href="inventory.html" class="auth-button account-button-small">Manage your inventory</a>
+      </section>
+
       <section class="auth-card flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-ink-700 dark:text-stone-300">See what growers have, with prices and how fresh each listing is.</p>
-        <a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>
+        <a href="directory.html" id="directory-link" class="auth-button account-button-small">Open the plant directory</a>
       </section>
 
       <!-- ===== Your details ============================================== -->
@@ -187,6 +193,12 @@
       document.getElementById("business-field").hidden = user.type === "personal";
       document.getElementById("business-label").textContent =
         user.type === "grower" ? "Nursery name" : user.type === "transporter" ? "Company name" : "Business name";
+
+      // Growers get their inventory as the main button; the directory
+      // button steps back to an outline so only one is filled in.
+      const grower = user.type === "grower";
+      document.getElementById("inventory-link").hidden = !grower;
+      document.getElementById("directory-link").classList.toggle("auth-button-outline", grower);
 
       const tax = user.taxExempt;
       document.getElementById("tax-card").hidden = !tax;
