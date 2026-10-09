@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <!--
-  signin.html — log in, and below it, create an account.
+  signin.html — sign in, reset a forgotten password, or try a demo account.
 
-  PROTOTYPE ONLY. There is no account system yet: neither form sends anything
-  anywhere. Pressing a button just shows a note saying accounts aren't live.
-  When real accounts arrive (see the roadmap in README.md), these forms get
-  wired to that service and the note goes away.
+  PROTOTYPE ONLY. Accounts are pretend: store.js keeps them in this browser
+  and nothing is sent anywhere. The page says so, and warns against typing a
+  real password.
+
+  Two views share the page. The address decides which shows:
+    signin.html           the sign-in form
+    signin.html#forgot    set a new password
 
   Creating an account happens on signup.html, which asks who you are one
   step at a time.
@@ -34,55 +37,165 @@
   <main class="page flex-1 flex flex-col items-center py-8">
     <div class="w-full max-w-md">
 
-      <!-- ===== Log in =================================================== -->
-      <section class="auth-card" aria-labelledby="login-title">
-        <h1 id="login-title" class="font-display font-semibold text-3xl tracking-tight">Sign in</h1>
-        <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">Welcome back.</p>
+      <!-- ===== Sign in ================================================== -->
+      <div id="view-signin">
+        <section class="auth-card" aria-labelledby="login-title">
+          <h1 id="login-title" class="font-display font-semibold text-3xl tracking-tight">Sign in</h1>
+          <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">Welcome back.</p>
 
-        <form id="login-form" class="mt-6 space-y-4" novalidate>
-          <div>
-            <label class="auth-label" for="login-email">Email</label>
-            <input class="auth-input" id="login-email" type="email" autocomplete="email" required>
-          </div>
-          <div>
-            <div class="flex items-baseline justify-between">
-              <label class="auth-label" for="login-password">Password</label>
-              <a href="#" class="auth-link text-[13px]" data-not-live>Forgot password?</a>
+          <!-- Filled in after a password reset or when a page sent you here. -->
+          <p id="login-note" role="status" hidden class="auth-note mt-4"></p>
+
+          <form id="login-form" class="mt-6 space-y-4" novalidate>
+            <div>
+              <label class="auth-label" for="login-email">Email</label>
+              <input class="auth-input" id="login-email" type="email" autocomplete="email">
             </div>
-            <input class="auth-input" id="login-password" type="password" autocomplete="current-password" required>
-          </div>
-          <button type="submit" class="auth-button">Sign in</button>
-        </form>
-      </section>
+            <div>
+              <div class="flex items-baseline justify-between">
+                <label class="auth-label" for="login-password">Password</label>
+                <a href="#forgot" class="auth-link text-[13px]">Forgot password?</a>
+              </div>
+              <input class="auth-input" id="login-password" type="password" autocomplete="current-password">
+            </div>
+            <p id="login-error" role="alert" hidden class="auth-error"></p>
+            <button type="submit" class="auth-button">Sign in</button>
+          </form>
+        </section>
 
-      <!-- ===== Create an account ========================================
-           Just a way in. The questions (who are you, which kind) are on
-           signup.html, one step at a time. -->
-      <section class="auth-card mt-6 text-center" aria-labelledby="create-title">
-        <h2 id="create-title" class="font-display font-semibold text-2xl tracking-tight">New to PlantHub?</h2>
-        <a href="signup.html" class="auth-button auth-button-outline mt-4 inline-block">Create an account</a>
-      </section>
+        <!-- ===== Demo accounts ==========================================
+             One invented account of each kind, so the site can be explored
+             without signing up. The list comes from store.js. -->
+        <section class="auth-card mt-6" aria-labelledby="demo-title">
+          <h2 id="demo-title" class="font-display font-semibold text-2xl tracking-tight">Just looking?</h2>
+          <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">Sign in as a demo account with one click.</p>
+          <div id="demo-buttons" class="mt-4 grid grid-cols-2 gap-2"></div>
+        </section>
 
-      <!-- Shown when the form is sent, since nothing is wired up yet. -->
-      <p id="not-live" role="status" hidden
-         class="mt-6 rounded-lg border border-clay-300 bg-clay-50 dark:bg-ink-900 dark:border-clay-700 px-4 py-3 text-sm text-clay-700 dark:text-clay-300">
-        Accounts aren't live yet. This page is a preview, and nothing you type here is saved or sent.
+        <!-- ===== Create an account ====================================== -->
+        <section class="auth-card mt-6 text-center" aria-labelledby="create-title">
+          <h2 id="create-title" class="font-display font-semibold text-2xl tracking-tight">New to PlantHub?</h2>
+          <a href="signup.html" id="create-link" class="auth-button auth-button-outline mt-4 inline-block">Create an account</a>
+        </section>
+      </div>
+
+      <!-- ===== Forgot password ==========================================
+           A real site emails a link. The prototype has no email, so the new
+           password is set right here. -->
+      <div id="view-forgot" hidden>
+        <section class="auth-card" aria-labelledby="forgot-title">
+          <h1 id="forgot-title" class="font-display font-semibold text-3xl tracking-tight">Reset your password</h1>
+          <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">
+            The real site will email you a link. This preview sends no email, so choose the new password here.
+          </p>
+
+          <form id="forgot-form" class="mt-6 space-y-4" novalidate>
+            <div>
+              <label class="auth-label" for="forgot-email">Email</label>
+              <input class="auth-input" id="forgot-email" type="email" autocomplete="email">
+            </div>
+            <div>
+              <label class="auth-label" for="forgot-password">New password</label>
+              <input class="auth-input" id="forgot-password" type="password" autocomplete="new-password">
+              <p class="auth-hint">At least 8 characters.</p>
+            </div>
+            <p id="forgot-error" role="alert" hidden class="auth-error"></p>
+            <button type="submit" class="auth-button">Set new password</button>
+          </form>
+        </section>
+        <div class="text-center"><a href="#" class="step-back">Back to sign in</a></div>
+      </div>
+
+      <p class="auth-note mt-6">
+        Preview: accounts are saved only in this browser and are not real. Don't use a password you use anywhere else.
       </p>
     </div>
   </main>
 
+  <script src="store.js"></script>
   <script>
-    // No account system yet: stop the form and "forgot" link from going anywhere,
-    // clear the password boxes, and say so.
-    const notLive = document.getElementById("not-live");
-    function showNotLive(event) {
-      event.preventDefault();
-      document.querySelectorAll('input[type="password"]').forEach(function (box) { box.value = ""; });
-      notLive.hidden = false;
-      notLive.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const loginNote = document.getElementById("login-note");
+    const loginError = document.getElementById("login-error");
+    const forgotError = document.getElementById("forgot-error");
+
+    // Already signed in? There is nothing to do here.
+    if (PH.currentUser()) location.replace(PH.nextPage("account.html"));
+
+    // Keep the "come back here afterwards" page when moving to sign-up.
+    if (location.search) document.getElementById("create-link").href = "signup.html" + location.search;
+
+    function showError(box, message) {
+      box.textContent = message;
+      box.hidden = false;
     }
-    document.querySelectorAll("form").forEach(function (form) { form.addEventListener("submit", showNotLive); });
-    document.querySelectorAll("[data-not-live]").forEach(function (link) { link.addEventListener("click", showNotLive); });
+
+    // ---- Which view: sign in, or forgot password -------------------------
+    function showView() {
+      const forgot = location.hash === "#forgot";
+      document.getElementById("view-signin").hidden = forgot;
+      document.getElementById("view-forgot").hidden = !forgot;
+      loginError.hidden = true;
+      forgotError.hidden = true;
+      if (forgot) document.getElementById("forgot-email").value = document.getElementById("login-email").value;
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener("hashchange", showView);
+    showView();
+
+    // A page that needs an account sends people here with ?next=that-page.
+    if (new URLSearchParams(location.search).get("next")) {
+      loginNote.textContent = "Sign in to continue.";
+      loginNote.hidden = false;
+    }
+
+    // ---- Sign in ----------------------------------------------------------
+    document.getElementById("login-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+
+      if (!email.trim() || !password) {
+        showError(loginError, "Enter your email and password.");
+        return;
+      }
+      const result = PH.signIn(email, password);
+      if (!result.ok) {
+        document.getElementById("login-password").value = "";
+        showError(loginError, result.error);
+        return;
+      }
+      location.href = PH.nextPage("account.html");
+    });
+
+    // ---- Demo accounts ----------------------------------------------------
+    const demoButtons = document.getElementById("demo-buttons");
+    PH.DEMO_USERS.forEach(function (demo) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "demo-button";
+      button.textContent = PH.ACCOUNT_TYPES[demo.type].name;
+      button.addEventListener("click", function () {
+        PH.signInDemo(demo.type);
+        location.href = PH.nextPage("account.html");
+      });
+      demoButtons.appendChild(button);
+    });
+
+    // ---- Forgot password --------------------------------------------------
+    document.getElementById("forgot-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const email = document.getElementById("forgot-email").value;
+      const result = PH.resetPassword(email, document.getElementById("forgot-password").value);
+      if (!result.ok) {
+        showError(forgotError, result.error);
+        return;
+      }
+      document.getElementById("forgot-password").value = "";
+      document.getElementById("login-email").value = email.trim();
+      location.hash = "";
+      loginNote.textContent = "Password changed. Sign in with the new one.";
+      loginNote.hidden = false;
+    });
   </script>
 </body>
 </html>

@@ -553,14 +553,22 @@ function rowHtml(listing, words, index) {
 
   // Hidden until the row is clicked: the small print, and the way to order.
   // Prices are public, but ordering and contacting a grower need an account,
-  // so the phone and email stay out of the page until sign-in exists.
+  // so the phone and email only reach the page for someone signed in.
+  const contact = PH.currentUser()
+    ? '<span class="w-full sm:w-auto py-1 sm:py-0 font-medium text-ink-900 dark:text-stone-100">' +
+        "Contact this grower: " +
+        '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' + escapeHtml(n.phone) + "</a> · " +
+        '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' + escapeHtml(n.email) + "</a>" +
+      "</span>"
+    : '<a class="w-full sm:w-auto py-1 sm:py-0 font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html?next=directory.html">' +
+        "Sign in to order or contact this grower</a>";
+
   const detail =
     '<tr class="detail-row hidden" id="detail-' + index + '">' +
       '<td colspan="8" class="px-3 pb-3 pt-0">' +
         '<div class="rounded-md bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
              'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-1.5">' +
-          '<a class="w-full sm:w-auto py-1 sm:py-0 font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html">' +
-            "Sign in to order or contact this grower</a>" +
+          contact +
           '<span class="text-ink-400 dark:text-stone-400">' + MIN_ORDER + " minimum order · pay by bank transfer (ACH)</span>" +
           '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
           '<span class="ml-auto ' + style.text + '">' + agoLong(listing.days) + "</span>" +

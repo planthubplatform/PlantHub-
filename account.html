@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<!--
+  account.html — the signed-in person's own page.
+
+  What it holds today: who you are, your contact details, your password,
+  and the ways out (sign out, delete the account). Each later part of the
+  site (a grower's inventory, a buyer's orders, a carrier's rates) gets its
+  own page and a link from here when it is built.
+
+  PROTOTYPE ONLY. Everything is saved by store.js in this browser. Nobody
+  signed in? The page sends them to signin.html and comes back afterwards.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your account — PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-2xl space-y-6">
+
+      <!-- Shown once, straight after signing up. -->
+      <p id="welcome" role="status" hidden class="auth-note"></p>
+
+      <!-- ===== Who you are =============================================== -->
+      <section class="flex items-center gap-4">
+        <span id="big-initial" class="account-initial" aria-hidden="true"></span>
+        <div class="min-w-0">
+          <h1 id="account-name" class="font-display font-semibold text-3xl tracking-tight truncate"></h1>
+          <p id="account-kind" class="mt-0.5 text-sm text-ink-400 dark:text-stone-400"></p>
+        </div>
+      </section>
+
+      <!-- ===== Where to go ================================================ -->
+      <section class="auth-card flex flex-wrap items-center justify-between gap-3">
+        <p class="text-sm text-ink-700 dark:text-stone-300">See what growers have, with prices and how fresh each listing is.</p>
+        <a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>
+      </section>
+
+      <!-- ===== Your details ============================================== -->
+      <section class="auth-card" aria-labelledby="details-title">
+        <h2 id="details-title" class="font-display font-semibold text-xl tracking-tight">Your details</h2>
+        <form id="profile-form" class="mt-5 space-y-4" novalidate>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="name">Name</label>
+              <input class="auth-input" id="name" type="text" autocomplete="name">
+            </div>
+            <div>
+              <label class="auth-label" for="email">Email</label>
+              <input class="auth-input" id="email" type="email" autocomplete="email">
+            </div>
+            <div>
+              <label class="auth-label" for="phone">Phone <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+              <input class="auth-input" id="phone" type="tel" autocomplete="tel">
+            </div>
+            <!-- Not asked of Personal accounts: they have no business. -->
+            <div id="business-field">
+              <label class="auth-label" for="business"><span id="business-label">Business name</span> <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+              <input class="auth-input" id="business" type="text" autocomplete="organization">
+            </div>
+          </div>
+          <p id="profile-error" role="alert" hidden class="auth-error"></p>
+          <div class="flex items-center gap-4">
+            <button type="submit" class="auth-button account-button-small">Save details</button>
+            <span id="profile-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Saved.</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== Tax exempt (landscapers who said so at sign-up) ============
+           PARKED: read-only until a Florida CPA signs off (see CLAUDE.md). -->
+      <section id="tax-card" class="auth-card" aria-labelledby="tax-title" hidden>
+        <h2 id="tax-title" class="font-display font-semibold text-xl tracking-tight">Tax exempt certificate</h2>
+        <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-3 text-sm">
+          <div><dt class="text-ink-400 dark:text-stone-400">Certificate number</dt><dd id="tax-number" class="font-medium"></dd></div>
+          <div><dt class="text-ink-400 dark:text-stone-400">Expires</dt><dd id="tax-expires" class="font-medium"></dd></div>
+          <div class="min-w-0"><dt class="text-ink-400 dark:text-stone-400">File</dt><dd id="tax-file" class="font-medium truncate"></dd></div>
+        </dl>
+        <p class="auth-hint">How PlantHub treats sales tax is not decided yet, so this is recorded and not yet used.</p>
+      </section>
+
+      <!-- ===== Password =================================================== -->
+      <section class="auth-card" aria-labelledby="password-title">
+        <h2 id="password-title" class="font-display font-semibold text-xl tracking-tight">Password</h2>
+        <form id="password-form" class="mt-5 space-y-4" novalidate>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label class="auth-label" for="old-password">Current password</label>
+              <input class="auth-input" id="old-password" type="password" autocomplete="current-password">
+            </div>
+            <div>
+              <label class="auth-label" for="new-password">New password</label>
+              <input class="auth-input" id="new-password" type="password" autocomplete="new-password">
+              <p class="auth-hint">At least 8 characters.</p>
+            </div>
+          </div>
+          <p id="password-error" role="alert" hidden class="auth-error"></p>
+          <div class="flex items-center gap-4">
+            <button type="submit" class="auth-button account-button-small">Change password</button>
+            <span id="password-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Password changed.</span>
+          </div>
+        </form>
+      </section>
+
+      <!-- ===== Ways out =================================================== -->
+      <section class="auth-card" aria-labelledby="leave-title">
+        <h2 id="leave-title" class="font-display font-semibold text-xl tracking-tight">Leaving</h2>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <button type="button" data-sign-out class="auth-button auth-button-outline account-button-small">Sign out</button>
+          <button type="button" id="delete-start" class="auth-button auth-button-outline account-button-small account-button-danger">Delete this account</button>
+        </div>
+
+        <!-- Opens when "Delete this account" is pressed: a second look
+             before something that can't be undone. -->
+        <div id="delete-confirm" hidden class="mt-4 rounded-lg border border-clay-300 dark:border-clay-700 bg-clay-50 dark:bg-ink-900 px-4 py-3">
+          <p class="text-sm text-clay-700 dark:text-clay-300">Delete this account for good? This can't be undone.</p>
+          <div class="mt-3 flex flex-wrap gap-3">
+            <button type="button" id="delete-yes" class="auth-button account-button-small account-button-danger-solid">Yes, delete it</button>
+            <button type="button" id="delete-no" class="auth-button auth-button-outline account-button-small">Keep my account</button>
+          </div>
+        </div>
+      </section>
+
+      <p class="auth-note">
+        Preview: this account is saved only in this browser and is not real.
+        <button type="button" id="reset-demo" class="auth-link">Reset the preview</button>
+        to wipe every account made here and start again with the four demo accounts.
+      </p>
+    </div>
+  </main>
+
+  <script src="store.js"></script>
+  <script>
+    let user = PH.currentUser();
+
+    // Nobody signed in: go and sign in, then come straight back.
+    if (!user) location.replace("signin.html?next=account.html");
+
+    function showError(box, message) { box.textContent = message; box.hidden = false; }
+
+    // Say "Saved." for a moment, then take it away again.
+    function flash(element) {
+      element.hidden = false;
+      clearTimeout(element.timer);
+      element.timer = setTimeout(function () { element.hidden = true; }, 2500);
+    }
+
+    // "2026-10-08" -> "8 October 2026"
+    function niceDate(isoDate) {
+      const date = new Date(isoDate + "T12:00:00");
+      return isNaN(date) ? isoDate : date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+    }
+
+    // ---- Fill the page from the account -----------------------------------
+    function draw() {
+      document.getElementById("big-initial").textContent = user.name.charAt(0).toUpperCase();
+      document.getElementById("account-name").textContent = user.name;
+      document.getElementById("account-kind").textContent =
+        user.typeName + " account (" + user.side.toLowerCase() + ") · since " + niceDate(user.created);
+
+      document.getElementById("name").value = user.name;
+      document.getElementById("email").value = user.email;
+      document.getElementById("phone").value = user.phone || "";
+      document.getElementById("business").value = user.business || "";
+
+      // The business box is worded for the kind of account, and hidden for
+      // Personal accounts.
+      document.getElementById("business-field").hidden = user.type === "personal";
+      document.getElementById("business-label").textContent =
+        user.type === "grower" ? "Nursery name" : user.type === "transporter" ? "Company name" : "Business name";
+
+      const tax = user.taxExempt;
+      document.getElementById("tax-card").hidden = !tax;
+      if (tax) {
+        document.getElementById("tax-number").textContent = tax.number;
+        document.getElementById("tax-expires").textContent = niceDate(tax.expires);
+        document.getElementById("tax-file").textContent = tax.fileName;
+      }
+    }
+
+    if (user) {
+      draw();
+
+      if (new URLSearchParams(location.search).get("welcome")) {
+        const welcome = document.getElementById("welcome");
+        welcome.textContent = "Welcome to PlantHub, " + user.name + ". Your " + user.typeName.toLowerCase() + " account is ready.";
+        welcome.hidden = false;
+        // Drop ?welcome=1 from the address so a refresh doesn't greet twice.
+        history.replaceState(null, "", "account.html");
+      }
+    }
+
+    // ---- Save details ------------------------------------------------------
+    const profileError = document.getElementById("profile-error");
+    document.getElementById("profile-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const result = PH.updateProfile({
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        phone: document.getElementById("phone").value,
+        business: document.getElementById("business").value,
+      });
+      if (!result.ok) {
+        showError(profileError, result.error);
+        return;
+      }
+      profileError.hidden = true;
+      user = result.user;
+      draw();
+      // The name in the top corner may have changed too.
+      document.dispatchEvent(new Event("planthub:account-changed"));
+      flash(document.getElementById("profile-saved"));
+    });
+
+    // ---- Change password ---------------------------------------------------
+    const passwordError = document.getElementById("password-error");
+    document.getElementById("password-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const result = PH.changePassword(
+        document.getElementById("old-password").value,
+        document.getElementById("new-password").value
+      );
+      if (!result.ok) {
+        showError(passwordError, result.error);
+        return;
+      }
+      passwordError.hidden = true;
+      event.target.reset();
+      flash(document.getElementById("password-saved"));
+    });
+
+    // ---- Delete the account, after a second look ---------------------------
+    const deleteConfirm = document.getElementById("delete-confirm");
+    document.getElementById("delete-start").addEventListener("click", function () {
+      deleteConfirm.hidden = false;
+      deleteConfirm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+    document.getElementById("delete-no").addEventListener("click", function () { deleteConfirm.hidden = true; });
+    document.getElementById("delete-yes").addEventListener("click", function () {
+      PH.deleteAccount();
+      location.href = "index.html";
+    });
+
+    // ---- Reset the preview -------------------------------------------------
+    document.getElementById("reset-demo").addEventListener("click", function () {
+      PH.resetDemo();
+      location.href = "signin.html";
+    });
+  </script>
+</body>
+</html>

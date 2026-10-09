@@ -12,8 +12,10 @@
   The step lives in the address after the # (signup.html#seller), so the
   browser's Back button walks back through the questions.
 
-  PROTOTYPE ONLY. There is no account system yet. Nothing typed or attached
-  here is saved or sent; pressing "Create account" just says so.
+  PROTOTYPE ONLY. Accounts are pretend: store.js keeps them in this browser
+  and nothing is sent anywhere. "Create account" makes one, signs you in and
+  opens your account page. An attached certificate is never stored, only its
+  file name.
 -->
 <html lang="en">
 <head>
@@ -34,7 +36,7 @@
     <a href="index.html" class="font-display font-semibold text-xl tracking-tight inline-flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
       PlantHub<span class="w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
     </a>
-    <a href="signin.html" class="text-sm auth-link">Already have an account? Sign in</a>
+    <a href="signin.html" id="signin-link" class="text-sm auth-link">Already have an account? Sign in</a>
   </header>
 
   <main class="page flex-1 flex flex-col items-center justify-center pb-16">
@@ -125,6 +127,7 @@
           <div>
             <label class="auth-label" for="password">Password</label>
             <input class="auth-input" id="password" type="password" autocomplete="new-password">
+            <p class="auth-hint">At least 8 characters.</p>
           </div>
 
           <!-- ----- Landscapers only: tax exempt -------------------------
@@ -161,22 +164,28 @@
             </div>
           </div>
 
-          <p id="form-error" role="alert" hidden class="text-sm text-clay-700 dark:text-clay-300"></p>
+          <p id="form-error" role="alert" hidden class="auth-error"></p>
 
           <button type="submit" class="auth-button">Create account</button>
         </form>
       </div>
 
-      <p id="not-live" role="status" hidden
-         class="mt-4 rounded-lg border border-clay-300 bg-clay-50 dark:bg-ink-900 dark:border-clay-700 px-4 py-3 text-sm text-clay-700 dark:text-clay-300">
-        Accounts aren't live yet. This page is a preview, and nothing you type or attach here is saved or sent.
+      <p class="auth-note mt-4 text-left">
+        Preview: accounts are saved only in this browser and are not real. Don't use a password you use anywhere else.
       </p>
 
       <div class="text-center"><a id="details-back" href="#who" class="step-back">Back</a></div>
     </section>
   </main>
 
+  <script src="store.js"></script>
   <script>
+    // Already signed in? There is nothing to do here.
+    if (PH.currentUser()) location.replace(PH.nextPage("account.html"));
+
+    // Keep the "come back here afterwards" page when moving to sign-in.
+    if (location.search) document.getElementById("signin-link").href = "signin.html" + location.search;
+
     // The four account types that end at the details form, and which
     // question to go back to from each.
     const ACCOUNT_TYPES = {
@@ -205,7 +214,6 @@
         document.getElementById("details-back").setAttribute("href", type.back);
         taxBlock.hidden = key !== "landscaper";
       }
-      document.getElementById("not-live").hidden = true;
       errorBox.hidden = true;
       window.scrollTo(0, 0);
     }
@@ -215,27 +223,46 @@
       taxDetails.hidden = !taxBox.checked;
     });
 
-    // No account system yet. Check the tax-exempt answers are complete,
-    // then say it isn't live and clear the password and the attachment.
+    // Check the answers, make the account, and open the account page.
     document.getElementById("signup-form").addEventListener("submit", function (event) {
       event.preventDefault();
 
+      function fail(message, fieldId) {
+        errorBox.textContent = message;
+        errorBox.hidden = false;
+        if (fieldId) document.getElementById(fieldId).focus();
+      }
+
+      // Tax exempt landscapers must give all three certificate answers.
+      let taxExempt = null;
       if (!taxBlock.hidden && taxBox.checked) {
+        const file = document.getElementById("tax-file").files[0];
+        const number = document.getElementById("tax-number").value.trim();
+        const expires = document.getElementById("tax-expires").value;
         const missing = [];
-        if (!document.getElementById("tax-file").files.length) missing.push("attach your certificate");
-        if (!document.getElementById("tax-number").value.trim()) missing.push("enter the certificate number");
-        if (!document.getElementById("tax-expires").value) missing.push("enter the expiration date");
+        if (!file) missing.push("attach your certificate");
+        if (!number) missing.push("enter the certificate number");
+        if (!expires) missing.push("enter the expiration date");
         if (missing.length) {
-          errorBox.textContent = "To sign up as tax exempt, please " + missing.join(", ") + ".";
-          errorBox.hidden = false;
+          fail("To sign up as tax exempt, please " + missing.join(", ") + ".");
           return;
         }
+        // The file itself is not kept anywhere, only what it was called.
+        taxExempt = { number: number, expires: expires, fileName: file.name };
       }
-      errorBox.hidden = true;
 
-      document.getElementById("password").value = "";
-      document.getElementById("tax-file").value = "";
-      document.getElementById("not-live").hidden = false;
+      const result = PH.signUp({
+        type: location.hash.slice(1),
+        name: document.getElementById("name").value,
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+        taxExempt: taxExempt,
+      });
+      if (!result.ok) {
+        fail(result.error, result.field);
+        return;
+      }
+      location.href = PH.nextPage("account.html?welcome=1");
     });
 
     window.addEventListener("hashchange", showStep);

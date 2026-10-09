@@ -412,3 +412,111 @@ table {
 
 /* When "Show listings" scrolls down to the results, leave a little room above. */
 #count { scroll-margin-top: 0.75rem; }
+
+/* ---------------------------------------------------------------------------
+   Accounts: messages on the sign-in pages, the account corner in every
+   header, and the account page (account.html).
+--------------------------------------------------------------------------- */
+
+/* Something went wrong with what was typed. */
+.auth-error { font-size: 0.875rem; font-weight: 500; color: #8a4a22; }      /* clay-700 */
+
+/* A quiet boxed note: "this is a preview", "password changed". */
+.auth-note {
+  border: 1px solid #e0a877;          /* clay-300 */
+  background: #fbf1e9;                /* clay-50 */
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #8a4a22;
+}
+.auth-note[hidden] { display: none; }
+
+/* Small grey help under a field. */
+.auth-hint { margin-top: 0.375rem; font-size: 0.8125rem; color: #4a6b5a; }  /* ink-400 */
+
+/* The one-click demo accounts on signin.html. */
+.demo-button {
+  border: 1px solid #d6e0db;
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  background: #faf6ef;
+  transition: border-color 150ms, color 150ms;
+}
+.demo-button:hover { border-color: #c2703c; color: #8a4a22; }
+.demo-button:focus-visible { outline: none; box-shadow: 0 0 0 3px #e0a877; }
+
+/* Top-right of every page: "Sign in", or your name and "Sign out". */
+.account-corner { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+
+.corner-button {
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid #bccdc4;          /* ink-200 */
+  color: #122117;
+  white-space: nowrap;
+  transition: border-color 150ms, color 150ms;
+}
+.corner-button:hover { border-color: #c2703c; color: #8a4a22; }
+.corner-button:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; }
+
+.corner-name {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.corner-name:hover .corner-text { color: #8a4a22; text-decoration: underline; }
+.corner-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 14rem; }
+
+/* The round letter that stands in for a profile picture. */
+.corner-initial,
+.account-initial {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #f2e9dc;                /* sand */
+  color: #122117;
+  font-weight: 600;
+}
+.corner-initial { width: 2rem; height: 2rem; font-size: 0.875rem; }
+.account-initial { width: 4rem; height: 4rem; font-size: 1.75rem; font-family: Fraunces, ui-serif, Georgia, serif; }
+
+/* Buttons on the account page hug their words instead of filling the row. */
+.account-button-small { width: auto; padding: 0.625rem 1.25rem; font-size: 0.875rem; text-align: center; }
+
+.account-button-danger { color: #8a4a22; border-color: #e0a877; }
+.account-button-danger:hover { background: #fbf1e9; }
+.account-button-danger-solid { background: #8a4a22; color: #faf6ef; }
+.account-button-danger-solid:hover { background: #a95c2d; }
+
+@media (prefers-color-scheme: dark) {
+  .auth-error { color: #e0a877; }
+  .auth-note { background: #0b1710; border-color: #8a4a22; color: #e0a877; }
+  .auth-hint { color: #bccdc4; }
+  .demo-button { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
+  .demo-button:hover { border-color: #e0a877; color: #e0a877; }
+  .corner-button { border-color: #1b3328; color: #e7e5e4; }
+  .corner-button:hover { border-color: #c2703c; color: #e0a877; }
+  .corner-name:hover .corner-text { color: #e0a877; }
+  .corner-initial,
+  .account-initial { background: #1b3328; color: #f5f5f4; }
+  .account-button-danger { color: #e0a877; border-color: #8a4a22; }
+  .account-button-danger:hover { background: #1b3328; }
+  .account-button-danger-solid { background: #c2703c; color: #0b1710; }
+  .account-button-danger-solid:hover { background: #e0a877; }
+}
+
+/* On a phone the name would crowd the wordmark: keep just the round letter. */
+@media (max-width: 639px) {
+  .corner-text { display: none; }
+}

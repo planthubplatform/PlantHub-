@@ -43,8 +43,10 @@ More in `docs/two-versions.md`.
 
 | Session | Branch | Job |
 |---|---|---|
-| Website design V2 | `design-b` | The site overhaul, page by page. |
-| Roadblocks review | — | Works out the open questions below. Writes answers here. |
+| Site build | `design-b` | Builds every page as a working mock, one at a time. The only session editing site files. Note: `docs/handoffs/site-build.md`. |
+
+The earlier sessions (Website design V1 and V2, grower side, operating model)
+were retired on 8 Oct 2026. Their handoff notes are in `docs/handoffs/`.
 
 Add your session to this table when you start long-running work.
 
@@ -62,8 +64,10 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 |---|---|
 | `index.html` | Front page: Sign in, the PlantHub wordmark, search, five round section links. |
 | `directory.html` + `app.js` + `data/nurseries.js` | The plant directory: the trade listing table that used to be the whole site. Light header like the front page (logo home, search, Sign in). Both the front-page search and the "Plant Directory" circle land here; it reads `?q=`. |
-| `signin.html` | Sign in, with a "Create an account" button below. Preview only: nothing is saved or sent. |
-| `signup.html` | Create an account, one question per screen (steps after `#`). Preview only. |
+| `store.js` | The pretend back end. Keeps mock accounts in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Every page that has a header loads it. |
+| `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
+| `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
+| `account.html` | The signed-in person's page: details, password, sign out, delete. Sends signed-out visitors to sign in first. |
 | `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
@@ -79,6 +83,8 @@ Rules that are easy to break:
 - **6 Oct 2026 — Accounts are coming.** Sign in opens a log-in page with "Create an account" below.
 - **6 Oct 2026 — Sign-up flow.** "Who are you?" → **Buyer** or **Seller**. Then "Ok, but who?" → Buyer: **Landscaper** or **Personal**; Seller: **Grower** or **Transporter**. Then name, email, password. No one-line descriptions under the choices.
 - **6 Oct 2026 — Tax exempt landscapers (PARKED).** `signup.html` lets landscapers tick "Are you tax exempt?", attach a certificate, and enter its number and expiration date (renewed yearly). This was built ahead of the sales-tax decision. **Do not extend it** until a Florida CPA signs off.
+- **8 Oct 2026 — Build every page as a working mock.** No real data, clients or users. Each page is fully clickable against pretend data kept in the browser by `store.js`; no server, no real payments, no real email. One page at a time, reviewed by the owner before the next. Pages that need an account send signed-out visitors to `signin.html?next=<page>`.
+- **8 Oct 2026 — Sample nurseries are named "Sample Grower 01 (Palms)" and so on**, so none can pass for a real business. Demo accounts (one per account type) are defined at the top of `store.js`.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
 ### Operating model (locked 6 Oct 2026, from the operating-model session)
