@@ -15,6 +15,21 @@ git pull origin <your-branch>
 Several sessions and two computers commit to this repo. If two commit without
 pulling in between, the second push is refused. Pull, then push again.
 
+## Handoff notes
+
+Long sessions get retired, so each lane keeps a short note in `docs/handoffs/`
+that lets a fresh session pick up without the old conversation.
+
+- At the start of a session, read `docs/handoffs/` before exploring anything
+  else. Read your own lane's note in full; skim the others only if your task
+  touches them.
+- Keep your lane's note at `docs/handoffs/<lane>.md` current: update it after
+  each commit and before stopping work. Follow the template in
+  `docs/handoffs/README.md`.
+- Edit only your own lane's note.
+- This file holds decisions; handoff notes hold the state of the work. If they
+  disagree on a decision, this file wins.
+
 ## Branches
 
 | Branch | What it is |
