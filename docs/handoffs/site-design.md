@@ -30,19 +30,22 @@ styles.css, data, favicon) rather than trusting the push. Pages takes 40–80s.
 
 ## 3. In progress
 
-**Branch `design-b` — exists only on the Windows PC.** Worktree folder:
-`C:\Users\Kekers\Projects\PlantHub-designB`.
+**Nothing of this lane's is uncommitted,** so there is no `wip-` branch. All
+the work above is committed. Note that `61816f0` and three other sessions'
+handoff notes are committed but **not yet pushed** to `origin/main`.
 
-- It sits at `572de38`, so it is now two commits behind `main` (missing the
-  two docs commits). It has **no unique work** — it was never edited.
-- `git push -u origin design-b` was attempted and **blocked by a permission
-  guard**. It is still unpublished.
-- The user was on a MacBook and was told to create `design-b` fresh from the
-  Mac instead, since nothing unique is trapped. If they did, there are now two
-  unrelated branches with the same name and the Windows one must be discarded,
-  not merged. Unsure whether they did it.
+**`design-b` now holds real work, and it is not this lane's.** Corrected
+8 October after checking: earlier in this session the branch was empty and
+unpublished, and an earlier version of this note said it could be discarded.
+That is now **wrong and destructive** — do not delete it.
 
-No uncommitted work in the main folder as of the last check.
+- `origin/design-b` is at `4350a08`, **8 commits ahead** of the local worktree
+  copy at `a3dcbc0`. The local copy has nothing unique; it just needs
+  `git pull`.
+- What is on it: a front page, `signin.html`, `signup.html`, `directory.html`,
+  `soon.html`, `theme.js`, a `CLAUDE.md`, and a rewritten `index.html` —
+  roughly 1,100 lines added.
+- Unsure who built it. Treat it as another lane's and ask before touching.
 
 ## 4. Decisions
 
@@ -82,19 +85,22 @@ remote machine was sufficient.
 
 ## 5. Open questions
 
-- **What `design-b` is actually for.** No direction was ever chosen. The branch
-  is an empty container.
-- **Whether `design-b` got published from the Mac**, and so whether the Windows
-  worktree needs discarding and recreating. Ask before touching either.
-- Real nursery data is blocked on the other lane; everything here is invented.
+- **`design-b` withdraws the no-login promise** (commit `04a331b`) and adds
+  sign-in and sign-up pages. The live site's footer still reads "nothing is
+  hidden behind a login", and the competitive position recorded for this
+  project is open, transparent search *against* the gated directories. Those
+  two cannot both ship. This lane did not make that call and has not acted on
+  it — whoever owns it should reconcile them.
+- Real nursery data is blocked on another lane; everything here is invented.
 
 ## 6. Next steps
 
-1. Ask the user which machine `design-b` now lives on, and reconcile. If they
-   published from the Mac: `git worktree remove ../PlantHub-designB` and
-   `git branch -D design-b` on Windows, then re-add tracking the remote.
-2. Get a direction for `design-b` before building anything in it.
-3. When real listings arrive, check the facets still hold up — grade and
+1. Push `main` — four handoff commits are sitting unpushed.
+2. In the `PlantHub-designB` folder, `git pull` to pick up the 8 commits it is
+   behind before doing anything there.
+3. Settle the login question in Open questions before either branch moves
+   further; it changes what the site is.
+4. When real listings arrive, check the facets still hold up — grade and
    container values are currently drawn from a small invented set.
 
 ## 7. Gotchas
