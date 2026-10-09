@@ -44,7 +44,7 @@
 const NURSERIES = [
   {
     id: "acreage-palms",
-    name: "Beautiful Gardens Growers",
+    name: "Sample Grower 01 (Palms)",
     city: "Acreage",
     state: "FL",
     phone: "(555) 0142-0118",
@@ -62,7 +62,7 @@ const NURSERIES = [
   },
   {
     id: "loxahatchee-hedge",
-    name: "Loxahatchee Hedge Company",
+    name: "Sample Grower 02 (Hedges)",
     city: "Loxahatchee",
     state: "FL",
     phone: "(555) 0142-0233",
@@ -80,7 +80,7 @@ const NURSERIES = [
   },
   {
     id: "everglades-natives",
-    name: "Everglades Native Plant Farm",
+    name: "Sample Grower 03 (Natives)",
     city: "Wellington",
     state: "FL",
     phone: "(555) 0142-0357",
@@ -98,7 +98,7 @@ const NURSERIES = [
   },
   {
     id: "royal-palm-tropicals",
-    name: "Royal Palm Tropicals",
+    name: "Sample Grower 04 (Tropicals)",
     city: "Royal Palm Beach",
     state: "FL",
     phone: "(555) 0142-0461",
@@ -116,7 +116,7 @@ const NURSERIES = [
   },
   {
     id: "jupiter-farms",
-    name: "Jupiter Farms Tree Nursery",
+    name: "Sample Grower 05 (Trees)",
     city: "Jupiter",
     state: "FL",
     phone: "(555) 0142-0572",
@@ -134,7 +134,7 @@ const NURSERIES = [
   },
   {
     id: "belle-glade-liners",
-    name: "Belle Glade Liner Farm",
+    name: "Sample Grower 06 (Liners)",
     city: "Belle Glade",
     state: "FL",
     phone: "(555) 0142-0688",
@@ -152,7 +152,7 @@ const NURSERIES = [
   },
   {
     id: "delray-groundcover",
-    name: "Delray Groundcover Growers",
+    name: "Sample Grower 07 (Groundcover)",
     city: "Delray Beach",
     state: "FL",
     phone: "(555) 0142-0794",
@@ -170,7 +170,7 @@ const NURSERIES = [
   },
   {
     id: "homestead-tropical",
-    name: "Homestead Tropical Fruit Co.",
+    name: "Sample Grower 08 (Fruit Trees)",
     city: "Homestead",
     state: "FL",
     phone: "(555) 0142-0815",
@@ -188,7 +188,7 @@ const NURSERIES = [
   },
   {
     id: "okeechobee-container",
-    name: "Okeechobee Container Yard",
+    name: "Sample Grower 09 (Containers)",
     city: "Okeechobee",
     state: "FL",
     phone: "(555) 0142-0926",
@@ -206,7 +206,7 @@ const NURSERIES = [
   },
   {
     id: "indiantown-wholesale",
-    name: "Indiantown Wholesale Nursery",
+    name: "Sample Grower 10 (Mixed)",
     city: "Indiantown",
     state: "FL",
     phone: "(555) 0142-1037",
