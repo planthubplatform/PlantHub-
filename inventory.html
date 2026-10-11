@@ -20,7 +20,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your inventory — PlantHub</title>
+  <title>Your inventory - PlantHub</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -66,7 +66,7 @@
             <button type="button" id="nursery-edit" class="auth-link ml-1">Edit nursery details</button>
           </p>
         </div>
-        <a id="buyer-view" href="directory.html" class="auth-link text-sm">See your listings as buyers do</a>
+        <a id="buyer-view" href="grower.html" class="auth-link text-sm">See your page as buyers do</a>
       </section>
 
       <!-- Nursery name and city. Folded away unless the city is missing,
@@ -279,7 +279,7 @@
     function drawNurseryLine() {
       const place = nursery.city ? nursery.city + ", " + nursery.state : "no city yet";
       $("nursery-line").textContent = nursery.name + " · " + place + ".";
-      $("buyer-view").href = "directory.html?q=" + encodeURIComponent(nursery.name);
+      $("buyer-view").href = "grower.html?id=" + encodeURIComponent(nursery.id);
       $("buyer-view").hidden = !nursery.plants.length;
 
       // No city: open the details form and hold back adding listings.

@@ -1,5 +1,5 @@
 # Site build
-Last updated: 8 October 2026
+Last updated: 10 October 2026
 
 ## Lane
 Builds every page of the site on `design-b` as a fully clickable mock, one page
@@ -19,10 +19,16 @@ files; it took over from Website design V2.
   nursery and listing functions in `store.js`, `shared.js` split out of
   `app.js`, a "Manage your inventory" link on `account.html` for growers. The
   directory now reads `PH.nurseries()`, so a grower's changes show at once.
+- Page 3, directory tune-up and inquiries (latest commit on `design-b`):
+  `grower.html` profile page, `inquiry.js` pop-up, `inquiries.html`
+  conversations, inquiry functions in `store.js`. In the directory the nursery
+  name links to the grower page, the detail strip has Inquire and View grower,
+  and phone and email are gone. Table and filter rail restyled to the site's
+  16px cards.
 
 ## In progress
-Nothing uncommitted. Page 2 is waiting on Kendrick's review; page 1 was
-approved with "go".
+Nothing uncommitted. Page 3 is waiting on Kendrick's review; pages 1 and 2
+were approved with "go".
 
 ## Decisions
 - **Mock back end is localStorage, in one file (`store.js`).** No server exists
@@ -47,6 +53,12 @@ approved with "go".
   carry only a photo count; adding real pictures replaces the count.
 - **Quantity 0 hides a listing from buyers** but keeps it in the inventory.
   My default, not yet confirmed by Kendrick.
+- **Add to order moved to the checkout build.** A button that adds to an order
+  needs an order page to land on, so both arrive together in page 4.
+- **Only buyer accounts (landscaper, personal) can send inquiries.** Growers
+  and transporters get a box saying so. My default for open question 1.
+- **Opening `inquiries.html` marks everything read**; the "New" mark stays for
+  that visit so the reader can see what was new.
 - **Account page links only to pages that exist.** Each new page adds its own
   link there, so there is never a dead link.
 
@@ -58,9 +70,10 @@ approved with "go".
 ## Next steps
 Proposed order, each a separate review:
 1. Grower inventory. **Built, in review.**
-2. Directory: grower profile page, inquiry button, add to order.
-3. Checkout: order, $250 minimum, mock ACH, pickup or delivery; order history
-   for buyer and grower.
+2. Directory: grower profile page and inquiries. **Built, in review.**
+3. Checkout: add to order from the directory and grower page, the order page,
+   $250 minimum, mock ACH, pickup or delivery; order history for buyer and
+   grower.
 4. Plant Transport: carrier directory, carrier profile and rates.
 5. Plant Encyclopedia.
 6. Plant News.
@@ -78,6 +91,10 @@ Proposed order, each a separate review:
   `styles.css`, or it never hides.
 - Preview from the main folder's session with the `planthub-design-b` entry in
   `PlantHub/.claude/launch.json`; it serves this folder on port 5174.
+- The taste-skill named in Kendrick's global instructions is written for landing
+  pages and rules itself out for data tables and product UI. Apply only its
+  consistency rules here (shape, one accent, contrast, no em dashes), and keep
+  the existing palette and Fraunces wordmark: they are the established brand.
 - The Browser pane's screenshot sometimes times out when the app window is in
   the background. Retry, or check with `javascript_tool` / `read_page`.
 - Pushing is Kendrick's: hand over the command, don't push.
@@ -86,6 +103,8 @@ Proposed order, each a separate review:
 - `store.js` — mock accounts, nurseries and listings, and the header's account
   corner; the `PH` object.
 - `shared.js` — freshness helpers and the listing vocabulary.
+- `grower.html`, `inquiry.js`, `inquiries.html` — the grower's public page and
+  buyer-to-grower messages.
 - `inventory.html` — the grower's page; its script is numbered in sections.
 - `signin.html`, `signup.html`, `account.html` — the account pages.
 - `app.js` — directory logic; the signed-in contact line is in `rowHtml`.

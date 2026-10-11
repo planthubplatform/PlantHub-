@@ -47,7 +47,7 @@ function freshnessTier(days) {
 
 // The short version, used in the table where space is tight: "2d", "3w", "4mo".
 function agoShort(days) {
-  if (days === Infinity) return "—";
+  if (days === Infinity) return "-";
   if (days === 0) return "today";
   if (days < 14) return days + "d";
   if (days < 60) return Math.round(days / 7) + "w";

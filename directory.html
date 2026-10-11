@@ -19,7 +19,7 @@
   <meta charset="UTF-8">
   <!-- Tells phones to use their real width instead of pretending to be a desktop. -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plant Directory — PlantHub</title>
+  <title>Plant Directory - PlantHub</title>
   <meta name="description" content="Wholesale plant availability for Palm Beach County. Container size, grade, quantity on hand, price, and the date each nursery last confirmed the listing.">
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -108,8 +108,7 @@
              starts shut, because three facet lists would otherwise push every
              result off the screen. On a laptop app.js opens it on load. -->
         <details id="filter-panel"
-                 class="lg:sticky lg:top-4 rounded-md border border-ink-100 dark:border-ink-800
-                        bg-white dark:bg-ink-900">
+                 class="lg:sticky lg:top-4 data-card">
 
           <summary class="flex items-center gap-2 px-3 py-2.5 cursor-pointer select-none
                           text-[11px] font-semibold uppercase tracking-wider
@@ -208,14 +207,14 @@
           <div class="flex items-center gap-2">
             <label class="text-[13px] text-ink-400 dark:text-stone-400" for="sort">Sort</label>
             <select id="sort"
-              class="text-[13px] font-medium px-2.5 py-1.5 rounded-md border border-ink-100 dark:border-ink-700
+              class="text-[13px] font-medium px-2.5 py-1.5 rounded-lg border border-ink-100 dark:border-ink-700
                      bg-white dark:bg-ink-900 text-ink-800 dark:text-stone-200
                      focus:outline-none focus:ring-2 focus:ring-clay-500 transition">
               <option value="fresh">Freshest first</option>
               <option value="qty">Most in stock</option>
               <option value="price">Lowest price</option>
-              <option value="plant">Plant A–Z</option>
-              <option value="nursery">Nursery A–Z</option>
+              <option value="plant">Plant A to Z</option>
+              <option value="nursery">Nursery A to Z</option>
             </select>
           </div>
         </div>
@@ -239,7 +238,7 @@
         </p>
         <p>
           Every listing shows the date the nursery last confirmed it. No ads, no paywall,
-          no paid placement — results are never reordered by who pays.
+          no paid placement. Results are never reordered by who pays.
           Everything here, prices included, is open to browse. An account is needed to order,
           to contact a grower, or to list plants.
         </p>
@@ -251,6 +250,7 @@
   <script src="shared.js"></script>
   <script src="store.js"></script>
   <script src="data/nurseries.js"></script>
+  <script src="inquiry.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

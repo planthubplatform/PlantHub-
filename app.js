@@ -373,6 +373,7 @@ function photoBadge(listing) {
 function rowHtml(listing, words, index) {
   const style = TIER_STYLE[listing.tier];
   const n = listing.nursery;
+  const growerHref = "grower.html?id=" + encodeURIComponent(n.id);
   const specs = specText(listing);
   const grades = listing.grades.join(", ");
 
@@ -386,7 +387,7 @@ function rowHtml(listing, words, index) {
   // On a phone the nursery column is hidden too, so its name goes here.
   const nurseryMobile =
     '<span class="sm:hidden block text-[12px] text-ink-700 dark:text-stone-300 mt-1">' +
-      highlight(n.name, words) + " · " + highlight(n.city, words) +
+      '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a> · " + highlight(n.city, words) +
     '</span>';
 
   const main =
@@ -401,7 +402,7 @@ function rowHtml(listing, words, index) {
       "</td>" +
 
       '<td class="hidden sm:table-cell py-2 pr-3 align-top">' +
-        '<span class="text-ink-800 dark:text-stone-200">' + highlight(n.name, words) + "</span>" +
+        '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a>" +
         '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
           highlight(n.city + ", " + n.state, words) + "</span>" +
       "</td>" +
@@ -430,23 +431,27 @@ function rowHtml(listing, words, index) {
         "</span></td>" +
     "</tr>";
 
-  // Hidden until the row is clicked: the small print, and the way to order.
-  // Prices are public, but ordering and contacting a grower need an account,
-  // so the phone and email only reach the page for someone signed in.
-  const contact = PH.currentUser()
-    ? '<span class="w-full sm:w-auto py-1 sm:py-0 font-medium text-ink-900 dark:text-stone-100">' +
-        "Contact this grower: " +
-        '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="tel:' + escapeHtml(n.phone.replace(/[^0-9+]/g, "")) + '">' + escapeHtml(n.phone) + "</a> · " +
-        '<a class="text-clay-600 dark:text-clay-300 hover:underline" href="mailto:' + escapeHtml(n.email) + '">' + escapeHtml(n.email) + "</a>" +
-      "</span>"
-    : '<a class="w-full sm:w-auto py-1 sm:py-0 font-medium text-clay-600 dark:text-clay-300 hover:underline" href="signin.html?next=directory.html">' +
-        "Sign in to order or contact this grower</a>";
+  // Hidden until the row is clicked: the small print, and the way to reach
+  // the grower. Prices are public, but a grower's phone and email never
+  // reach the page: a buyer sends an inquiry (inquiry.js) and the
+  // conversation stays on PlantHub. A grower looking at their own listing
+  // gets the way to their inventory instead.
+  const user = PH.currentUser();
+  const mine = !!user && user.nurseryId === n.id;
+  const contact =
+    '<span class="w-full sm:w-auto flex flex-wrap items-center gap-2">' +
+      (mine
+        ? '<a class="row-button row-button-main" href="inventory.html">Manage this listing</a>'
+        : '<button type="button" class="row-button row-button-main" data-inquire="' + index + '">' +
+            (user ? "Inquire" : "Sign in to inquire") + "</button>") +
+      '<a class="row-button" href="' + growerHref + '">View grower</a>' +
+    "</span>";
 
   const detail =
     '<tr class="detail-row hidden" id="detail-' + index + '">' +
       '<td colspan="8" class="px-3 pb-3 pt-0">' +
-        '<div class="rounded-md bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
-             'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-1.5">' +
+        '<div class="rounded-lg bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
+             'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-2">' +
           contact +
           '<span class="text-ink-400 dark:text-stone-400">' + MIN_ORDER + " minimum order · pay by bank transfer (ACH)</span>" +
           '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
@@ -478,8 +483,7 @@ function tableHtml(rows, words) {
     return rowHtml(listing, words, index);
   }).join("");
 
-  return '<div class="overflow-x-auto rounded-md border border-ink-100 dark:border-ink-800 ' +
-              'bg-white dark:bg-ink-900">' +
+  return '<div class="data-card overflow-x-auto">' +
     '<table class="w-full text-[13px] border-collapse">' + head +
       '<tbody>' + body + "</tbody>" +
     "</table></div>";
@@ -494,7 +498,7 @@ function emptyHtml(query, filtersAreOn) {
       escapeHtml(query) + "&rdquo;</strong></p>" +
       '<p class="mt-1.5">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by nursery or city.</p>';
 
-  return '<div class="rounded-md border border-dashed border-ink-100 dark:border-ink-700 ' +
+  return '<div class="rounded-2xl border border-dashed border-ink-100 dark:border-ink-700 ' +
               'bg-white dark:bg-ink-900 px-4 py-10 text-center text-[13px] ' +
               'text-ink-400 dark:text-stone-400">' + message + "</div>";
 }
@@ -502,6 +506,10 @@ function emptyHtml(query, filtersAreOn) {
 // ---------------------------------------------------------------------------
 // 10. Put it all together and draw the page.
 // ---------------------------------------------------------------------------
+// The listings in the table right now, in order. A row's Inquire button
+// carries its place in this list.
+let shownRows = [];
+
 function render() {
   const query = searchBox.value;
   clearButton.classList.toggle("hidden", query === "");
@@ -542,6 +550,7 @@ function render() {
     " · " + nurseries.size + (nurseries.size === 1 ? " nursery" : " nurseries") +
     " · " + fresh + " updated this week";
 
+  shownRows = rows;
   resultsBox.innerHTML = tableHtml(rows, words);
 }
 
@@ -656,6 +665,14 @@ function toggleRow(row) {
 resultsBox.addEventListener("click", function (event) {
   // Let a link inside a row behave like a link.
   if (event.target.closest("a")) return;
+
+  // "Inquire" opens the message box for that row's listing.
+  const inquire = event.target.closest("[data-inquire]");
+  if (inquire) {
+    const listing = shownRows[Number(inquire.getAttribute("data-inquire"))];
+    openInquiry(listing.nursery, listing);
+    return;
+  }
 
   const row = event.target.closest(".listing-row");
   if (row) toggleRow(row);

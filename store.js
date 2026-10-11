@@ -32,6 +32,14 @@
     PH.confirmListing(id)       "still accurate": stamps it with today's date
     PH.confirmAll()
 
+    PH.nursery(id)              one nursery, or null
+    PH.canBuy()                 is a buyer account signed in?
+    PH.sendInquiry({ ... })     a buyer's message to a grower
+    PH.myInquiries()            the signed-in person's conversations
+    PH.replyInquiry(id, text)
+    PH.markInquiryRead(id)
+    PH.unreadInquiries()        how many have a reply you haven't opened
+
   Functions that can fail return { ok: true, ... } or { ok: false, error }.
 */
 
@@ -46,6 +54,9 @@ const PH = (function () {
   // Nurseries made by growers who signed up here (the sample ones live in
   // data/nurseries.js).
   const NURSERIES_KEY = "planthub.nurseries";
+  // Messages between buyers and growers. A buyer never gets a grower's
+  // phone or email: contact goes through here, so it stays on PlantHub.
+  const INQUIRIES_KEY = "planthub.inquiries";
 
   const ACCOUNT_TYPES = {
     landscaper:  { name: "Landscaper",  side: "Buyer" },
@@ -260,6 +271,7 @@ const PH = (function () {
     remove(SESSION_KEY);
     remove(INVENTORY_KEY);
     remove(NURSERIES_KEY);
+    remove(INQUIRIES_KEY);
     write(USERS_KEY, seedUsers());
   }
 
@@ -436,7 +448,141 @@ const PH = (function () {
     });
   }
 
-  // ---- 6. The account corner of every page ---------------------------------
+  // ---- 6. Inquiries -------------------------------------------------------
+  // One inquiry is a short conversation: a buyer asks a grower something,
+  // usually about one listing, and either side can reply.
+
+  // One invented conversation, so the demo grower's inbox isn't empty.
+  function seedInquiries() {
+    const yesterday = new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString();
+    return [{
+      id: "inquiry-demo",
+      nurseryId: "acreage-palms",
+      nurseryName: "Sample Grower 01 (Palms)",
+      about: { common: "Sabal Palm", container: "Field Grown", price: 438 },
+      quantity: 40,
+      buyerId: "demo-landscaper",
+      buyer: { name: "Lena Landscaper (demo)", email: "landscaper@demo.example", phone: "", business: "" },
+      messages: [{
+        from: "buyer",
+        at: yesterday,
+        text: "Do you have 40 of these at 18 feet, and could they be ready for pickup the week of the 20th?",
+      }],
+      read: { buyer: yesterday },
+    }];
+  }
+
+  function inquiries() {
+    let list = read(INQUIRIES_KEY);
+    if (!Array.isArray(list)) {
+      list = seedInquiries();
+      write(INQUIRIES_KEY, list);
+    }
+    return list;
+  }
+
+  function canBuy() {
+    const user = signedInRecord();
+    return !!user && ACCOUNT_TYPES[user.type].side === "Buyer";
+  }
+
+  // Which side of a conversation the signed-in person is on, or "" if
+  // it isn't theirs.
+  function sideOf(inquiry, user) {
+    if (!user) return "";
+    if (inquiry.buyerId === user.id) return "buyer";
+    if (user.type === "grower" && user.nurseryId && inquiry.nurseryId === user.nurseryId) return "grower";
+    return "";
+  }
+
+  function lastMessage(inquiry) { return inquiry.messages[inquiry.messages.length - 1]; }
+
+  function isUnread(inquiry, side) {
+    const last = lastMessage(inquiry);
+    return last.from !== side && (!inquiry.read[side] || inquiry.read[side] < last.at);
+  }
+
+  function sendInquiry(details) {
+    const user = signedInRecord();
+    const text = String(details.text || "").trim();
+    if (!user) return { ok: false, error: "Sign in to send an inquiry." };
+    if (!canBuy()) return { ok: false, error: "Inquiries are sent from buyer accounts." };
+    const nursery = findNursery(details.nurseryId);
+    if (!nursery) return { ok: false, error: "That grower is no longer listed." };
+    if (!text) return { ok: false, field: "text", error: "Write a message for the grower." };
+
+    let quantity;
+    if (details.quantity !== "" && details.quantity !== undefined && details.quantity !== null) {
+      quantity = Number(details.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return { ok: false, field: "quantity", error: "Quantity must be a whole number, or left empty." };
+      }
+    }
+
+    const now = new Date().toISOString();
+    const inquiry = {
+      id: "inquiry-" + Date.now().toString(36),
+      nurseryId: nursery.id,
+      nurseryName: nursery.name,
+      about: details.about || null,
+      quantity: quantity,
+      buyerId: user.id,
+      // What the grower is given about the buyer, as it was when sent.
+      buyer: { name: user.name, email: user.email, phone: user.phone || "", business: user.business || "" },
+      messages: [{ from: "buyer", at: now, text: text }],
+      read: { buyer: now },
+    };
+    write(INQUIRIES_KEY, [inquiry].concat(inquiries()));
+    return { ok: true, inquiry: inquiry };
+  }
+
+  // The signed-in person's conversations, most recently active first. Each
+  // comes back with `side` (which end they are) and `unread`.
+  function myInquiries() {
+    const user = signedInRecord();
+    return inquiries().map(function (inquiry) {
+      const side = sideOf(inquiry, user);
+      return side ? Object.assign({}, inquiry, { side: side, unread: isUnread(inquiry, side) }) : null;
+    }).filter(Boolean).sort(function (a, b) {
+      return lastMessage(a).at < lastMessage(b).at ? 1 : -1;
+    });
+  }
+
+  function changeInquiry(id, change) {
+    const user = signedInRecord();
+    let result = { ok: false, error: "That conversation isn't yours." };
+    const list = inquiries().map(function (inquiry) {
+      const side = inquiry.id === id ? sideOf(inquiry, user) : "";
+      if (!side) return inquiry;
+      const copy = JSON.parse(JSON.stringify(inquiry));
+      result = change(copy, side) || { ok: true };
+      return result.ok ? copy : inquiry;
+    });
+    if (result.ok) write(INQUIRIES_KEY, list);
+    return result;
+  }
+
+  function replyInquiry(id, text) {
+    const words = String(text || "").trim();
+    return changeInquiry(id, function (inquiry, side) {
+      if (!words) return { ok: false, error: "Write a reply first." };
+      const now = new Date().toISOString();
+      inquiry.messages.push({ from: side, at: now, text: words });
+      inquiry.read[side] = now;
+    });
+  }
+
+  function markInquiryRead(id) {
+    return changeInquiry(id, function (inquiry, side) {
+      inquiry.read[side] = new Date().toISOString();
+    });
+  }
+
+  function unreadInquiries() {
+    return myInquiries().filter(function (inquiry) { return inquiry.unread; }).length;
+  }
+
+  // ---- 7. The account corner of every page ---------------------------------
   // A page marks where the corner goes with <div data-account-corner></div>.
   // Signed out it holds "Sign in"; signed in, the person's name (a link to
   // their account) and "Sign out".
@@ -453,7 +599,14 @@ const PH = (function () {
         corner.innerHTML = '<a href="signin.html" class="corner-button">Sign in</a>';
         return;
       }
-      corner.innerHTML =
+      // Buyers and growers get a way to their conversations, with a count
+      // when a reply is waiting.
+      const waiting = unreadInquiries();
+      const inbox = user.type === "transporter" ? "" :
+        '<a href="inquiries.html" class="corner-link">Inquiries' +
+          (waiting ? ' <span class="corner-count">' + waiting + "</span>" : "") + "</a>";
+
+      corner.innerHTML = inbox +
         '<a href="account.html" class="corner-name" title="Your account">' +
           '<span class="corner-initial" aria-hidden="true">' + escapeHtml(user.name.charAt(0).toUpperCase()) + "</span>" +
           '<span class="corner-text">' + escapeHtml(user.name) + "</span>" +
@@ -505,6 +658,13 @@ const PH = (function () {
     removeListing: removeListing,
     confirmListing: confirmListing,
     confirmAll: confirmAll,
+    nursery: findNursery,
+    canBuy: canBuy,
+    sendInquiry: sendInquiry,
+    myInquiries: myInquiries,
+    replyInquiry: replyInquiry,
+    markInquiryRead: markInquiryRead,
+    unreadInquiries: unreadInquiries,
     escapeHtml: escapeHtml,
   };
 })();

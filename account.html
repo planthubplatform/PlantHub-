@@ -14,7 +14,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your account — PlantHub</title>
+  <title>Your account - PlantHub</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -54,6 +54,12 @@
       <section id="inventory-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
         <p class="text-sm text-ink-700 dark:text-stone-300">Keep your listings current: add plants, change counts and prices, confirm what's still accurate.</p>
         <a href="inventory.html" class="auth-button account-button-small">Manage your inventory</a>
+      </section>
+
+      <!-- Buyers and growers: their conversations. -->
+      <section id="inquiries-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
+        <p id="inquiries-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
+        <a href="inquiries.html" class="auth-button auth-button-outline account-button-small">Open inquiries</a>
       </section>
 
       <section class="auth-card flex flex-wrap items-center justify-between gap-3">
@@ -199,6 +205,13 @@
       const grower = user.type === "grower";
       document.getElementById("inventory-link").hidden = !grower;
       document.getElementById("directory-link").classList.toggle("auth-button-outline", grower);
+
+      // Everyone but transport companies has inquiries.
+      const waiting = PH.unreadInquiries();
+      document.getElementById("inquiries-link").hidden = user.type === "transporter";
+      document.getElementById("inquiries-text").textContent =
+        (grower ? "Questions buyers have sent your nursery." : "Your questions to growers, and their replies.") +
+        (waiting ? " " + waiting + (waiting === 1 ? " is" : " are") + " waiting for you." : "");
 
       const tax = user.taxExempt;
       document.getElementById("tax-card").hidden = !tax;

@@ -673,3 +673,95 @@ table {
 
 /* A hidden card stays hidden even when a layout class sets its display. */
 .auth-card[hidden] { display: none; }
+
+/* ---------------------------------------------------------------------------
+   One shape rule for the whole site:
+     buttons and tags are pills, cards are 16px, boxes you type in are 8px.
+   .data-card is a card that holds a table or a list of filters, so it has
+   no padding of its own.
+--------------------------------------------------------------------------- */
+.data-card {
+  background: #fff;
+  border: 1px solid #d6e0db;          /* ink-100 */
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.data-card.overflow-x-auto { overflow-x: auto; }
+.filter-tag { border-radius: 9999px; padding: 0.1875rem 0.625rem; }
+.spec-input, .spec-unit { border-radius: 0.5rem; }
+
+/* A nursery's name in a listing row: a link to the grower's page. */
+.grower-link { color: #122117; text-decoration: underline; text-decoration-color: #bccdc4; text-underline-offset: 2px; }
+.grower-link:hover { color: #8a4a22; text-decoration-color: #c2703c; }
+
+/* Rows on a grower's page: a hairline between them, like the directory. */
+.profile-row + .profile-row { border-top: 1px solid #eef2f0; }
+
+/* "Inquiries" beside the name in the account corner, with a count when a
+   reply is waiting. */
+.corner-link { font-size: 0.875rem; font-weight: 500; white-space: nowrap; }
+.corner-link:hover { color: #8a4a22; text-decoration: underline; }
+.corner-count,
+.new-mark {
+  display: inline-block;
+  border-radius: 9999px;
+  background: #a95c2d;                /* clay-600 */
+  color: #faf6ef;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0.1875rem 0.4375rem;
+}
+.new-mark { padding: 0.25rem 0.5rem; }
+
+/* The inquiry pop-up (inquiry.js). */
+.inquiry-dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  border: 1px solid #d6e0db;
+  border-radius: 1rem;
+  padding: 1.75rem;
+  background: #fff;
+  color: #0b1710;
+}
+.inquiry-dialog::backdrop { background: rgba(11, 23, 16, 0.45); }
+.inquiry-close-form { position: absolute; top: 0.75rem; right: 0.75rem; }
+.inquiry-close {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: #4a6b5a;
+}
+.inquiry-close:hover { background: #f2e9dc; color: #0b1710; }
+.inquiry-close:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; }
+textarea.auth-input { display: block; resize: vertical; }
+
+/* One message in a conversation. Your own sit on sand, theirs on cream. */
+.message { border-radius: 0.5rem; background: #faf6ef; padding: 0.625rem 0.875rem; font-size: 0.9375rem; }
+.message-own { background: #f2e9dc; }
+.message-meta { font-size: 0.75rem; font-weight: 500; color: #4a6b5a; margin-bottom: 0.125rem; }
+
+@media (prefers-color-scheme: dark) {
+  .data-card { background: #122117; border-color: #24402f; }
+  .grower-link { color: #e7e5e4; text-decoration-color: #24402f; }
+  .grower-link:hover { color: #e0a877; text-decoration-color: #c2703c; }
+  .profile-row + .profile-row { border-top-color: #1b3328; }
+  .corner-link:hover { color: #e0a877; }
+  .corner-count, .new-mark { background: #c2703c; color: #0b1710; }
+  .inquiry-dialog { background: #122117; border-color: #24402f; color: #f5f5f4; }
+  .inquiry-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+  .inquiry-close { color: #bccdc4; }
+  .inquiry-close:hover { background: #1b3328; color: #f5f5f4; }
+  .message { background: #0b1710; }
+  .message-own { background: #1b3328; }
+  .message-meta { color: #bccdc4; }
+}
+
+/* On a phone the corner keeps to the round letter and the buttons. */
+@media (max-width: 639px) {
+  .corner-link { display: none; }
+}
+
+/* A row button can also be a link. */
+a.row-button { display: inline-block; }

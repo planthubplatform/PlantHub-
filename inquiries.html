@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<!--
+  inquiries.html — conversations between buyers and growers.
+
+  A buyer sees the inquiries they sent; a grower sees the ones sent to their
+  nursery. Either side can reply. This is the only way the two talk: a
+  buyer is never shown a grower's phone or email, so the conversation, and
+  the order that follows, stay on PlantHub. The grower does get the buyer's
+  name, email and phone with each inquiry.
+
+  PROTOTYPE ONLY. store.js keeps the messages in this browser. To see both
+  ends, send one as a buyer, then sign in as the grower.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inquiries - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+      <h1 class="font-display font-semibold text-3xl tracking-tight">Inquiries</h1>
+      <p id="intro" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
+
+      <!-- store.js hands over the conversations; the script below draws them. -->
+      <div id="threads" class="mt-6 space-y-5"></div>
+    </div>
+  </main>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: messages are saved only in this browser and are not sent to anyone.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script>
+    const user = PH.currentUser();
+    if (!user) location.replace("signin.html?next=inquiries.html");
+
+    const threadsBox = document.getElementById("threads");
+
+    // Which conversations had something new when the page opened. Opening
+    // the page counts as reading them, but the "New" mark stays until you leave.
+    const wasUnread = new Set();
+
+    // "2026-10-09T14:05:00Z" -> "9 Oct, 10:05"
+    function whenText(isoTime) {
+      const date = new Date(isoTime);
+      if (isNaN(date)) return "";
+      return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " +
+             date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function threadHtml(inquiry) {
+      const grower = inquiry.side === "grower";
+      const about = inquiry.about
+        ? inquiry.about.common + ", " + inquiry.about.container + ", " + priceText(inquiry.about.price) + " each" +
+          (inquiry.quantity ? ". Needs " + inquiry.quantity.toLocaleString() + "." : "")
+        : "General question";
+
+      // A grower is given the buyer's details; a buyer gets a link to the grower.
+      const who = grower
+        ? '<p class="font-semibold">' + escapeHtml(inquiry.buyer.name) +
+            (inquiry.buyer.business ? '<span class="font-normal text-ink-400 dark:text-stone-400">, ' + escapeHtml(inquiry.buyer.business) + "</span>" : "") + "</p>" +
+          '<p class="text-[13px] text-ink-700 dark:text-stone-300">' +
+            '<a class="auth-link" href="mailto:' + escapeHtml(inquiry.buyer.email) + '">' + escapeHtml(inquiry.buyer.email) + "</a>" +
+            (inquiry.buyer.phone ? " · " + escapeHtml(inquiry.buyer.phone) : "") +
+          "</p>"
+        : '<p class="font-semibold"><a class="hover:underline" href="grower.html?id=' + encodeURIComponent(inquiry.nurseryId) + '">' +
+            escapeHtml(inquiry.nurseryName) + "</a></p>";
+
+      const messages = inquiry.messages.map(function (message) {
+        const own = message.from === inquiry.side;
+        const name = own ? "You" : (message.from === "buyer" ? inquiry.buyer.name : inquiry.nurseryName);
+        return (
+          '<li class="message' + (own ? " message-own" : "") + '">' +
+            '<p class="message-meta">' + escapeHtml(name) + " · " + escapeHtml(whenText(message.at)) + "</p>" +
+            '<p class="whitespace-pre-line">' + escapeHtml(message.text) + "</p>" +
+          "</li>"
+        );
+      }).join("");
+
+      return (
+        '<article class="auth-card" data-id="' + escapeHtml(inquiry.id) + '">' +
+          '<div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">' +
+            '<div class="min-w-0">' + who + "</div>" +
+            (wasUnread.has(inquiry.id) ? '<span class="new-mark">New</span>' : "") +
+          "</div>" +
+          '<p class="mt-2 text-[13px] text-ink-700 dark:text-stone-300">' + escapeHtml(about) + "</p>" +
+          '<ul class="mt-4 space-y-3">' + messages + "</ul>" +
+          '<form class="reply-form mt-4" novalidate>' +
+            '<label class="sr-only" for="reply-' + escapeHtml(inquiry.id) + '">Reply</label>' +
+            '<textarea class="auth-input" id="reply-' + escapeHtml(inquiry.id) + '" rows="2" placeholder="Write a reply"></textarea>' +
+            '<p class="auth-error mt-2" role="alert" hidden></p>' +
+            '<button type="submit" class="mt-3 auth-button account-button-small">Send reply</button>' +
+          "</form>" +
+        "</article>"
+      );
+    }
+
+    function draw() {
+      const list = PH.myInquiries();
+      const grower = user.type === "grower";
+
+      document.getElementById("intro").textContent = grower
+        ? "Questions buyers have sent your nursery. Buyers never see your phone or email, so reply here."
+        : "Your questions to growers, and their replies.";
+
+      if (!list.length) {
+        threadsBox.innerHTML =
+          '<div class="auth-card text-sm text-ink-700 dark:text-stone-300">' +
+            (grower
+              ? "<p>No inquiries yet. Buyers can send one from any of your listings.</p>" +
+                '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>'
+              : user.side === "Buyer"
+                ? "<p>You haven't sent an inquiry yet. Open any listing in the directory and press Inquire.</p>" +
+                  '<a href="directory.html" class="mt-4 inline-block auth-button account-button-small">Open the plant directory</a>'
+                : "<p>Transport accounts have no inquiries yet.</p>") +
+          "</div>";
+        return;
+      }
+      threadsBox.innerHTML = list.map(threadHtml).join("");
+    }
+
+    if (user) {
+      PH.myInquiries().forEach(function (inquiry) {
+        if (!inquiry.unread) return;
+        wasUnread.add(inquiry.id);
+        PH.markInquiryRead(inquiry.id);
+      });
+      draw();
+      // The count in the corner has just dropped to zero.
+      document.dispatchEvent(new Event("planthub:account-changed"));
+    }
+
+    threadsBox.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const card = event.target.closest("[data-id]");
+      const result = PH.replyInquiry(card.dataset.id, card.querySelector("textarea").value);
+      if (!result.ok) {
+        const error = card.querySelector(".auth-error");
+        error.textContent = result.error;
+        error.hidden = false;
+        return;
+      }
+      // You've answered it, so it is no longer new.
+      wasUnread.delete(card.dataset.id);
+      draw();
+    });
+  </script>
+</body>
+</html>

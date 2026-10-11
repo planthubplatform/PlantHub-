@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--
+  grower.html — one grower's public page.
+
+  Reached from a nursery's name in the directory: grower.html?id=acreage-palms.
+  It shows who the grower is, how current their listings are, and everything
+  they have, freshest first. Prices are open to anyone. There is no phone or
+  email here: a buyer sends an inquiry (inquiry.js) and the conversation stays
+  on PlantHub.
+
+  PROTOTYPE ONLY. The nurseries are sample data, plus whatever growers have
+  changed in this browser (store.js).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grower - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <!-- The same header as the directory: wordmark, search, account corner.
+       The search box is a plain form that hands the words to the directory. -->
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex flex-wrap items-center gap-x-6 gap-y-3 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <form action="directory.html" method="get" role="search" class="relative order-last sm:order-none w-full sm:w-auto sm:flex-1 sm:max-w-2xl">
+        <label class="sr-only" for="search">Search for a plant</label>
+        <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400 pointer-events-none"
+             viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>
+        </svg>
+        <input type="search" id="search" name="q" placeholder="Search a plant, nursery or city" autocomplete="off"
+               class="w-full rounded-full pl-11 pr-4 py-2.5 text-base sm:text-sm
+                      bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700 shadow-sm
+                      placeholder:text-ink-400 dark:placeholder:text-stone-500
+                      focus:outline-none focus:ring-2 focus:ring-clay-500 focus:border-transparent transition">
+      </form>
+      <div data-account-corner class="account-corner ml-auto"></div>
+    </div>
+  </header>
+
+  <div class="border-b border-clay-300/50 bg-clay-50 dark:bg-clay-700/20 text-[13px] text-clay-700 dark:text-clay-100">
+    <div class="page py-2">
+      <strong class="font-semibold">Sample data.</strong>
+      This grower, and every quantity and price below, is invented for testing. None of it describes a real business.
+    </div>
+  </div>
+
+  <main class="page flex-1 py-6">
+
+    <!-- ===== No such grower ============================================== -->
+    <section id="missing" hidden class="mx-auto max-w-xl auth-card text-center">
+      <h1 class="font-display font-semibold text-2xl tracking-tight">That grower isn't listed</h1>
+      <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">The link may be old, or the grower has left PlantHub.</p>
+      <a href="directory.html" class="mt-5 inline-block auth-button account-button-small">Open the plant directory</a>
+    </section>
+
+    <div id="profile" hidden>
+      <a href="directory.html" class="step-back" style="margin-top:0">Plant directory</a>
+
+      <!-- ===== Who they are ============================================== -->
+      <section class="mt-3 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+        <div class="min-w-0">
+          <h1 id="g-name" class="font-display font-semibold text-3xl sm:text-4xl tracking-tight"></h1>
+          <p id="g-place" class="mt-1.5 text-ink-700 dark:text-stone-300"></p>
+          <!-- How current this grower keeps things: the reason to trust the table. -->
+          <p id="g-fresh" class="mt-3 flex items-center gap-2 text-sm font-medium"></p>
+        </div>
+        <div id="g-actions" class="flex flex-wrap gap-3"></div>
+      </section>
+
+      <!-- ===== How buying from them works ================================ -->
+      <p class="mt-6 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
+        Orders run through PlantHub, with a <span id="g-min"></span> minimum, paid in full by bank transfer (ACH).
+        To ask about stock, sizes or timing, send the grower an inquiry.
+      </p>
+
+      <!-- ===== What they have ============================================ -->
+      <section class="mt-6" aria-labelledby="g-list-title">
+        <h2 id="g-list-title" class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400 mb-2.5"></h2>
+        <div id="g-listings"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="border-t border-ink-100 dark:border-ink-800 mt-8">
+    <div class="page py-7 text-[13px] text-ink-400 dark:text-stone-400">
+      Every listing shows the date the grower last confirmed it. Prices are open to browse. An account is needed to contact a grower or to order.
+    </div>
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script src="inquiry.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+    const nursery = PH.nursery(new URLSearchParams(location.search).get("id"));
+    const user = PH.currentUser();
+
+    function plural(count, word) { return count + " " + word + (count === 1 ? "" : "s"); }
+
+    if (!nursery) {
+      $("missing").hidden = false;
+    } else {
+      // Buyers see what can be bought: nothing at zero, freshest first.
+      const plants = nursery.plants
+        .filter(function (plant) { return plant.quantity > 0; })
+        .map(function (plant) { return Object.assign({ days: daysSince(plant.updated) }, plant); })
+        .sort(function (a, b) { return a.days - b.days || a.common.localeCompare(b.common); });
+
+      const mine = !!user && user.nurseryId === nursery.id;
+
+      document.title = nursery.name + " - PlantHub";
+      $("g-name").textContent = nursery.name;
+      $("g-place").textContent = [nursery.city + ", " + nursery.state].concat(nursery.specialties || []).join(" · ");
+      $("g-min").textContent = MIN_ORDER;
+      $("g-list-title").textContent = plural(plants.length, "listing");
+
+      // ---- Freshness line ----
+      const fresh = plants.filter(function (plant) { return plant.days <= FRESH_DAYS; }).length;
+      const newest = plants.length ? plants[0].days : Infinity;
+      const tier = TIER_STYLE[freshnessTier(newest)];
+      $("g-fresh").className += " " + tier.text;
+      $("g-fresh").innerHTML = plants.length
+        ? '<span class="w-2 h-2 rounded-full ' + tier.dot + '"></span>' +
+          escapeHtml(fresh + " of " + plural(plants.length, "listing") + " confirmed this week. Last update: " + agoLong(newest).replace("Confirmed ", "") + ".")
+        : "";
+
+      // ---- Buttons: inquire, or manage if it's your own nursery ----
+      $("g-actions").innerHTML = mine
+        ? '<a href="inventory.html" class="auth-button account-button-small">Manage your inventory</a>'
+        : '<button type="button" id="g-inquire" class="auth-button account-button-small">' +
+            (user ? "Send an inquiry" : "Sign in to inquire") + "</button>";
+      if (!mine) $("g-inquire").addEventListener("click", function () { openInquiry(nursery); });
+
+      // ---- The listings ----
+      if (!plants.length) {
+        $("g-listings").innerHTML =
+          '<p class="auth-card text-sm text-ink-700 dark:text-stone-300">This grower has nothing listed right now.</p>';
+      } else {
+        const rows = plants.map(function (plant, index) {
+          const style = TIER_STYLE[freshnessTier(plant.days)];
+          const small = [plant.container, specText(plant), (plant.grades || []).join(", ")].filter(Boolean).join(" · ");
+          return (
+            '<tr class="profile-row">' +
+              '<td class="py-2.5 pl-4 pr-3 align-top">' +
+                '<span class="font-medium">' + escapeHtml(plant.common) + "</span>" +
+                (plant.botanical ? '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' + escapeHtml(plant.botanical) + "</span>" : "") +
+                '<span class="lg:hidden block text-[12px] text-ink-400 dark:text-stone-400 mt-0.5">' + escapeHtml(small) + "</span>" +
+                // On a phone there is no room for a button column, so it sits here.
+                (mine ? "" : '<button type="button" class="row-button sm:hidden mt-2" data-inquire="' + index + '">Inquire</button>') +
+              "</td>" +
+              '<td class="hidden lg:table-cell py-2.5 pr-3 align-top whitespace-nowrap">' + escapeHtml(plant.container) + "</td>" +
+              '<td class="hidden lg:table-cell py-2.5 pr-3 align-top text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(specText(plant)) + "</td>" +
+              '<td class="hidden lg:table-cell py-2.5 pr-3 align-top text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml((plant.grades || []).join(", ")) + "</td>" +
+              '<td class="py-2.5 pr-3 align-top text-right tabular-nums font-medium">' + plant.quantity.toLocaleString() + "</td>" +
+              '<td class="py-2.5 pr-3 align-top text-right tabular-nums font-medium">' + priceText(plant.price) + "</td>" +
+              '<td class="py-2.5 pr-3 align-top text-right whitespace-nowrap">' +
+                '<span class="inline-flex items-center gap-1.5 text-[12px] ' + style.text + '" title="' + escapeHtml(plant.updated || "no date given") + '">' +
+                  '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' + agoShort(plant.days) + "</span>" +
+              "</td>" +
+              (mine ? "" :
+                '<td class="hidden sm:table-cell py-2 pr-4 align-top text-right"><button type="button" class="row-button" data-inquire="' + index + '">Inquire</button></td>') +
+            "</tr>"
+          );
+        }).join("");
+
+        $("g-listings").innerHTML =
+          '<div class="data-card overflow-x-auto">' +
+            '<table class="w-full text-[13px] border-collapse">' +
+              '<thead><tr class="text-left text-[11px] uppercase tracking-wider text-ink-400 dark:text-stone-400 bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
+                '<th class="py-2 pl-4 pr-3 font-semibold">Plant</th>' +
+                '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Container</th>' +
+                '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Specs</th>' +
+                '<th class="hidden lg:table-cell py-2 pr-3 font-semibold">Grade</th>' +
+                '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
+                '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
+                '<th class="py-2 pr-3 font-semibold text-right">Updated</th>' +
+                (mine ? "" : '<th class="hidden sm:table-cell py-2 pr-4"><span class="sr-only">Inquire</span></th>') +
+              "</tr></thead>" +
+              "<tbody>" + rows + "</tbody>" +
+            "</table>" +
+          "</div>";
+
+        $("g-listings").addEventListener("click", function (event) {
+          const button = event.target.closest("[data-inquire]");
+          if (button) openInquiry(nursery, plants[Number(button.dataset.inquire)]);
+        });
+      }
+
+      $("profile").hidden = false;
+    }
+  </script>
+</body>
+</html>

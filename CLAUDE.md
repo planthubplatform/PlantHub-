@@ -66,6 +66,9 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | `directory.html` + `app.js` + `data/nurseries.js` | The plant directory: the trade listing table that used to be the whole site. Light header like the front page (logo home, search, Sign in). Both the front-page search and the "Plant Directory" circle land here; it reads `?q=`. |
 | `shared.js` | What every page showing a listing needs: the freshness date helpers, price and measurement text, and the trade's vocabulary (`CONTAINERS`, `SPECS`, `GRADES`). Load it before `app.js`. |
 | `store.js` | The pretend back end. Keeps mock accounts and growers' listing changes in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Pages read nurseries through `PH.nurseries()`, never `NURSERIES` directly. |
+| `grower.html` | One grower's public page (`grower.html?id=<nursery id>`): who they are, how fresh their listings are, everything they have, and an inquiry button. No phone or email. |
+| `inquiry.js` | The "send an inquiry" pop-up, shared by the directory and the grower page. `openInquiry(nursery, listing)`. |
+| `inquiries.html` | Conversations between buyers and growers. Either side can reply. |
 | `inventory.html` | A grower's own listings: one-tap "still accurate" (all, or one row), quantity and price edited in the row, add / edit / remove, photos, and the nursery's name and city. Growers only. |
 | `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
@@ -88,6 +91,8 @@ Rules that are easy to break:
 - **8 Oct 2026 — Build every page as a working mock.** No real data, clients or users. Each page is fully clickable against pretend data kept in the browser by `store.js`; no server, no real payments, no real email. One page at a time, reviewed by the owner before the next. Pages that need an account send signed-out visitors to `signin.html?next=<page>`.
 - **8 Oct 2026 — Sample nurseries are named "Sample Grower 01 (Palms)" and so on**, so none can pass for a real business. Demo accounts (one per account type) are defined at the top of `store.js`.
 - **8 Oct 2026 — Touching a listing confirms it.** Any save on `inventory.html` (a new quantity, a new price, a full edit) stamps the listing with today's date, the same as pressing "still accurate". A listing at quantity 0 stays in the grower's inventory but is hidden from the directory.
+- **10 Oct 2026 — Contact goes through inquiries.** A buyer is never shown a grower's phone or email, signed in or not; they send an inquiry and the conversation stays on PlantHub. The grower is given the buyer's name, email and phone. The owner expects growers who do get a call to send the buyer back to PlantHub anyway, because selling through it is easier. This replaces "signed-in buyers see contact details".
+- **10 Oct 2026 — One shape rule.** Buttons and tags are pills, cards are 16px (`.auth-card`, `.data-card`), boxes you type in are 8px. No em dashes in text a visitor can see.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
 ### Operating model (locked 6 Oct 2026, from the operating-model session)
