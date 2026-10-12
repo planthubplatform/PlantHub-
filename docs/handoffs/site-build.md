@@ -64,6 +64,9 @@ were approved with "go".
 
 ## Open questions
 - Order of the remaining pages (proposed under Next steps).
+- Choices made while building are parked in `docs/review-later.md` for one
+  review at the end. Kendrick asked for this on 12 Oct: build a default, log
+  it there, keep going.
 - The 11 "Road Block 2" questions in `website-design-v2.md`. Where a page needs
   one, build the doc's suggested default and say so on review.
 
