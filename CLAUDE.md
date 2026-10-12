@@ -56,6 +56,11 @@ Learning to code. Explain new ideas in plain language. Lead with the
 recommendation. Keep code comments plain and explanatory, like the ones
 already in the files.
 
+## Working standards
+
+- **Find the cause before fixing a bug.** Reproduce it, trace it back to where it starts, and say what the cause is before changing anything. No guess-and-retry fixes, and no patching the symptom.
+- **Evidence before "done".** Never say something works or is fixed without having just checked it: run it, click it, read the result, and report what was seen. If a check was skipped or failed, say so.
+
 ## How the site is built
 
 Plain HTML, CSS and JavaScript. No install, no build step.
