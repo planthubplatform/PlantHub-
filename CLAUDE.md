@@ -56,6 +56,12 @@ Learning to code. Explain new ideas in plain language. Lead with the
 recommendation. Keep code comments plain and explanatory, like the ones
 already in the files.
 
+## The light factory
+
+The remaining pages are built in one long run: one builder, one independent
+reviewer, written specs. How it works, the page order, and when to stop are in
+`docs/factory/README.md`. Read it before building any new page.
+
 ## Working standards
 
 - **Find the cause before fixing a bug.** Reproduce it, trace it back to where it starts, and say what the cause is before changing anything. No guess-and-retry fixes, and no patching the symptom.

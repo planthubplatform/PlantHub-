@@ -27,6 +27,11 @@ files; it took over from Website design V2.
   16px cards.
 
 ## In progress
+The light factory is set up in `docs/factory/` (12 Oct) but not ready to run:
+`questionnaire.md` has no answers yet and `specs/` holds only the template.
+Next: ask Kendrick the questionnaire in chat, section by section, write the
+answers in, write the five page specs plus `site-wide`, and get his go.
+
 Nothing uncommitted. Page 3 is waiting on Kendrick's review; pages 1 and 2
 were approved with "go".
 
@@ -71,7 +76,9 @@ were approved with "go".
   one, build the doc's suggested default and say so on review.
 
 ## Next steps
-Proposed order, each a separate review:
+The remaining pages are built by the light factory, in the order and by the
+rules in `docs/factory/README.md`, with a checkpoint after checkout. The list
+below is the earlier page-by-page plan it replaces:
 1. Grower inventory. **Built, in review.**
 2. Directory: grower profile page and inquiries. **Built, in review.**
 3. Checkout: add to order from the directory and grower page, the order page,
