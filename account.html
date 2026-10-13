@@ -56,6 +56,22 @@
         <a href="inventory.html" class="auth-button account-button-small">Manage your inventory</a>
       </section>
 
+      <!-- Buyers and growers: their orders. Buyers also get their basket. -->
+      <section id="orders-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
+        <p id="orders-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
+        <div class="flex flex-wrap gap-3">
+          <a href="basket.html" id="basket-link" hidden class="auth-button auth-button-outline account-button-small">Your basket</a>
+          <a href="orders.html" id="orders-button" class="auth-button auth-button-outline account-button-small"></a>
+        </div>
+      </section>
+
+      <!-- Buyers: the bank their orders are paid from. Pretend, like every
+           payment here: it is picked from a list at checkout, never typed. -->
+      <section id="bank-card" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
+        <p id="bank-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
+        <button type="button" id="bank-disconnect" hidden class="auth-button auth-button-outline account-button-small">Disconnect</button>
+      </section>
+
       <!-- Buyers and growers: their conversations. -->
       <section id="inquiries-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
         <p id="inquiries-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
@@ -144,7 +160,7 @@
         <!-- Opens when "Delete this account" is pressed: a second look
              before something that can't be undone. -->
         <div id="delete-confirm" hidden class="mt-4 rounded-lg border border-clay-300 dark:border-clay-700 bg-clay-50 dark:bg-ink-900 px-4 py-3">
-          <p class="text-sm text-clay-700 dark:text-clay-300">Delete this account for good? This can't be undone.</p>
+          <p id="delete-question" class="text-sm text-clay-700 dark:text-clay-300">Delete this account for good? This can't be undone.</p>
           <div class="mt-3 flex flex-wrap gap-3">
             <button type="button" id="delete-yes" class="auth-button account-button-small account-button-danger-solid">Yes, delete it</button>
             <button type="button" id="delete-no" class="auth-button auth-button-outline account-button-small">Keep my account</button>
@@ -161,6 +177,9 @@
   </main>
 
   <script src="store.js"></script>
+  <!-- Deleting an account cancels its unanswered orders, which puts plants
+       back on listings, so the sample nurseries have to be loaded here. -->
+  <script src="data/nurseries.js"></script>
   <script>
     let user = PH.currentUser();
 
@@ -213,6 +232,25 @@
         (grower ? "Questions buyers have sent your nursery." : "Your questions to growers, and their replies.") +
         (waiting ? " " + waiting + (waiting === 1 ? " is" : " are") + " waiting for you." : "");
 
+      // Orders: buyers see what they ordered, growers what they have to
+      // fill. Transport companies get their jobs with the transport pages.
+      const toAnswer = PH.ordersWaiting();
+      const lines = PH.basketCount();
+      document.getElementById("orders-link").hidden = user.type === "transporter";
+      document.getElementById("orders-button").textContent = grower ? "Orders to fill" : "My orders";
+      document.getElementById("basket-link").hidden = user.side !== "Buyer";
+      document.getElementById("basket-link").textContent = "Your basket" + (lines ? " (" + lines + ")" : "");
+      document.getElementById("orders-text").textContent =
+        (grower ? "Orders buyers have sent your nursery, and which carriers may deliver them." : "Your basket, and the orders you have placed with growers.") +
+        (toAnswer ? " " + toAnswer + (toAnswer === 1 ? " is" : " are") + " waiting for you." : "");
+
+      // The bank, for buyers. Connected at checkout; it can be let go here.
+      document.getElementById("bank-card").hidden = user.side !== "Buyer";
+      document.getElementById("bank-disconnect").hidden = !user.bank;
+      document.getElementById("bank-text").textContent = user.bank
+        ? "Orders are paid by bank transfer from " + user.bank.name + " ····" + user.bank.last4 + ". Sample bank: nothing real is connected."
+        : "No bank connected yet. You choose one the first time you check out. PlantHub takes bank transfers (ACH) only.";
+
       const tax = user.taxExempt;
       document.getElementById("tax-card").hidden = !tax;
       if (tax) {
@@ -256,6 +294,15 @@
       flash(document.getElementById("profile-saved"));
     });
 
+    // ---- Disconnect the bank ------------------------------------------------
+    // Nothing is lost that can't be put back: the next checkout asks again.
+    document.getElementById("bank-disconnect").addEventListener("click", function () {
+      const result = PH.disconnectBank();
+      if (!result.ok) return;
+      user = result.user;
+      draw();
+    });
+
     // ---- Change password ---------------------------------------------------
     const passwordError = document.getElementById("password-error");
     document.getElementById("password-form").addEventListener("submit", function (event) {
@@ -276,6 +323,12 @@
     // ---- Delete the account, after a second look ---------------------------
     const deleteConfirm = document.getElementById("delete-confirm");
     document.getElementById("delete-start").addEventListener("click", function () {
+      // Orders nobody has answered go with the account: say so first.
+      const waiting = PH.myOrders().filter(function (order) { return order.state === "awaiting"; }).length;
+      const orders = waiting === 1 ? "1 order that is waiting for an answer" : waiting + " orders that are waiting for an answer";
+      document.getElementById("delete-question").textContent = "Delete this account for good? " +
+        (waiting ? "Your " + orders + " will be " + (user.type === "grower" ? "declined" : "cancelled") + ", and the plants put back on the listings. " : "") +
+        "This can't be undone.";
       deleteConfirm.hidden = false;
       deleteConfirm.scrollIntoView({ behavior: "smooth", block: "nearest" });
     });

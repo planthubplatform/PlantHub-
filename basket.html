@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<!--
+  basket.html — a buyer's basket, and checking out.
+
+  A buyer adds listings from any number of growers (the "Add to order" box,
+  basket.js). This page shows them grouped by grower, because each grower's
+  group becomes its own order: its own $250 minimum, its own pickup or
+  delivery, its own payout. A group is checked out on its own, and the rest
+  stay in the basket.
+
+  The page has three views, picked by what follows the # in the address, so
+  the browser's Back button works:
+
+    basket.html                       the basket
+    basket.html#checkout=<nursery>    checking out one grower's group
+    basket.html#placed=<order>        "order placed"
+
+  PROTOTYPE ONLY. Paying is pretend: the buyer picks an invented bank, types
+  nothing, and no money moves. No cards anywhere: PlantHub is bank transfer
+  (ACH) only. No sales tax is worked out.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your basket - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+
+      <!-- ===== Signed in, but not as a buyer ============================== -->
+      <section id="not-buyer" hidden class="mx-auto max-w-xl auth-card text-center">
+        <h1 class="font-display font-semibold text-2xl tracking-tight">Ordering is for buyers</h1>
+        <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">
+          You're signed in with a <span id="not-buyer-type"></span> account, which has no basket.
+          To order plants, sign in with a landscaper or personal account.
+        </p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+          <a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>
+          <a href="account.html" class="auth-button auth-button-outline account-button-small">Your account</a>
+        </div>
+      </section>
+
+      <!-- ===== The basket ================================================== -->
+      <div id="basket-view" hidden>
+        <h1 class="font-display font-semibold text-3xl tracking-tight">Your basket</h1>
+        <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">
+          Each grower's plants become one order, with a <span data-min></span> minimum per grower, paid in full by bank transfer (ACH).
+        </p>
+
+        <!-- Shown once if stock moved since the plants were added. -->
+        <div id="tidy-notes" role="status" hidden class="auth-note mt-5"></div>
+
+        <!-- One card per grower; the script below draws them. -->
+        <div id="groups" class="mt-6 space-y-5"></div>
+
+        <div id="empty-row" hidden class="mt-6">
+          <button type="button" id="empty-start" class="auth-link text-sm">Empty the basket</button>
+          <div id="empty-ask" hidden class="ask-first mt-3">
+            <p class="text-sm text-clay-700 dark:text-clay-300">Take everything out of your basket?</p>
+            <div class="mt-3 flex flex-wrap gap-3">
+              <button type="button" id="empty-yes" class="auth-button account-button-small account-button-danger-solid">Yes, empty it</button>
+              <button type="button" id="empty-no" class="auth-button auth-button-outline account-button-small">Keep it</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Checking out one grower's group ============================= -->
+      <div id="checkout-view" hidden>
+        <a href="basket.html" class="step-back" style="margin-top:0">Your basket</a>
+        <h1 class="mt-3 font-display font-semibold text-3xl tracking-tight">Check out</h1>
+        <p id="checkout-from" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
+
+        <!-- The group isn't in the basket any more, or is under the minimum. -->
+        <section id="checkout-missing" hidden class="mt-6 auth-card">
+          <p id="checkout-missing-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
+          <a href="basket.html" class="mt-4 inline-block auth-button account-button-small">Back to your basket</a>
+        </section>
+
+        <div id="checkout-steps" class="mt-6 space-y-5">
+
+          <!-- 1. What is being ordered. -->
+          <section class="auth-card" aria-labelledby="step-order">
+            <h2 id="step-order" class="font-display font-semibold text-xl tracking-tight">1. Your order</h2>
+            <div id="checkout-lines" class="mt-3"></div>
+          </section>
+
+          <!-- 2. The bank. Pretend: pick one, type nothing. -->
+          <section class="auth-card" aria-labelledby="step-bank">
+            <h2 id="step-bank" class="font-display font-semibold text-xl tracking-tight">2. Pay by bank transfer</h2>
+
+            <div data-part="bank-connected" hidden>
+              <p class="mt-3 text-sm"><strong id="bank-name" class="font-semibold"></strong> connected.</p>
+              <p class="mt-1 text-sm text-ink-700 dark:text-stone-300">The payment for this order will come from this account.</p>
+              <button type="button" id="bank-change" class="mt-3 auth-link text-sm">Use a different bank</button>
+            </div>
+
+            <form id="bank-form" data-part="bank-pick" hidden class="mt-3" novalidate>
+              <p class="text-sm text-ink-700 dark:text-stone-300">
+                PlantHub takes bank transfers (ACH) only, never cards. Choose the bank the payment will come from.
+              </p>
+              <fieldset class="mt-4 grid gap-3 sm:grid-cols-2">
+                <legend class="sr-only">Your bank</legend>
+                <div id="bank-list" class="contents"></div>
+              </fieldset>
+              <p id="bank-error" role="alert" hidden class="auth-error mt-3"></p>
+              <button type="submit" class="mt-4 auth-button account-button-small">Connect this bank</button>
+              <p class="auth-hint">
+                Preview: these banks are invented and nothing is really connected. You are never asked for an account or routing number here.
+              </p>
+            </form>
+          </section>
+
+          <!-- 3. The total, and the button. -->
+          <section class="auth-card" aria-labelledby="step-place">
+            <h2 id="step-place" class="font-display font-semibold text-xl tracking-tight">3. Place the order</h2>
+            <dl class="money-list mt-3">
+              <div><dt>Plants</dt><dd id="sum-plants"></dd></div>
+              <div><dt>Sales tax</dt><dd class="text-ink-400 dark:text-stone-400">Not worked out in this preview</dd></div>
+              <div class="money-total"><dt>Bank payment to authorize</dt><dd id="sum-total"></dd></div>
+            </dl>
+            <ul class="mt-4 space-y-1.5 text-sm text-ink-700 dark:text-stone-300 list-disc pl-5">
+              <li>Nothing is taken until <span data-grower></span> accepts the order. If they decline, nothing is taken at all.</li>
+              <li>Once they accept, the payment is taken and PlantHub holds it until you have the plants.</li>
+              <li>Then you choose pickup or delivery. Delivery is a separate charge, agreed when you pick a carrier.</li>
+            </ul>
+            <p id="place-error" role="alert" hidden class="auth-error mt-4"></p>
+            <button type="button" id="place" class="mt-5 auth-button account-button-small">Place order</button>
+            <p id="place-hint" class="auth-hint" hidden>Connect a bank above to place the order.</p>
+          </section>
+        </div>
+      </div>
+
+      <!-- ===== Order placed ================================================ -->
+      <section id="placed-view" hidden class="auth-card">
+        <h1 id="placed-title" class="font-display font-semibold text-3xl tracking-tight"></h1>
+        <p id="placed-text" class="mt-3 text-sm text-ink-700 dark:text-stone-300"></p>
+        <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">When they accept, you choose pickup or delivery on the order's page.</p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a id="placed-order" href="orders.html" class="auth-button account-button-small">View this order</a>
+          <a id="placed-next" href="directory.html" class="auth-button auth-button-outline account-button-small"></a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <p id="toast" role="status" aria-live="polite" class="toast" hidden></p>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: growers, plants and prices here are sample data. Nothing is really ordered, and no money moves.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. Who is here?
+    // -----------------------------------------------------------------------
+    let user = PH.currentUser();
+    const $ = function (id) { return document.getElementById(id); };
+    const isBuyer = !!user && user.side === "Buyer";
+
+    if (!user) {
+      location.replace("signin.html?next=basket.html");
+    } else if (!isBuyer) {
+      $("not-buyer-type").textContent = user.typeName.toLowerCase();
+      $("not-buyer").hidden = false;
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. Small helpers.
+    // -----------------------------------------------------------------------
+    function showError(box, message) { box.textContent = message; box.hidden = false; }
+
+    // The message at the bottom of the screen: "Removed."
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.hidden = false;
+      clearTimeout(box.timer);
+      box.timer = setTimeout(function () { box.hidden = true; }, 2800);
+    }
+
+    // The basket count in the top corner follows every change.
+    function cornerChanged() { document.dispatchEvent(new Event("planthub:account-changed")); }
+
+    document.querySelectorAll("[data-min]").forEach(function (spot) { spot.textContent = minOrderText(); });
+
+    // -----------------------------------------------------------------------
+    // 3. The basket view.
+    // -----------------------------------------------------------------------
+    function lineHtml(line) {
+      const plant = line.listing;
+      return (
+        '<div class="basket-line" data-line="' + escapeHtml(line.listingId) + '">' +
+          '<div class="min-w-0">' +
+            '<p class="font-medium">' + escapeHtml(plant.common) + "</p>" +
+            '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(lineDetailText(plant)) + "</p>" +
+            '<p class="text-[13px] text-ink-700 dark:text-stone-300">' + priceText(plant.price) + " each · " + line.available.toLocaleString() + " available</p>" +
+          "</div>" +
+          '<label class="block">' +
+            '<span class="sr-only">Quantity of ' + escapeHtml(plant.common) + "</span>" +
+            '<input class="auth-input inventory-input" style="margin-top:0" type="number" min="1" max="' + line.available + '" step="1" inputmode="numeric" data-quantity value="' + line.quantity + '">' +
+          "</label>" +
+          '<p class="basket-line-total" data-line-total>' + moneyText(line.total) + "</p>" +
+          '<button type="button" class="row-button" data-remove>Remove</button>' +
+          '<p class="auth-error" role="alert" hidden></p>' +
+        "</div>"
+      );
+    }
+
+    function groupHtml(group) {
+      const growerHref = "grower.html?id=" + encodeURIComponent(group.nurseryId);
+      const percent = Math.min(100, Math.round(group.subtotal / PH.MIN_ORDER_DOLLARS * 100));
+      const place = group.nursery ? group.nursery.city + ", " + group.nursery.state : "";
+
+      return (
+        '<section class="auth-card" data-group="' + escapeHtml(group.nurseryId) + '">' +
+          '<div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">' +
+            '<h2 class="font-display font-semibold text-xl tracking-tight"><a class="hover:underline" href="' + growerHref + '">' + escapeHtml(group.nurseryName) + "</a></h2>" +
+            '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(place) + "</p>" +
+          "</div>" +
+          '<div class="mt-2">' + group.lines.map(lineHtml).join("") + "</div>" +
+          '<div class="mt-2 border-t border-ink-100 dark:border-ink-700 pt-4">' +
+            '<p class="flex justify-between gap-4 font-semibold"><span>Subtotal</span><span class="tabular-nums" data-subtotal>' + moneyText(group.subtotal) + "</span></p>" +
+            '<div class="minimum-bar mt-3" aria-hidden="true"><span data-bar style="width:' + percent + '%"></span></div>' +
+            '<p class="mt-2 text-[13px] ' + minimumLook(group) + '" data-minimum>' + minimumText(group) + "</p>" +
+            '<div class="mt-4 flex flex-wrap gap-3">' +
+              // Always a link, switched off while the group is under the
+              // minimum, so a new quantity can switch it on without the
+              // button being swapped out from under the pointer.
+              '<a class="auth-button account-button-small" data-checkout href="#checkout=' + encodeURIComponent(group.nurseryId) + '"' +
+                (group.ready ? "" : ' aria-disabled="true" tabindex="-1"') + ">Check out this order</a>" +
+              '<a class="auth-button auth-button-outline account-button-small" href="' + growerHref + '">Add more from this grower</a>' +
+            "</div>" +
+          "</div>" +
+        "</section>"
+      );
+    }
+
+    function minimumText(group) {
+      return group.ready
+        ? "Meets the " + minOrderText() + " minimum for this grower."
+        : "Add " + moneyText(group.short) + " more from this grower to reach the " + minOrderText() + " minimum.";
+    }
+
+    function minimumLook(group) {
+      return group.ready ? "text-ink-700 dark:text-stone-300" : "font-medium text-clay-700 dark:text-clay-300";
+    }
+
+    // After a quantity changes, bring one grower's card up to date without
+    // drawing it again: the totals, the bar and the check-out link. Drawing
+    // it again would swap the buttons out mid-click, so that a press on
+    // "Check out" straight after typing a number would be lost.
+    function refreshGroup(card) {
+      const group = PH.basket().find(function (other) { return other.nurseryId === card.dataset.group; });
+      if (!group) { drawBasket(); return; }
+
+      group.lines.forEach(function (line) {
+        const row = Array.from(card.querySelectorAll("[data-line]")).find(function (other) { return other.dataset.line === line.listingId; });
+        if (!row) return;
+        const box = row.querySelector("[data-quantity]");
+        box.value = line.quantity;
+        box.defaultValue = line.quantity;
+        row.querySelector("[data-line-total]").textContent = moneyText(line.total);
+        row.querySelector(".auth-error").hidden = true;
+      });
+
+      card.querySelector("[data-subtotal]").textContent = moneyText(group.subtotal);
+      card.querySelector("[data-bar]").style.width = Math.min(100, Math.round(group.subtotal / PH.MIN_ORDER_DOLLARS * 100)) + "%";
+      const minimum = card.querySelector("[data-minimum]");
+      minimum.textContent = minimumText(group);
+      minimum.className = "mt-2 text-[13px] " + minimumLook(group);
+
+      const link = card.querySelector("[data-checkout]");
+      if (group.ready) {
+        link.removeAttribute("aria-disabled");
+        link.removeAttribute("tabindex");
+      } else {
+        link.setAttribute("aria-disabled", "true");
+        link.setAttribute("tabindex", "-1");
+      }
+    }
+
+    function drawBasket() {
+      const groups = PH.basket();
+      $("empty-row").hidden = !groups.length;
+      $("empty-ask").hidden = true;
+
+      if (!groups.length) {
+        const count = PH.myOrders().length;
+        $("groups").innerHTML =
+          '<section class="auth-card">' +
+            '<p class="font-medium">Your basket is empty.</p>' +
+            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Open any listing in the plant directory and press Add to order.</p>' +
+            '<div class="mt-4 flex flex-wrap gap-3">' +
+              '<a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>' +
+              (count ? '<a href="orders.html" class="auth-button auth-button-outline account-button-small">Your orders</a>' : "") +
+            "</div>" +
+          "</section>";
+        return;
+      }
+      $("groups").innerHTML = groups.map(groupHtml).join("");
+    }
+
+    // A new quantity typed into a line. A bad one is put back, with the
+    // reason next to it.
+    $("groups").addEventListener("change", function (event) {
+      const box = event.target.closest("[data-quantity]");
+      if (!box) return;
+      const row = box.closest("[data-line]");
+      const result = PH.setBasketQuantity(row.dataset.line, box.value);
+      if (!result.ok) {
+        box.value = box.defaultValue;
+        showError(row.querySelector(".auth-error"), result.error);
+        return;
+      }
+      refreshGroup(row.closest("[data-group]"));
+      toast("Quantity changed.");
+    });
+
+    $("groups").addEventListener("click", function (event) {
+      // A check-out link that is switched off goes nowhere.
+      if (event.target.closest('[data-checkout][aria-disabled="true"]')) event.preventDefault();
+
+      const button = event.target.closest("[data-remove]");
+      if (!button) return;
+      PH.removeFromBasket(button.closest("[data-line]").dataset.line);
+      drawBasket();
+      cornerChanged();
+      toast("Taken out of your basket.");
+    });
+
+    // Emptying the whole basket asks first.
+    $("empty-start").addEventListener("click", function () { $("empty-ask").hidden = false; });
+    $("empty-no").addEventListener("click", function () { $("empty-ask").hidden = true; });
+    $("empty-yes").addEventListener("click", function () {
+      PH.clearBasket();
+      drawBasket();
+      cornerChanged();
+      toast("Basket emptied.");
+    });
+
+    // -----------------------------------------------------------------------
+    // 4. Checking out one grower's group.
+    // -----------------------------------------------------------------------
+    let checkoutId = "";        // the nursery being checked out
+    let pickingBank = false;    // "Use a different bank" was pressed
+
+    function drawBank() {
+      const bank = user.bank;
+      const pick = !bank || pickingBank;
+      document.querySelector('[data-part="bank-connected"]').hidden = pick;
+      document.querySelector('[data-part="bank-pick"]').hidden = !pick;
+      $("bank-error").hidden = true;
+      if (bank) $("bank-name").textContent = bank.name + " ····" + bank.last4;
+
+      $("bank-list").innerHTML = PH.BANKS.map(function (other) {
+        return (
+          '<label class="choice">' +
+            '<input type="radio" name="bank" value="' + escapeHtml(other.name) + '"' + (bank && bank.name === other.name ? " checked" : "") + ">" +
+            '<span><span class="block font-medium">' + escapeHtml(other.name) + "</span>" +
+            '<span class="block text-[13px] text-ink-400 dark:text-stone-400">Sample checking ····' + other.last4 + "</span></span>" +
+          "</label>"
+        );
+      }).join("");
+
+      // No bank, no order.
+      $("place").disabled = pick;
+      $("place-hint").hidden = !pick;
+    }
+
+    function drawCheckout() {
+      const group = PH.basket().find(function (other) { return other.nurseryId === checkoutId; });
+      const missing = !group || !group.ready;
+      $("checkout-missing").hidden = !missing;
+      $("checkout-steps").hidden = missing;
+      $("place-error").hidden = true;
+
+      if (missing) {
+        $("checkout-from").textContent = "";
+        $("checkout-missing-text").textContent = group
+          ? "Your order from " + group.nurseryName + " is under the " + minOrderText() + " minimum, so it can't be checked out yet."
+          : "There is nothing from that grower in your basket.";
+        return;
+      }
+
+      $("checkout-from").textContent = "Order from " + group.nurseryName + (group.nursery ? ", " + group.nursery.city : "") + ".";
+      document.querySelectorAll("[data-grower]").forEach(function (spot) { spot.textContent = group.nurseryName; });
+
+      $("checkout-lines").innerHTML = group.lines.map(function (line) {
+        return (
+          '<div class="flex justify-between gap-4 py-2.5 border-b border-ink-50 dark:border-ink-800 text-sm">' +
+            '<div class="min-w-0">' +
+              '<p class="font-medium">' + line.quantity.toLocaleString() + " × " + escapeHtml(line.listing.common) + "</p>" +
+              '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(lineDetailText(line.listing)) + " · " + priceText(line.listing.price) + " each</p>" +
+            "</div>" +
+            '<p class="tabular-nums font-medium whitespace-nowrap">' + moneyText(line.total) + "</p>" +
+          "</div>"
+        );
+      }).join("");
+
+      $("sum-plants").textContent = moneyText(group.subtotal);
+      $("sum-total").textContent = moneyText(group.subtotal);
+      drawBank();
+    }
+
+    $("bank-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const chosen = document.querySelector('input[name="bank"]:checked');
+      const result = PH.connectBank(chosen ? chosen.value : "");
+      if (!result.ok) {
+        showError($("bank-error"), result.error);
+        return;
+      }
+      user = result.user;
+      pickingBank = false;
+      drawBank();
+      toast(user.bank.name + " connected.");
+    });
+
+    $("bank-change").addEventListener("click", function () {
+      pickingBank = true;
+      drawBank();
+    });
+
+    $("place").addEventListener("click", function () {
+      const result = PH.placeOrder(checkoutId);
+      if (!result.ok) {
+        showError($("place-error"), result.error);
+        return;
+      }
+      cornerChanged();
+      // Replace, not add: Back from "order placed" should not land on a
+      // checkout page for a group that is no longer in the basket.
+      location.replace("basket.html#placed=" + encodeURIComponent(result.order.id));
+    });
+
+    // -----------------------------------------------------------------------
+    // 5. "Order placed".
+    // -----------------------------------------------------------------------
+    function drawPlaced(order) {
+      const more = PH.basketCount() > 0;
+      $("placed-title").textContent = "Order " + order.id + " placed";
+      $("placed-text").textContent = order.nurseryName + " has been asked to accept it. Your bank payment of " +
+        moneyText(order.money.subtotal) + " is authorized, and is only taken if they accept.";
+      $("placed-order").href = "order.html?id=" + encodeURIComponent(order.id);
+      $("placed-next").textContent = more ? "Back to your basket" : "Keep browsing";
+      $("placed-next").href = more ? "basket.html" : "directory.html";
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. Which view? Whatever follows the # in the address decides.
+    // -----------------------------------------------------------------------
+    function route() {
+      const parts = location.hash.slice(1).split("=");
+      const value = decodeURIComponent(parts[1] || "");
+      const placed = parts[0] === "placed" ? PH.order(value) : null;
+      const view = placed ? "placed" : parts[0] === "checkout" && value ? "checkout" : "basket";
+
+      $("basket-view").hidden = view !== "basket";
+      $("checkout-view").hidden = view !== "checkout";
+      $("placed-view").hidden = view !== "placed";
+
+      if (view === "basket") drawBasket();
+      if (view === "checkout") { checkoutId = value; pickingBank = false; drawCheckout(); }
+      if (view === "placed") drawPlaced(placed);
+      document.title = (view === "checkout" ? "Check out" : view === "placed" ? "Order placed" : "Your basket") + " - PlantHub";
+      window.scrollTo(0, 0);
+    }
+
+    if (isBuyer) {
+      // Stock may have moved since these plants went in the basket.
+      const notes = PH.tidyBasket();
+      if (notes.length) {
+        $("tidy-notes").innerHTML = notes.map(function (text) { return "<p>" + escapeHtml(text) + "</p>"; }).join("");
+        $("tidy-notes").hidden = false;
+        cornerChanged();
+      }
+      window.addEventListener("hashchange", route);
+      route();
+    }
+  </script>
+</body>
+</html>

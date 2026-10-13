@@ -765,3 +765,180 @@ textarea.auth-input { display: block; resize: vertical; }
 
 /* A row button can also be a link. */
 a.row-button { display: inline-block; }
+
+/* ---------------------------------------------------------------------------
+   Basket and orders (basket.html, orders.html, order.html)
+--------------------------------------------------------------------------- */
+
+/* The basket in the top corner: a small drawing, the word on a wide screen,
+   and the number of lines in it. Unlike the other corner links it stays on
+   a phone, because a basket nobody can find is no use. */
+.corner-basket {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.corner-basket svg { width: 1.25rem; height: 1.25rem; }
+.corner-basket:hover { color: #8a4a22; }
+.corner-basket:hover .corner-basket-word { text-decoration: underline; }
+.corner-basket:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; border-radius: 0.25rem; }
+
+/* Where an order stands, as a tag. Never green: green means fresh.
+   Plain outline for "in progress", clay for "your move", sand for "done",
+   dashed for an order that came to nothing. */
+.status-pill {
+  display: inline-block;
+  border: 1px solid #bccdc4;          /* ink-200 */
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #24402f;
+}
+.status-pill-you { background: #a95c2d; border-color: #a95c2d; color: #faf6ef; }
+.status-pill-done { background: #f2e9dc; border-color: #f2e9dc; }
+.status-pill-off { border-style: dashed; color: #4a6b5a; }
+
+/* One plant in a basket: the name, then how many, the line total and Remove.
+   On a phone the name takes the first row and the rest the second. */
+.basket-line {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr auto;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 0.875rem 0;
+}
+.basket-line + .basket-line { border-top: 1px solid #eef2f0; }
+.basket-line > :first-child,
+.basket-line > .auth-error { grid-column: 1 / -1; }
+.basket-line-total { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+@media (min-width: 640px) {
+  .basket-line { grid-template-columns: minmax(0, 1fr) 5.5rem 7rem auto; }
+  .basket-line > :first-child { grid-column: auto; }
+}
+
+/* How far a grower's group is toward the $250 minimum. Clay, not green. */
+.minimum-bar { height: 0.375rem; border-radius: 9999px; background: #eef2f0; overflow: hidden; }
+.minimum-bar span { display: block; height: 100%; border-radius: 9999px; background: #c2703c; }
+
+/* One of several things to choose between (a bank, pickup or delivery, a
+   carrier): a box with a round tick on the left. The whole box is the target. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border: 1px solid #d6e0db;
+  border-radius: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  cursor: pointer;
+  transition: border-color 150ms, background 150ms;
+}
+.choice:hover { border-color: #c2703c; }
+.choice input { margin-top: 0.1875rem; accent-color: #a95c2d; flex-shrink: 0; }
+.choice:has(input:checked) { border-color: #a95c2d; background: #fbf1e9; }
+.choice:has(input:focus-visible) { box-shadow: 0 0 0 2px #c2703c; }
+
+/* A second look before something that can't be undone. */
+.ask-first {
+  border: 1px solid #e0a877;          /* clay-300 */
+  background: #fbf1e9;                /* clay-50 */
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+}
+.ask-first[hidden] { display: none; }
+
+/* The amounts on an order: a label on the left, dollars on the right. */
+.money-list { font-size: 0.9375rem; }
+.money-list > div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.375rem 0; }
+.money-list dt { min-width: 0; }
+.money-list dd { font-variant-numeric: tabular-nums; text-align: right; }
+.money-list .money-total { border-top: 1px solid #d6e0db; margin-top: 0.375rem; padding-top: 0.75rem; font-weight: 600; }
+/* A row whose right-hand side is a remark, not an amount: the remark may
+   wrap, the short label on the left may not. */
+.money-list .money-note dt { flex-shrink: 0; }
+
+/* An order's history, oldest first, with a small dot per step. */
+.timeline { border-left: 2px solid #d6e0db; margin-left: 0.3125rem; }
+.timeline li { position: relative; padding: 0 0 0.875rem 1.125rem; font-size: 0.875rem; }
+.timeline li:last-child { padding-bottom: 0; }
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: -0.375rem;
+  top: 0.3125rem;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  background: #bccdc4;
+}
+.timeline time { display: block; font-size: 0.75rem; color: #4a6b5a; }
+
+/* The small heading over each part of an order. */
+.part-title { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #4a6b5a; }
+
+/* A carrier in the grower's delivery settings. */
+.carrier-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1rem; padding: 0.875rem 0; }
+.carrier-row + .carrier-row { border-top: 1px solid #eef2f0; }
+
+/* A pick list and a date box sit side by side on an order, so they share a
+   height. A box whose value was refused gets a clay edge until it is fixed. */
+select.auth-input, input[type="date"].auth-input { height: 2.875rem; }
+.auth-input[aria-invalid="true"] { border-color: #a95c2d; box-shadow: 0 0 0 1px #a95c2d; }
+
+/* A link that looks like a button but is switched off for now (checking out
+   a basket that is under the minimum). It still takes the press, and the
+   basket page decides at that moment whether the press goes anywhere: a
+   number typed just before may have switched it back on. */
+a.auth-button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
+a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
+@media (prefers-color-scheme: dark) {
+  a.auth-button[aria-disabled="true"]:hover { background: #faf6ef; }
+}
+
+/* The search box in the header of the directory and the grower page. A
+   signed-in buyer's corner is long (Inquiries, Orders, Basket, name, Sign
+   out), and without a floor the search box was squeezed to a sliver on
+   in-between screens. With one, the corner drops to a second row instead;
+   and on those screens the name gives way to its round letter first. */
+@media (min-width: 640px) {
+  .header-search { min-width: 18rem; }
+}
+@media (max-width: 1179px) {
+  header:has(.header-search) .corner-text { display: none; }
+}
+
+/* Layout classes would otherwise beat the hidden attribute. */
+.choice[hidden], .basket-line[hidden], .carrier-row[hidden], [data-part][hidden] { display: none; }
+
+@media (max-width: 639px) {
+  .corner-basket-word { display: none; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .corner-basket:hover { color: #e0a877; }
+  .status-pill { border-color: #24402f; color: #d6e0db; }
+  .status-pill-you { background: #c2703c; border-color: #c2703c; color: #0b1710; }
+  .status-pill-done { background: #1b3328; border-color: #1b3328; }
+  .status-pill-off { color: #bccdc4; }
+  .basket-line + .basket-line { border-top-color: #1b3328; }
+  .minimum-bar { background: #1b3328; }
+  .choice { border-color: #24402f; }
+  .choice:has(input:checked) { border-color: #c2703c; background: #1b3328; }
+  .ask-first { border-color: #8a4a22; background: #0b1710; }
+  .money-list .money-total { border-top-color: #24402f; }
+  .timeline { border-left-color: #24402f; }
+  .timeline li::before { background: #4a6b5a; }
+  .timeline time { color: #bccdc4; }
+  .part-title { color: #bccdc4; }
+  .carrier-row + .carrier-row { border-top-color: #1b3328; }
+  /* Tell the browser these boxes sit on a dark page, so the calendar
+     button, the pick-list arrow and the round ticks are drawn light. */
+  .auth-input, .choice input { color-scheme: dark; }
+  .auth-input[aria-invalid="true"] { border-color: #e0a877; box-shadow: 0 0 0 1px #e0a877; }
+}

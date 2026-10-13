@@ -327,6 +327,9 @@
             (plant.botanical ? '<p class="italic text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(plant.botanical) + "</p>" : "") +
             '<p class="mt-0.5 text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(small + photos) + "</p>" +
             (plant.quantity === 0 ? '<p class="mt-1 text-[13px] font-medium text-clay-700 dark:text-clay-300">None left: hidden from buyers until the quantity is above zero.</p>' : "") +
+            // Plants in an order you haven't answered are already off the count.
+            (held[plant.id] ? '<p class="mt-1 text-[13px] font-medium text-clay-700 dark:text-clay-300">' + held[plant.id].toLocaleString() +
+              ' more held by an order waiting for your answer. <a class="underline" href="orders.html">Open orders</a></p>' : "") +
           "</div>" +
 
           '<label class="inventory-field">' +
@@ -363,8 +366,13 @@
       );
     }
 
+    // How many of each listing sit in orders the grower hasn't answered yet.
+    // Worked out before the rows are drawn (rowHtml reads it).
+    let held = {};
+
     function drawListings() {
       const plants = nursery.plants;
+      held = PH.awaitingByListing();
       $("list-title").textContent = plural(plants.length, "listing");
       $("listings").innerHTML = plants.length
         ? plants.map(rowHtml).join("")
@@ -561,8 +569,15 @@
           row.querySelector(".inventory-confirm").hidden = action !== "remove";
         }
         if (action === "remove-yes") {
-          if (editingId === id) closeListingForm();
-          apply(PH.removeListing(id), "Listing removed.");
+          const result = apply(PH.removeListing(id), "Listing removed.");
+          if (result.ok) {
+            if (editingId === id) closeListingForm();
+          } else {
+            // Held by an order that is waiting for an answer: say so here.
+            row.querySelector(".inventory-actions").hidden = false;
+            row.querySelector(".inventory-confirm").hidden = true;
+            showError(row.querySelector(".inventory-row-error"), result.error);
+          }
         }
       });
 

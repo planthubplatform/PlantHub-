@@ -75,15 +75,21 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 |---|---|
 | `index.html` | Front page: Sign in, the PlantHub wordmark, search, five round section links. |
 | `directory.html` + `app.js` + `data/nurseries.js` | The plant directory: the trade listing table that used to be the whole site. Light header like the front page (logo home, search, Sign in). Both the front-page search and the "Plant Directory" circle land here; it reads `?q=`. |
-| `shared.js` | What every page showing a listing needs: the freshness date helpers, price and measurement text, and the trade's vocabulary (`CONTAINERS`, `SPECS`, `GRADES`). Load it before `app.js`. |
-| `store.js` | The pretend back end. Keeps mock accounts and growers' listing changes in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Pages read nurseries through `PH.nurseries()`, never `NURSERIES` directly. |
-| `grower.html` | One grower's public page (`grower.html?id=<nursery id>`): who they are, how fresh their listings are, everything they have, and an inquiry button. No phone or email. |
+| `shared.js` | What every page showing a listing or an order needs: the freshness date helpers, price, money and date text, the trade's vocabulary (`CONTAINERS`, `SPECS`, `GRADES`) and the transport vocabulary (`HAUL_TYPES`, `HAUL_SIZES`, `HAUL_LOADS`, `EQUIPMENT`). Load it before `app.js`. |
+| `store.js` | The pretend back end. Keeps mock accounts, growers' listing changes, baskets, orders and each grower's carrier rules in the browser's own storage (localStorage) and draws the account corner in every header. Nothing is sent anywhere. Pages read nurseries through `PH.nurseries()`, never `NURSERIES` directly. Every function is listed at the top of the file. |
+| `grower.html` | One grower's public page (`grower.html?id=<nursery id>`): who they are, how fresh their listings are, everything they have, with "Add to order" and "Inquire" on every listing. No phone or email. |
 | `inquiry.js` | The "send an inquiry" pop-up, shared by the directory and the grower page. `openInquiry(nursery, listing)`. |
 | `inquiries.html` | Conversations between buyers and growers. Either side can reply. |
+| `basket.js` | The "add to order" pop-up, shared by the directory and the grower page. `openAddToOrder(nursery, listing)`. |
+| `basket.html` | A buyer's basket, grouped by grower, and checking out one grower's group: review, pretend bank, place order. Three views picked by what follows `#`. Buyers only. |
+| `orders.html` | Every order the signed-in buyer or grower is part of. Growers also keep their delivery settings here: approved carriers, the "any carrier I haven't blocked" switch, blocks. |
+| `order.html` | One order (`order.html?id=PH-1001`) and everything done to it: accept or decline, pickup or delivery, confirm, report a problem. The "Preview tools" box stands in for people a reviewer can't sign in as. |
+| `data/carriers.js` | Eight invented transport companies ("Sample Carrier 01 (Flatbed)"). Insurance is given as days from today so the samples never all lapse. |
+| `data/distances.js` | Sample mileage between 18 South Florida cities, worked out from rough positions. Not road-accurate, and says so. |
 | `inventory.html` | A grower's own listings: one-tap "still accurate" (all, or one row), quantity and price edited in the row, add / edit / remove, photos, and the nursery's name and city. Growers only. |
 | `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
-| `account.html` | The signed-in person's page: details, password, sign out, delete. Sends signed-out visitors to sign in first. |
+| `account.html` | The signed-in person's page: links to their orders, basket and inquiries, the bank a buyer connected, details, password, sign out, delete. Sends signed-out visitors to sign in first. |
 | `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
@@ -91,6 +97,12 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 Rules that are easy to break:
 - **Green means fresh.** Green is only for how recently a listing was confirmed (and the logo dot). Hover and selected states use clay.
 - **Sample data stays labelled.** `data/nurseries.js` is invented. Never present it as real businesses.
+- **Order status tags are never green.** Clay means "your move", sand means done, a dashed outline means the order came to nothing (`orderPillClass` in `shared.js`).
+- **The buyer never sees PlantHub's 3%.** Only the grower's side of an order shows the fee and the payout, and `store.js` only puts them on the copy of an order a grower gets. An order's history is read by both sides, so it never states the payout: beside the order total, that gives the fee away.
+- **A page that changes stock must load `data/nurseries.js`.** Placing, declining or cancelling an order, and deleting an account, all move plants on or off listings.
+- **No bank or card details are ever typed.** The buyer picks an invented bank from a list and that is the whole step.
+- **Preview tools are marked as preview.** Anything that stands in for a person or for time passing (`PH.preview...` in `store.js`) sits in the "Preview tools" box and says it exists only in the preview.
+- Script order on pages with deliveries: `shared.js`, `store.js`, `data/nurseries.js`, `data/carriers.js`, `data/distances.js`, then the page's own script.
 - Tailwind comes from `cdn.tailwindcss.com`. Cloud sandboxes block that address, so screenshots there need a locally built copy of the CSS.
 
 ## Decisions made

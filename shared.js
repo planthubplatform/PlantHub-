@@ -7,6 +7,8 @@
     1. the "updated" date: how old a listing is and what colour that makes it
     2. small text helpers: safe HTML, prices, measurements
     3. the trade's vocabulary: the allowed container sizes, specs and grades
+    4. money and dates on orders, and the look of an order's status tag
+    5. the transport vocabulary: what a carrier hauls, and with what
 
   Load this file before app.js or any page script that uses these.
 */
@@ -143,5 +145,68 @@ const GRADES = [
 // 4. Photos: yes or no.
 const PHOTO_OPTIONS = ["With photos", "No photos"];
 
-// Every order goes through PlantHub, paid in full by bank transfer (ACH).
-const MIN_ORDER = "$250";
+// Every order goes through PlantHub, paid in full by bank transfer (ACH),
+// with a minimum per grower. The amount is kept in one place, with the other
+// money rules at the top of store.js; this turns it into text: "$250".
+function minOrderText() {
+  return "$" + PH.MIN_ORDER_DOLLARS;
+}
+
+// ---------------------------------------------------------------------------
+// 4. Money and dates on orders.
+// ---------------------------------------------------------------------------
+
+// A total, always with cents and with commas in the thousands: "$1,250.00".
+// (priceText above is for a single plant's price, where "$326" reads better.)
+function moneyText(amount) {
+  return "$" + Number(amount || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+// "2026-10-20" -> "20 Oct 2026"
+function dayText(isoDate) {
+  const date = new Date(String(isoDate).slice(0, 10) + "T12:00:00");
+  return isNaN(date) ? String(isoDate || "") : date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+
+// "2026-10-09T14:05:00Z" -> "9 Oct, 10:05" (in this computer's own time)
+function momentText(isoTime) {
+  const date = new Date(isoTime);
+  if (isNaN(date)) return "";
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" }) + ", " +
+         date.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+}
+
+// One line of an order or basket, in the trade's short form:
+// "Field Grown · 18' ht · 12' CT · Florida Fancy"
+function lineDetailText(line) {
+  return [line.container, specText(line), (line.grades || []).join(", ")].filter(Boolean).join(" · ");
+}
+
+// Which look an order's status tag gets (the styles are in styles.css).
+// Never green: green means fresh. Clay says "your move", sand says "done",
+// a dashed outline says the order came to nothing.
+function orderPillClass(order) {
+  if (order.needsYou) return "status-pill status-pill-you";
+  if (order.status === "complete") return "status-pill status-pill-done";
+  if (order.status === "declined" || order.status === "cancelled") return "status-pill status-pill-off";
+  return "status-pill";
+}
+
+// An order's lines in one breath: "40 × Sabal Palm, 12 × Areca Palm".
+function orderLinesText(order) {
+  return order.lines.map(function (line) {
+    return line.quantity.toLocaleString() + " × " + line.common;
+  }).join(", ");
+}
+
+// ---------------------------------------------------------------------------
+// 5. The transport vocabulary: what a carrier says it can haul, and with what.
+//    Like the lists in section 3, a value lives in ONE list only.
+// ---------------------------------------------------------------------------
+const HAUL_TYPES = ["Palms", "Trees", "Shrubs", "Groundcover and liners"];
+const HAUL_SIZES = ["Up to 15G", "45G to 100G", "Boxed", "Field grown"];
+const HAUL_LOADS = ["Partial loads", "Full truckloads"];
+const EQUIPMENT = [
+  "Flatbed", "Box truck", "Enclosed trailer", "Gooseneck trailer",
+  "Tractor trailer", "Crane truck", "Forklift on board", "Liftgate",
+];

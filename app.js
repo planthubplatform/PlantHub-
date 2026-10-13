@@ -133,6 +133,7 @@ PH.nurseries().forEach(function (nursery) {
     const grades = plant.grades || [];
     LISTINGS.push({
       nursery: nursery,
+      id: plant.id,
       common: plant.common,
       botanical: plant.botanical,
       container: plant.container,
@@ -431,8 +432,9 @@ function rowHtml(listing, words, index) {
         "</span></td>" +
     "</tr>";
 
-  // Hidden until the row is clicked: the small print, and the way to reach
-  // the grower. Prices are public, but a grower's phone and email never
+  // Hidden until the row is clicked: the small print, and the two things a
+  // buyer can do. "Add to order" puts the listing in their basket
+  // (basket.js). Prices are public, but a grower's phone and email never
   // reach the page: a buyer sends an inquiry (inquiry.js) and the
   // conversation stays on PlantHub. A grower looking at their own listing
   // gets the way to their inventory instead.
@@ -442,7 +444,8 @@ function rowHtml(listing, words, index) {
     '<span class="w-full sm:w-auto flex flex-wrap items-center gap-2">' +
       (mine
         ? '<a class="row-button row-button-main" href="inventory.html">Manage this listing</a>'
-        : '<button type="button" class="row-button row-button-main" data-inquire="' + index + '">' +
+        : '<button type="button" class="row-button row-button-main" data-add="' + index + '">Add to order</button>' +
+          '<button type="button" class="row-button" data-inquire="' + index + '">' +
             (user ? "Inquire" : "Sign in to inquire") + "</button>") +
       '<a class="row-button" href="' + growerHref + '">View grower</a>' +
     "</span>";
@@ -453,7 +456,7 @@ function rowHtml(listing, words, index) {
         '<div class="rounded-lg bg-cream dark:bg-ink-950/60 border border-ink-100 dark:border-ink-800 ' +
              'px-3 py-2.5 text-[13px] flex flex-wrap items-center gap-x-5 gap-y-2">' +
           contact +
-          '<span class="text-ink-400 dark:text-stone-400">' + MIN_ORDER + " minimum order · pay by bank transfer (ACH)</span>" +
+          '<span class="text-ink-400 dark:text-stone-400">' + minOrderText() + " minimum order · pay by bank transfer (ACH)</span>" +
           '<span class="text-ink-400 dark:text-stone-400">' + escapeHtml(n.specialties.join(" · ")) + "</span>" +
           '<span class="ml-auto ' + style.text + '">' + agoLong(listing.days) + "</span>" +
         "</div>" +
@@ -666,6 +669,14 @@ resultsBox.addEventListener("click", function (event) {
   // Let a link inside a row behave like a link.
   if (event.target.closest("a")) return;
 
+  // "Add to order" opens the how-many box for that row's listing.
+  const add = event.target.closest("[data-add]");
+  if (add) {
+    const listing = shownRows[Number(add.getAttribute("data-add"))];
+    openAddToOrder(listing.nursery, listing);
+    return;
+  }
+
   // "Inquire" opens the message box for that row's listing.
   const inquire = event.target.closest("[data-inquire]");
   if (inquire) {
@@ -695,3 +706,21 @@ if (startQuery) searchBox.value = startQuery;
 
 syncFilterPanel();
 render();
+
+// Someone who pressed "Add to order" while signed out comes back from the
+// sign-in page with the listing in the address, as directory.html?open=<id>.
+// Open that row, bring it into view, and carry on where they left off.
+const openId = new URLSearchParams(window.location.search).get("open");
+if (openId) {
+  const place = shownRows.findIndex(function (listing) { return listing.id === openId; });
+  const row = place === -1 ? null : resultsBox.querySelector('[data-row="' + place + '"]');
+  if (row) {
+    toggleRow(row);
+    row.scrollIntoView({ block: "center" });
+    if (PH.currentUser()) openAddToOrder(shownRows[place].nursery, shownRows[place]);
+  }
+  // Drop "open=" from the address so a refresh doesn't open the box again.
+  const params = new URLSearchParams(window.location.search);
+  params.delete("open");
+  history.replaceState(null, "", "directory.html" + (params.toString() ? "?" + params.toString() : ""));
+}

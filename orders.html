@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<!--
+  orders.html — every order the signed-in person is part of.
+
+  A buyer sees the orders they placed; a grower sees the orders buyers have
+  sent their nursery. Orders waiting on you come first. Each one opens on its
+  own page (order.html), which is where anything is done to it.
+
+  A grower also keeps their delivery settings here: which carriers may
+  deliver their orders. Plants that arrive dead are the grower's cost, so a
+  buyer can only pick a carrier the grower allows.
+
+  PROTOTYPE ONLY. store.js keeps the orders in this browser. To see both
+  ends of one, place it as a buyer, then sign in as the grower.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+
+      <!-- ===== Transport accounts have no orders =========================== -->
+      <section id="no-orders" hidden class="mx-auto max-w-xl auth-card text-center">
+        <h1 class="font-display font-semibold text-2xl tracking-tight">Orders are for buyers and growers</h1>
+        <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">
+          You're signed in with a transporter account. Transport companies don't place or fill orders: they deliver them.
+        </p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+          <a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>
+          <a href="account.html" class="auth-button auth-button-outline account-button-small">Your account</a>
+        </div>
+      </section>
+
+      <div id="orders-page" hidden>
+        <h1 id="page-title" class="font-display font-semibold text-3xl tracking-tight">Orders</h1>
+        <p id="intro" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
+
+        <!-- store.js hands over the orders; the script below draws them. -->
+        <div id="orders" class="mt-6 space-y-5"></div>
+
+        <!-- ===== Growers: who may deliver your orders ====================== -->
+        <section id="delivery" hidden class="mt-10" aria-labelledby="delivery-title">
+          <h2 id="delivery-title" class="font-display font-semibold text-2xl tracking-tight">Delivery settings</h2>
+          <p class="mt-1 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
+            Plants that arrive dead are your cost, so a buyer can only pick a carrier you allow.
+            Tick the carriers you trust. With nobody allowed, your orders are pickup only.
+          </p>
+
+          <div class="auth-card mt-5">
+            <p id="delivery-summary" class="text-sm font-medium"></p>
+            <p id="delivery-city" hidden class="auth-error mt-2"></p>
+
+            <label class="mt-4 flex items-start gap-3 text-sm">
+              <input type="checkbox" id="allow-any" class="mt-0.5 w-4 h-4 accent-clay-600">
+              <span>
+                <span class="font-medium">Also allow any carrier I haven't blocked</span>
+                <span class="block text-[13px] text-ink-700 dark:text-stone-300">Off, only the carriers you tick are offered. On, every insured carrier is, unless you block it.</span>
+              </span>
+            </label>
+
+            <div id="carriers" class="mt-4 border-t border-ink-100 dark:border-ink-700"></div>
+          </div>
+          <p class="mt-3 text-[13px] text-ink-400 dark:text-stone-400">Every carrier here is sample data. A carrier whose insurance has lapsed is never offered to a buyer, ticked or not.</p>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <p id="toast" role="status" aria-live="polite" class="toast" hidden></p>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: these are sample orders, saved only in this browser. Nothing is really bought, and no money moves.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script src="data/carriers.js"></script>
+  <script src="data/distances.js"></script>
+  <script>
+    const user = PH.currentUser();
+    const $ = function (id) { return document.getElementById(id); };
+    const grower = !!user && user.type === "grower";
+
+    if (!user) location.replace("signin.html?next=orders.html");
+    else if (user.type === "transporter") $("no-orders").hidden = false;
+    else $("orders-page").hidden = false;
+
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.hidden = false;
+      clearTimeout(box.timer);
+      box.timer = setTimeout(function () { box.hidden = true; }, 2800);
+    }
+
+    // -----------------------------------------------------------------------
+    // 1. The orders.
+    // -----------------------------------------------------------------------
+
+    // One line on whose move it is, in the words of whoever is looking.
+    function nextText(order) {
+      const buyer = order.side === "buyer";
+      const job = order.job;
+      switch (order.status) {
+        case "awaiting": return buyer ? "Waiting for the grower to accept. Nothing has been taken yet." : "Accept or decline this order.";
+        case "accepted": return buyer ? "Choose pickup or delivery." : "Waiting for the buyer to choose pickup or delivery.";
+        case "pickup": return (buyer ? "Collect on " : "The buyer collects on ") + dayText(order.pickupDate) + ".";
+        case "delivery-requested": return "Waiting for " + job.carrierName + " to accept the delivery.";
+        case "delivery-booked": return job.carrierName + " delivers to " + job.city + " on " + dayText(job.date) + "." + (buyer ? " Confirm it when the plants arrive." : "");
+        case "picked-up":
+        case "delivered":
+          return order.problems.some(function (problem) { return problem.status === "waiting"; })
+            ? (buyer ? "Waiting for the grower to answer your wrong-grade report." : "Answer the buyer's wrong-grade report.")
+            : (buyer ? (order.canReport ? "You can report a problem until " + momentText(order.problemDeadline) + "." : "A report on this order is still being settled.") : "Your payout has been released.");
+        case "complete": return "Finished.";
+        case "declined": return buyer ? "The grower declined. Nothing was taken." : "You declined this order.";
+        default: return buyer ? "You cancelled this order. Nothing was taken." : "The buyer cancelled before you answered.";
+      }
+    }
+
+    function orderHtml(order) {
+      const buyer = order.side === "buyer";
+      const money = order.money;
+
+      // The buyer sees what they pay; the grower sees the total, PlantHub's
+      // fee and their payout. The fee is never shown to the buyer. An order
+      // that was declined or cancelled shows what it was for and no more.
+      const amounts = buyer
+        ? (order.live ? "Total " + moneyText(money.total) : "Plants " + moneyText(money.subtotal) + " · nothing was taken")
+        : (order.live
+            ? "Order total " + moneyText(money.subtotal) + " · PlantHub fee " + Math.round(PH.FEE_RATE * 100) + "% " + moneyText(money.fee) +
+              " · Your payout " + moneyText(money.payout)
+            : "Order total " + moneyText(money.subtotal) + " · no payout");
+
+      const action = order.status === "awaiting" && !buyer ? "Review and answer"
+                   : order.status === "accepted" && buyer ? "Choose pickup or delivery"
+                   : order.needsYou ? "Answer the report"
+                   : "Open order";
+
+      return (
+        '<article class="auth-card">' +
+          '<div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">' +
+            '<p><a class="font-semibold hover:underline" href="order.html?id=' + encodeURIComponent(order.id) + '">Order ' + escapeHtml(order.id) + "</a>" +
+              '<span class="text-[13px] text-ink-400 dark:text-stone-400"> · placed ' + escapeHtml(momentText(order.placedAt)) + "</span></p>" +
+            '<span class="' + orderPillClass(order) + '">' + escapeHtml(order.statusLabel) + "</span>" +
+          "</div>" +
+          '<p class="mt-2 text-sm">' +
+            (buyer
+              ? 'From <a class="font-medium hover:underline" href="grower.html?id=' + encodeURIComponent(order.nurseryId) + '">' + escapeHtml(order.nurseryName) + "</a>, " + escapeHtml(order.nurseryCity)
+              : 'From <span class="font-medium">' + escapeHtml(order.buyer.name) + "</span>" + (order.buyer.business ? ", " + escapeHtml(order.buyer.business) : "")) +
+          "</p>" +
+          '<p class="mt-1 text-[13px] text-ink-700 dark:text-stone-300">' + escapeHtml(orderLinesText(order)) + "</p>" +
+          '<p class="mt-2 text-sm tabular-nums">' + escapeHtml(amounts) + "</p>" +
+          '<div class="mt-4 flex flex-wrap items-center justify-between gap-3">' +
+            '<p class="text-sm ' + (order.needsYou ? "font-medium text-clay-700 dark:text-clay-300" : "text-ink-700 dark:text-stone-300") + '">' + escapeHtml(nextText(order)) + "</p>" +
+            '<a class="auth-button account-button-small' + (order.needsYou ? "" : " auth-button-outline") + '" href="order.html?id=' + encodeURIComponent(order.id) + '">' + action + "</a>" +
+          "</div>" +
+        "</article>"
+      );
+    }
+
+    function drawOrders() {
+      const list = PH.myOrders();
+      $("page-title").textContent = grower ? "Orders to fill" : "Your orders";
+      $("intro").textContent = grower
+        ? "Orders buyers have sent your nursery. You accept or decline each one, and PlantHub holds the payment until the plants are handed over."
+        : "Each order is with one grower. The grower accepts it, then you choose pickup or delivery.";
+
+      if (!list.length) {
+        $("orders").innerHTML =
+          '<div class="auth-card">' +
+            (grower
+              ? '<p class="font-medium">No orders yet.</p>' +
+                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here for you to accept or decline. Fresh listings are found first.</p>' +
+                '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>'
+              : '<p class="font-medium">You haven\'t ordered anything yet.</p>' +
+                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Open any listing in the plant directory and press Add to order. Your basket checks out one grower at a time.</p>' +
+                '<div class="mt-4 flex flex-wrap gap-3">' +
+                  '<a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>' +
+                  (PH.basketCount() ? '<a href="basket.html" class="auth-button auth-button-outline account-button-small">Your basket</a>' : "") +
+                "</div>") +
+          "</div>";
+        return;
+      }
+      $("orders").innerHTML = list.map(orderHtml).join("");
+    }
+
+    // -----------------------------------------------------------------------
+    // 2. Growers: delivery settings.
+    // -----------------------------------------------------------------------
+    function carrierHtml(entry) {
+      const carrier = entry.carrier;
+      const id = escapeHtml(carrier.id);
+      const facts = moneyText(carrier.ratePerMile) + " a mile · " + moneyText(carrier.tripMinimum) + " trip minimum · " + carrier.equipment.join(", ");
+
+      // Why a carrier isn't on offer, when the tick alone doesn't explain it.
+      const state = !carrier.insured ? "Insurance lapsed on " + dayText(carrier.insuranceExpires) + ": hidden from buyers until renewed."
+                  : entry.blocked ? "Blocked: never offered on your orders."
+                  : entry.blockedYou ? "This carrier doesn't deliver for your nursery."
+                  : entry.offered ? "Offered to your buyers."
+                  : "Not offered.";
+
+      return (
+        '<div class="carrier-row" data-carrier="' + id + '">' +
+          '<div class="min-w-0">' +
+            '<p class="font-medium text-sm">' + escapeHtml(carrier.name) + '<span class="font-normal text-ink-400 dark:text-stone-400"> · ' + escapeHtml(carrier.city) + "</span></p>" +
+            '<p class="text-[13px] text-ink-700 dark:text-stone-300">' + escapeHtml(facts) + "</p>" +
+            '<p class="text-[13px] ' + (entry.offered ? "text-ink-700 dark:text-stone-300" : "text-clay-700 dark:text-clay-300") + '">' + escapeHtml(state) + "</p>" +
+          "</div>" +
+          '<div class="flex items-center gap-3">' +
+            (entry.blocked ? "" :
+              '<label class="flex items-center gap-2 text-sm">' +
+                '<input type="checkbox" data-approve class="w-4 h-4 accent-clay-600"' + (entry.approved ? " checked" : "") + ">Approved" +
+              "</label>") +
+            '<button type="button" class="row-button" data-block="' + (entry.blocked ? "no" : "yes") + '">' + (entry.blocked ? "Unblock" : "Block") + "</button>" +
+          "</div>" +
+        "</div>"
+      );
+    }
+
+    function drawDelivery(rules) {
+      $("allow-any").checked = rules.allowAny;
+      $("delivery-summary").textContent = rules.offered === 0
+        ? "No carriers allowed: your orders are pickup only."
+        : "Buyers can choose from " + rules.offered + (rules.offered === 1 ? " carrier" : " carriers") + " for delivery.";
+
+      // A nursery in a city the sample mileage doesn't cover can't have a
+      // delivery priced, whoever is allowed.
+      $("delivery-city").hidden = rules.cityKnown;
+      $("delivery-city").textContent = rules.cityKnown ? ""
+        : "This preview has no mileage for " + (rules.city || "your city (none is set yet)") + ", so deliveries from your nursery can't be priced and your orders are pickup only.";
+
+      $("carriers").innerHTML = rules.carriers.map(carrierHtml).join("");
+    }
+
+    // Every change is saved at once, and the page says so.
+    function saved(result, message) {
+      if (!result.ok) {
+        toast(result.error);
+        drawDelivery(PH.myCarrierRules());
+        return;
+      }
+      drawDelivery(result.rules);
+      toast(message);
+    }
+
+    $("allow-any").addEventListener("change", function (event) {
+      saved(PH.setAllowAnyCarrier(event.target.checked),
+            event.target.checked ? "Saved. Any carrier you haven't blocked is now offered." : "Saved. Only the carriers you tick are offered.");
+    });
+
+    $("carriers").addEventListener("change", function (event) {
+      if (!event.target.matches("[data-approve]")) return;
+      const row = event.target.closest("[data-carrier]");
+      saved(PH.setCarrierApproved(row.dataset.carrier, event.target.checked), event.target.checked ? "Saved. Carrier approved." : "Saved. Approval removed.");
+    });
+
+    $("carriers").addEventListener("click", function (event) {
+      const button = event.target.closest("[data-block]");
+      if (!button) return;
+      const row = button.closest("[data-carrier]");
+      const block = button.dataset.block === "yes";
+      saved(PH.setCarrierBlocked(row.dataset.carrier, block), block ? "Saved. Carrier blocked." : "Saved. Carrier unblocked.");
+    });
+
+    // -----------------------------------------------------------------------
+    // 3. Draw the page.
+    // -----------------------------------------------------------------------
+    if (user && user.type !== "transporter") {
+      drawOrders();
+      if (grower) {
+        $("delivery").hidden = false;
+        drawDelivery(PH.myCarrierRules());
+      }
+    }
+  </script>
+</body>
+</html>

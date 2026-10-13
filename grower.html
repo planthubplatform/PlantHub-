@@ -33,7 +33,7 @@
       <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
         PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
       </a>
-      <form action="directory.html" method="get" role="search" class="relative order-last sm:order-none w-full sm:w-auto sm:flex-1 sm:max-w-2xl">
+      <form action="directory.html" method="get" role="search" class="header-search relative order-last sm:order-none w-full sm:w-auto sm:flex-1 sm:max-w-2xl">
         <label class="sr-only" for="search">Search for a plant</label>
         <svg class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400 pointer-events-none"
              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -82,8 +82,8 @@
 
       <!-- ===== How buying from them works ================================ -->
       <p class="mt-6 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
-        Orders run through PlantHub, with a <span id="g-min"></span> minimum, paid in full by bank transfer (ACH).
-        To ask about stock, sizes or timing, send the grower an inquiry.
+        Orders run through PlantHub, with a <span id="g-min"></span> minimum per grower, paid in full by bank transfer (ACH).
+        Add what you need to your order below. To ask about stock, sizes or timing first, send the grower an inquiry.
       </p>
 
       <!-- ===== What they have ============================================ -->
@@ -104,6 +104,7 @@
   <script src="store.js"></script>
   <script src="data/nurseries.js"></script>
   <script src="inquiry.js"></script>
+  <script src="basket.js"></script>
   <script>
     const $ = function (id) { return document.getElementById(id); };
     const nursery = PH.nursery(new URLSearchParams(location.search).get("id"));
@@ -125,7 +126,7 @@
       document.title = nursery.name + " - PlantHub";
       $("g-name").textContent = nursery.name;
       $("g-place").textContent = [nursery.city + ", " + nursery.state].concat(nursery.specialties || []).join(" · ");
-      $("g-min").textContent = MIN_ORDER;
+      $("g-min").textContent = minOrderText();
       $("g-list-title").textContent = plural(plants.length, "listing");
 
       // ---- Freshness line ----
@@ -159,8 +160,12 @@
                 '<span class="font-medium">' + escapeHtml(plant.common) + "</span>" +
                 (plant.botanical ? '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' + escapeHtml(plant.botanical) + "</span>" : "") +
                 '<span class="lg:hidden block text-[12px] text-ink-400 dark:text-stone-400 mt-0.5">' + escapeHtml(small) + "</span>" +
-                // On a phone there is no room for a button column, so it sits here.
-                (mine ? "" : '<button type="button" class="row-button sm:hidden mt-2" data-inquire="' + index + '">Inquire</button>') +
+                // On a phone there is no room for a button column, so the buttons sit here.
+                (mine ? "" :
+                  '<span class="sm:hidden mt-2 flex flex-wrap gap-2">' +
+                    '<button type="button" class="row-button row-button-main" data-add="' + index + '">Add to order</button>' +
+                    '<button type="button" class="row-button" data-inquire="' + index + '">Inquire</button>' +
+                  "</span>") +
               "</td>" +
               '<td class="hidden lg:table-cell py-2.5 pr-3 align-top whitespace-nowrap">' + escapeHtml(plant.container) + "</td>" +
               '<td class="hidden lg:table-cell py-2.5 pr-3 align-top text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(specText(plant)) + "</td>" +
@@ -172,7 +177,10 @@
                   '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' + agoShort(plant.days) + "</span>" +
               "</td>" +
               (mine ? "" :
-                '<td class="hidden sm:table-cell py-2 pr-4 align-top text-right"><button type="button" class="row-button" data-inquire="' + index + '">Inquire</button></td>') +
+                '<td class="hidden sm:table-cell py-2 pr-4 align-top text-right whitespace-nowrap">' +
+                  '<button type="button" class="row-button row-button-main" data-add="' + index + '">Add to order</button> ' +
+                  '<button type="button" class="row-button" data-inquire="' + index + '">Inquire</button>' +
+                "</td>") +
             "</tr>"
           );
         }).join("");
@@ -188,19 +196,32 @@
                 '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
                 '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
                 '<th class="py-2 pr-3 font-semibold text-right">Updated</th>' +
-                (mine ? "" : '<th class="hidden sm:table-cell py-2 pr-4"><span class="sr-only">Inquire</span></th>') +
+                (mine ? "" : '<th class="hidden sm:table-cell py-2 pr-4"><span class="sr-only">Order or inquire</span></th>') +
               "</tr></thead>" +
               "<tbody>" + rows + "</tbody>" +
             "</table>" +
           "</div>";
 
         $("g-listings").addEventListener("click", function (event) {
+          const add = event.target.closest("[data-add]");
+          if (add) openAddToOrder(nursery, plants[Number(add.dataset.add)]);
           const button = event.target.closest("[data-inquire]");
           if (button) openInquiry(nursery, plants[Number(button.dataset.inquire)]);
         });
       }
 
       $("profile").hidden = false;
+
+      // Someone who pressed "Add to order" while signed out comes back from
+      // the sign-in page with the listing in the address (open=<id>). Carry
+      // on where they left off, then tidy the address so a refresh doesn't
+      // open the box again.
+      const openId = new URLSearchParams(location.search).get("open");
+      if (openId) {
+        const wanted = plants.find(function (plant) { return plant.id === openId; });
+        if (wanted && user && !mine) openAddToOrder(nursery, wanted);
+        history.replaceState(null, "", "grower.html?id=" + encodeURIComponent(nursery.id));
+      }
     }
   </script>
 </body>

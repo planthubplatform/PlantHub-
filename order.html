@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<!--
+  order.html — one order, for the buyer who placed it or the grower filling it.
+
+  Reached from the orders list: order.html?id=PH-1001. The page says where
+  the order stands, what happens next and whose move it is, and holds every
+  action on an order:
+
+    grower   accept or decline; mark a pickup as picked up; answer a
+             wrong-grade report
+    buyer    cancel before the grower answers; choose pickup or delivery;
+             confirm a delivery; report a problem within 48 hours
+
+  The two sides see different money. The buyer sees what they pay. The
+  grower sees the order total, PlantHub's 3% fee and their payout. The buyer
+  is never shown the fee.
+
+  PROTOTYPE ONLY. store.js keeps the order in this browser and no money
+  moves. The "Preview tools" box at the bottom stands in for the people a
+  reviewer can't sign in as (a sample grower with no account, the carrier
+  until its page is built) and for time passing.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-needs-account class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+
+      <!-- ===== No such order, or not yours ================================= -->
+      <section id="missing" hidden class="mx-auto max-w-xl auth-card text-center">
+        <h1 class="font-display font-semibold text-2xl tracking-tight">That order isn't here</h1>
+        <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">The link may be wrong, or the order belongs to a different account.</p>
+        <a href="orders.html" class="mt-5 inline-block auth-button account-button-small">Your orders</a>
+      </section>
+
+      <!-- ===== The order =================================================== -->
+      <div id="order" hidden>
+        <a href="orders.html" class="step-back" style="margin-top:0">Orders</a>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <h1 id="o-title" class="font-display font-semibold text-3xl tracking-tight"></h1>
+          <span id="o-status"></span>
+        </div>
+        <p id="o-sub" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
+
+        <!-- Everything below is drawn by the script from the order. -->
+        <div id="o-body" class="mt-6 space-y-5"></div>
+      </div>
+    </div>
+  </main>
+
+  <p id="toast" role="status" aria-live="polite" class="toast" hidden></p>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: this is a sample order. Nothing is really bought, and no money moves.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script src="data/carriers.js"></script>
+  <script src="data/distances.js"></script>
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. Who is here, and which order?
+    // -----------------------------------------------------------------------
+    const user = PH.currentUser();
+    const orderId = new URLSearchParams(location.search).get("id") || "";
+    const $ = function (id) { return document.getElementById(id); };
+
+    if (!user) location.replace("signin.html?next=" + encodeURIComponent("order.html?id=" + orderId));
+
+    let order = user ? PH.order(orderId) : null;
+
+    // Which box is open on the page: "" for none, or the name of a second
+    // look ("cancel", "decline", "delivered", "picked-up", a problem answer),
+    // or "change" (choosing pickup or delivery again), or "report".
+    let open = "";
+
+    // -----------------------------------------------------------------------
+    // 2. Small helpers.
+    // -----------------------------------------------------------------------
+    const text = escapeHtml;
+
+    function toast(message) {
+      const box = $("toast");
+      box.textContent = message;
+      box.hidden = false;
+      clearTimeout(box.timer);
+      box.timer = setTimeout(function () { box.hidden = true; }, 3200);
+    }
+
+    function card(title, body) {
+      return '<section class="auth-card">' + (title ? '<h2 class="part-title">' + title + "</h2>" : "") + body + "</section>";
+    }
+
+    function button(label, action, kind, extra) {
+      const look = kind === "outline" ? "auth-button auth-button-outline account-button-small"
+                 : kind === "danger" ? "auth-button account-button-small account-button-danger-solid"
+                 : kind === "small" ? "row-button"
+                 : "auth-button account-button-small";
+      return '<button type="button" class="' + look + '" data-do="' + action + '"' + (extra || "") + ">" + label + "</button>";
+    }
+
+    // A second look before something that can't be undone. Shown in place
+    // of the button that opened it.
+    function askFirst(question, yesAction, yesLabel, noLabel, extra) {
+      return (
+        '<div class="ask-first mt-4">' +
+          '<p class="text-sm text-clay-700 dark:text-clay-300">' + question + "</p>" +
+          '<div class="mt-3 flex flex-wrap gap-3">' +
+            button(yesLabel, yesAction, "danger", extra) +
+            button(noLabel, "close", "outline") +
+          "</div>" +
+        "</div>"
+      );
+    }
+
+    // Apply a change through the store, then redraw and say it worked.
+    function apply(result, message) {
+      if (!result.ok) {
+        toast(result.error);
+        return result;
+      }
+      order = result.order;
+      open = "";
+      draw();
+      toast(message);
+      // The count beside "Orders" in the top corner may have changed.
+      document.dispatchEvent(new Event("planthub:account-changed"));
+      return result;
+    }
+
+    function plantsWord() { return order.method === "pickup" ? "picked up" : "delivered"; }
+
+    // The 48 hours to report a problem can run out while the form is open.
+    // If that is why a report was refused, draw the order again as it now
+    // stands (no form, no "you have until"), say why, and answer true.
+    function tooLate(result) {
+      const fresh = PH.order(order.id);
+      if (!fresh || fresh.canReport) return false;
+      order = fresh;
+      open = "";
+      draw();
+      toast(result.error);
+      return true;
+    }
+
+    // A form was refused: say why, and mark and focus the box that needs
+    // fixing, so the message is never far from the problem. `boxes` maps
+    // the store's name for a field to the box's id on this page.
+    function refuse(errorId, result, boxes) {
+      document.querySelectorAll('#o-body [aria-invalid="true"]').forEach(function (box) { box.removeAttribute("aria-invalid"); });
+      const error = $(errorId);
+      error.textContent = result.error;
+      error.hidden = false;
+      const box = result.field && boxes[result.field] ? $(boxes[result.field]) : null;
+      if (box) {
+        box.setAttribute("aria-invalid", "true");
+        box.focus();
+      }
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. "What happens next": the part of the page that changes most.
+    // -----------------------------------------------------------------------
+
+    // Choosing pickup or delivery. Used the first time, and again if the
+    // buyer changes their mind before anything is confirmed.
+    function arrangeHtml(changing) {
+      const delivery = PH.deliveryOptions(order.id, "");
+      const day = PH.today();
+      const cities = PH.deliveryCities().map(function (city) { return '<option value="' + text(city) + '">' + text(city) + "</option>"; }).join("");
+
+      return (
+        '<form id="arrange" class="mt-4 space-y-4" novalidate>' +
+          '<fieldset class="grid gap-3 sm:grid-cols-2">' +
+            '<legend class="sr-only">Pickup or delivery</legend>' +
+            '<label class="choice">' +
+              '<input type="radio" name="method" value="pickup" checked>' +
+              '<span><span class="block font-medium">Pickup</span>' +
+              '<span class="block text-[13px] text-ink-700 dark:text-stone-300">Collect from ' + text(order.nurseryName) + " in " + text(order.nurseryCity) + ". No extra charge.</span></span>" +
+            "</label>" +
+            '<label class="choice"' + (delivery.ok ? "" : ' style="cursor:default"') + ">" +
+              '<input type="radio" name="method" value="delivery"' + (delivery.ok ? "" : " disabled") + ">" +
+              '<span><span class="block font-medium">Delivery</span>' +
+              '<span class="block text-[13px] text-ink-700 dark:text-stone-300">' +
+                (delivery.ok ? "A carrier brings the plants to your job site. Charged by the mile." : text(delivery.error)) +
+              "</span></span>" +
+            "</label>" +
+          "</fieldset>" +
+
+          '<div data-part="pickup">' +
+            '<label class="auth-label" for="pickup-date">Collection date</label>' +
+            '<input class="auth-input" style="max-width:14rem" type="date" id="pickup-date" min="' + day + '">' +
+          "</div>" +
+
+          '<div data-part="delivery" hidden>' +
+            '<div class="grid gap-4 sm:grid-cols-2">' +
+              "<div>" +
+                '<label class="auth-label" for="job-city">Job site city</label>' +
+                '<select class="auth-input" id="job-city"><option value="">Choose…</option>' + cities + "</select>" +
+              "</div>" +
+              "<div>" +
+                '<label class="auth-label" for="job-date">Delivery date</label>' +
+                '<input class="auth-input" type="date" id="job-date" min="' + day + '">' +
+              "</div>" +
+            "</div>" +
+            '<div id="carrier-list" class="mt-4"></div>' +
+            '<p class="auth-hint">Delivery is a separate bank charge, taken when the carrier accepts and held until the plants arrive. Miles here are sample mileage, not road-accurate.</p>' +
+          "</div>" +
+
+          '<p id="arrange-error" role="alert" hidden class="auth-error"></p>' +
+          '<div class="flex flex-wrap gap-3">' +
+            '<button type="submit" id="arrange-submit" class="auth-button account-button-small">Choose pickup</button>' +
+            (changing ? button("Leave it as it is", "close", "outline") : "") +
+          "</div>" +
+        "</form>"
+      );
+    }
+
+    // The carriers the buyer may pick for a job site, each with its price
+    // and how the price was reached.
+    function drawCarriers() {
+      const city = $("job-city").value;
+      const box = $("carrier-list");
+      if (!city) {
+        box.innerHTML = '<p class="text-sm text-ink-700 dark:text-stone-300">Choose the job site\'s city to see the carriers and what each would charge.</p>';
+        return;
+      }
+      const options = PH.deliveryOptions(order.id, city);
+      if (!options.ok) {
+        box.innerHTML = '<p class="auth-error">' + text(options.error) + "</p>";
+        return;
+      }
+      box.innerHTML =
+        '<p class="text-sm font-medium">' + options.miles + " miles from " + text(order.nurseryCity) + " to " + text(city) + "</p>" +
+        '<fieldset class="mt-3 space-y-3"><legend class="sr-only">Carrier</legend>' +
+          options.carriers.map(function (option) {
+            const carrier = option.carrier;
+            const sum = options.miles + " miles × " + moneyText(carrier.ratePerMile) + " a mile = " + moneyText(option.byMile);
+            return (
+              '<label class="choice">' +
+                '<input type="radio" name="carrier" value="' + text(carrier.id) + '">' +
+                '<span class="flex-1 min-w-0">' +
+                  '<span class="flex flex-wrap justify-between gap-x-4 font-medium"><span>' + text(carrier.name) + '</span><span class="tabular-nums">' + moneyText(option.cost) + "</span></span>" +
+                  '<span class="block text-[13px] text-ink-700 dark:text-stone-300">' +
+                    (option.usesMinimum ? sum + ", so the " + moneyText(carrier.tripMinimum) + " trip minimum applies" : sum) +
+                  "</span>" +
+                  '<span class="block text-[13px] text-ink-400 dark:text-stone-400">' +
+                    text(carrier.equipment.join(", ")) + " · " + carrier.completedDeliveries.toLocaleString() + " deliveries · insured until " + dayText(carrier.insuranceExpires) +
+                  "</span>" +
+                "</span>" +
+              "</label>"
+            );
+          }).join("") +
+        "</fieldset>";
+    }
+
+    // Reporting a problem, within 48 hours of having the plants.
+    function reportHtml() {
+      const lines = order.lines.map(function (line) {
+        return '<option value="' + text(line.listingId) + '">' + line.quantity.toLocaleString() + " × " + text(line.common) + ", " + text(line.container) + "</option>";
+      }).join("");
+
+      return (
+        '<form id="report" class="mt-4 space-y-4" novalidate>' +
+          '<fieldset class="grid gap-3 sm:grid-cols-2">' +
+            '<legend class="sr-only">What went wrong</legend>' +
+            '<label class="choice">' +
+              '<input type="radio" name="kind" value="short" checked>' +
+              '<span><span class="block font-medium">Short count</span>' +
+              '<span class="block text-[13px] text-ink-700 dark:text-stone-300">Fewer plants than you paid for. Refunded at the price per plant, straight away.</span></span>' +
+            "</label>" +
+            '<label class="choice">' +
+              '<input type="radio" name="kind" value="grade">' +
+              '<span><span class="block font-medium">Wrong grade</span>' +
+              '<span class="block text-[13px] text-ink-700 dark:text-stone-300">What you got isn\'t the grade that was listed. The grower answers.</span></span>' +
+            "</label>" +
+          "</fieldset>" +
+          "<div>" +
+            '<label class="auth-label" for="report-line">Which plant?</label>' +
+            '<select class="auth-input" id="report-line">' + (order.lines.length > 1 ? '<option value="">Choose…</option>' : "") + lines + "</select>" +
+          "</div>" +
+          '<div data-part="short">' +
+            '<label class="auth-label" for="report-quantity">How many were missing?</label>' +
+            '<input class="auth-input" style="max-width:10rem" id="report-quantity" type="number" min="1" step="1" inputmode="numeric">' +
+          "</div>" +
+          '<div data-part="grade" hidden>' +
+            '<label class="auth-label" for="report-note">What did you get instead?</label>' +
+            '<textarea class="auth-input" id="report-note" rows="3" maxlength="500"></textarea>' +
+          "</div>" +
+          '<p id="report-error" role="alert" hidden class="auth-error"></p>' +
+          // "Send report" checks the report, then this asks before it goes.
+          '<div id="report-ask" class="ask-first" hidden>' +
+            '<p id="report-ask-text" class="text-sm text-clay-700 dark:text-clay-300"></p>' +
+            '<div class="mt-3 flex flex-wrap gap-3">' +
+              button("Yes, send it", "report-yes", "danger") +
+              button("Go back", "report-back", "outline") +
+            "</div>" +
+          "</div>" +
+          '<div id="report-buttons" data-part="report-buttons" class="flex flex-wrap gap-3">' +
+            '<button type="submit" class="auth-button account-button-small">Send report</button>' +
+            button("Cancel", "close", "outline") +
+          "</div>" +
+        "</form>"
+      );
+    }
+
+    // The heading, the explanation and the actions for where the order
+    // stands, for whichever side is looking.
+    function nextHtml() {
+      const buyer = order.side === "buyer";
+      const money = order.money;
+      const job = order.job;
+      const grower = text(order.nurseryName);
+      const buyerName = text(order.buyer.name);
+      const until = order.problemDeadline ? momentText(order.problemDeadline) : "";
+      const openReport = order.problems.some(function (problem) { return problem.status === "waiting"; });
+      let title = "";
+      let words = "";
+      let actions = "";
+
+      if (order.status === "awaiting" && buyer) {
+        title = "Waiting for " + grower + " to accept";
+        words = "Your bank payment of " + moneyText(money.subtotal) + " is authorized and not yet taken. If they decline, nothing is taken at all.";
+        actions = open === "cancel"
+          ? askFirst("Cancel this order? The plants go back on the grower's listing.", "cancel-yes", "Yes, cancel it", "Keep the order")
+          : '<div class="mt-4">' + button("Cancel order", "open:cancel", "outline") + "</div>";
+
+      } else if (order.status === "awaiting") {
+        title = "Accept or decline this order";
+        words = buyerName + " wants the plants below. Accepting takes their bank payment of " + moneyText(money.subtotal) +
+                ", and PlantHub holds it until the order is picked up or delivered. The plants are already off your listings. Declining puts them back.";
+        actions = open === "decline"
+          ? askFirst("Decline this order? The buyer is told, nothing is taken from them, and the plants go back on your listings.", "decline-yes", "Yes, decline it", "Keep the order")
+          : '<form id="accept" class="mt-4" novalidate>' +
+              '<label class="flex items-start gap-3 text-sm">' +
+                '<input type="checkbox" id="accept-dead" class="mt-0.5 w-4 h-4 accent-clay-600">' +
+                "<span>I accept that plants arriving dead are my cost. A carrier's insurance covers accidents in transit.</span>" +
+              "</label>" +
+              '<p id="accept-error" role="alert" hidden class="auth-error mt-3"></p>' +
+              '<div class="mt-4 flex flex-wrap gap-3">' +
+                '<button type="submit" class="auth-button account-button-small">Accept order</button>' +
+                button("Decline", "open:decline", "outline") +
+              "</div>" +
+            "</form>";
+
+      } else if (order.status === "accepted" && buyer) {
+        title = "Choose pickup or delivery";
+        words = (order.carrierDeclined ? text(order.carrierDeclined) + " declined the delivery, and nothing was taken for it. Pick another carrier, or switch to pickup. " : "") +
+                grower + " accepted your order. Your payment of " + moneyText(money.subtotal) + " has been taken and PlantHub is holding it.";
+        actions = arrangeHtml(false);
+
+      } else if (order.status === "accepted") {
+        title = "Waiting for the buyer to choose pickup or delivery";
+        words = "You accepted this order. The payment of " + moneyText(money.subtotal) + " has been taken and PlantHub is holding it." +
+                (order.carrierDeclined ? " " + text(order.carrierDeclined) + " declined the delivery, so the buyer is choosing again." : "");
+
+      } else if (order.status === "pickup" && buyer) {
+        title = "Ready for pickup on " + dayText(order.pickupDate);
+        words = "Collect from " + grower + " in " + text(order.nurseryCity) + ". When you have the plants, the grower marks the order as picked up. That releases their payout and starts your " + PH.PROBLEM_HOURS + " hours to report a problem.";
+        actions = open === "change" ? arrangeHtml(true) : '<div class="mt-4">' + button("Change the date, or switch to delivery", "open:change", "outline") + "</div>";
+
+      } else if (order.status === "pickup") {
+        title = "Pickup on " + dayText(order.pickupDate);
+        words = buyerName + " collects from you. When they have the plants, mark the order as picked up. That releases your payout of " + moneyText(money.payout) + ".";
+        actions = open === "picked-up"
+          ? askFirst("Has " + buyerName + " collected every plant on this order? This can't be undone.", "picked-up-yes", "Yes, picked up", "Not yet")
+          : '<div class="mt-4">' + button("Mark as picked up", "open:picked-up") + "</div>";
+
+      } else if (order.status === "delivery-requested" && buyer) {
+        title = "Waiting for " + text(job.carrierName) + " to accept";
+        words = "You asked for delivery to " + text(job.city) + " on " + dayText(job.date) + ": " + job.miles + " miles, " + moneyText(job.cost) +
+                ". The delivery charge is authorized, and only taken if they accept.";
+        actions = open === "change" ? arrangeHtml(true) : '<div class="mt-4">' + button("Pick another carrier, or switch to pickup", "open:change", "outline") + "</div>";
+
+      } else if (order.status === "delivery-requested") {
+        title = "Delivery requested";
+        words = buyerName + " asked " + text(job.carrierName) + " to deliver to " + text(job.city) + " on " + dayText(job.date) + ". The carrier hasn't accepted yet.";
+
+      } else if (order.status === "delivery-booked" && buyer) {
+        title = "Delivery booked for " + dayText(job.date);
+        words = text(job.carrierName) + " delivers to " + text(job.city) + ". When the plants arrive, confirm it here. That releases the payment to the grower and the carrier, and starts your " + PH.PROBLEM_HOURS + " hours to report a problem.";
+        actions = open === "delivered"
+          ? askFirst("Have all the plants arrived? Confirming releases the payment. This can't be undone.", "delivered-yes", "Yes, delivered", "Not yet")
+          : '<div class="mt-4">' + button("Confirm delivered", "open:delivered") + "</div>";
+
+      } else if (order.status === "delivery-booked") {
+        title = "Delivery booked for " + dayText(job.date);
+        words = text(job.carrierName) + " collects from you and delivers to " + text(job.city) + ". Your payout of " + moneyText(money.payout) + " is released when the buyer confirms the delivery.";
+
+      } else if ((order.status === "picked-up" || order.status === "delivered") && buyer) {
+        title = order.statusLabel + " on " + momentText(order.confirmedAt);
+        if (order.canReport) {
+          words = "Something wrong? You have until " + until + " to report a short count or a wrong grade.";
+          actions = open === "report" ? reportHtml() : '<div class="mt-4">' + button("Report a problem", "open:report", "outline") + "</div>";
+        } else {
+          words = "The " + PH.PROBLEM_HOURS + " hours for reporting a new problem have passed. The report below is still being settled.";
+        }
+
+      } else if (order.status === "picked-up" || order.status === "delivered") {
+        title = order.statusLabel + " on " + momentText(order.confirmedAt);
+        words = "Your payout has been released." +
+                (openReport ? " The buyer reported a wrong grade. Answer it below."
+                  : new Date().toISOString() < order.problemDeadline ? " The buyer can report a problem until " + until + "."
+                  : " The report below is still being settled.");
+
+      } else if (order.status === "complete") {
+        title = "Complete";
+        words = buyer
+          ? "The plants were " + plantsWord() + " on " + momentText(order.confirmedAt) + ". The " + PH.PROBLEM_HOURS + " hours for reporting a problem have passed."
+          : "The plants were " + plantsWord() + " on " + momentText(order.confirmedAt) + ", and your payout has been released.";
+
+      } else if (order.status === "declined") {
+        title = buyer ? grower + " declined this order" : "You declined this order";
+        words = buyer ? "Nothing was taken from your bank, and the plants are back on the grower's listing." : "Nothing was taken from the buyer, and the plants are back on your listings.";
+        if (buyer) actions = '<div class="mt-4"><a href="directory.html" class="auth-button auth-button-outline account-button-small inline-block">Open the plant directory</a></div>';
+
+      } else {
+        title = buyer ? "You cancelled this order" : "The buyer cancelled this order";
+        words = buyer ? "Nothing was taken from your bank, and the plants are back on the grower's listing." : "They withdrew it before you answered. The plants are back on your listings.";
+      }
+
+      return (
+        '<section class="auth-card">' +
+          '<h2 class="font-display font-semibold text-xl tracking-tight">' + title + "</h2>" +
+          '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + words + "</p>" +
+          actions +
+        "</section>"
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. The rest of the order: plants, money, people, problems, history.
+    // -----------------------------------------------------------------------
+    function linesHtml() {
+      const rows = order.lines.map(function (line) {
+        return (
+          '<div class="flex justify-between gap-4 py-2.5 border-b border-ink-50 dark:border-ink-800 text-sm">' +
+            '<div class="min-w-0">' +
+              '<p class="font-medium">' + line.quantity.toLocaleString() + " × " + text(line.common) + "</p>" +
+              '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + text(lineDetailText(line)) + " · " + priceText(line.price) + " each</p>" +
+            "</div>" +
+            '<p class="tabular-nums font-medium whitespace-nowrap">' + moneyText(line.total) + "</p>" +
+          "</div>"
+        );
+      }).join("");
+      return card("Plants", '<div class="mt-2">' + rows + "</div>");
+    }
+
+    function moneyRow(label, amount, look) {
+      return "<div" + (look ? ' class="' + look + '"' : "") + "><dt>" + label + "</dt><dd>" + amount + "</dd></div>";
+    }
+
+    // An amount taken away: "-$39.42". Nothing taken away is plain "$0.00".
+    function lessText(amount) { return amount ? "-" + moneyText(amount) : moneyText(0); }
+
+    // The buyer sees what they pay. The grower sees the total, PlantHub's
+    // fee and their payout. The fee never appears on the buyer's side: the
+    // store doesn't even hand it to a buyer's page. An order that was
+    // declined or cancelled shows what it was for and that nothing moved.
+    function moneyHtml() {
+      const money = order.money;
+      const job = order.job;
+      const bank = text(order.bank.name) + " ····" + text(order.bank.last4);
+      let rows = "";
+      let line = "";
+
+      if (order.side === "buyer") {
+        rows = moneyRow("Plants", moneyText(money.subtotal)) +
+          (money.refunds ? moneyRow("Refunded for short count", lessText(money.refunds)) : "") +
+          (job ? moneyRow("Delivery by " + text(job.carrierName) + ", " + job.miles + " miles", moneyText(job.cost)) : "") +
+          (order.live ? moneyRow("Sales tax", '<span class="text-ink-400 dark:text-stone-400">Not worked out in this preview</span>', "money-note") : "") +
+          moneyRow(order.live ? "Total" : "Taken from your bank", moneyText(money.total), "money-total");
+
+        line = money.payment === "authorized" ? "Authorized with " + bank + ". Not taken yet."
+             : money.payment === "none" ? "Nothing was taken from " + bank + "."
+             : order.confirmedAt ? "Paid by bank transfer from " + bank + "."
+             : "Paid by bank transfer from " + bank + ". PlantHub holds it until you have the plants.";
+        if (job && job.status === "requested") line += " The delivery charge is authorized, and taken if the carrier accepts.";
+      } else {
+        rows = moneyRow("Order total", moneyText(money.subtotal)) +
+          (money.refunds ? moneyRow("Refunded to the buyer for short count", lessText(money.refunds)) : "") +
+          (order.live ? moneyRow("PlantHub fee " + Math.round(PH.FEE_RATE * 100) + "%", lessText(money.fee)) : "") +
+          moneyRow("Your payout", moneyText(money.payout), "money-total");
+
+        line = money.payoutState === "released" ? "Released to you on " + momentText(order.confirmedAt) + "."
+             : money.payoutState === "held" ? "Held by PlantHub until the order is picked up or delivered."
+             : order.state === "awaiting" ? "Paid out after you accept and the order is picked up or delivered."
+             : "No payout: the order didn't go ahead.";
+      }
+
+      return card(order.side === "buyer" ? "What you pay" : "What you are paid",
+        '<dl class="money-list mt-2">' + rows + "</dl>" +
+        '<p class="mt-3 text-[13px] text-ink-700 dark:text-stone-300">' + line + "</p>");
+    }
+
+    // Who is on the other end. A grower is given the buyer's name, email
+    // and phone; a buyer gets a link to the grower's page and no contact
+    // details, as everywhere on PlantHub.
+    function peopleHtml() {
+      if (order.side === "buyer") {
+        return card("Grower",
+          '<p class="mt-2 font-medium"><a class="hover:underline" href="grower.html?id=' + encodeURIComponent(order.nurseryId) + '">' + text(order.nurseryName) + "</a></p>" +
+          '<p class="text-sm text-ink-700 dark:text-stone-300">' + text(order.nurseryCity + ", " + order.nurseryState) + "</p>" +
+          '<p class="mt-2 text-[13px] text-ink-700 dark:text-stone-300">Questions about this order go through <a class="auth-link" href="inquiries.html">Inquiries</a>.</p>');
+      }
+      const buyer = order.buyer;
+      return card("Buyer",
+        '<p class="mt-2 font-medium">' + text(buyer.name) + (buyer.business ? '<span class="font-normal text-ink-400 dark:text-stone-400">, ' + text(buyer.business) + "</span>" : "") + "</p>" +
+        '<p class="text-sm text-ink-700 dark:text-stone-300">' +
+          '<a class="auth-link" href="mailto:' + text(buyer.email) + '">' + text(buyer.email) + "</a>" +
+          (buyer.phone ? " · " + text(buyer.phone) : "") +
+        "</p>");
+    }
+
+    function problemsHtml() {
+      if (!order.problems.length) return "";
+      const grower = order.side === "grower";
+
+      const items = order.problems.map(function (problem) {
+        let head, body, actions = "";
+        if (problem.kind === "short") {
+          head = "Short count: " + problem.quantity.toLocaleString() + " × " + text(problem.common) + " missing";
+          body = "Refunded " + moneyText(problem.refund) + (grower ? " to the buyer, taken off your payout." : " to your bank.");
+        } else {
+          head = "Wrong grade: " + text(problem.common);
+          body = problem.status === "waiting" ? (grower ? "Accept the report, or dispute it." : "Waiting for the grower to answer.")
+               : problem.status === "accepted" ? (grower ? "You accepted this. PlantHub will settle the credit with the buyer." : "The grower accepted this. PlantHub will settle the credit with you.")
+               : (grower ? "You disputed this. PlantHub is reviewing." : "The grower disputed this. PlantHub is reviewing.");
+
+          if (grower && problem.status === "waiting") {
+            const extra = ' data-problem="' + text(problem.id) + '"';
+            actions = open === "accept:" + problem.id
+              ? askFirst("Accept this report? PlantHub then settles a credit with the buyer. This can't be undone.", "problem-accept", "Yes, accept it", "Go back", extra)
+              : open === "dispute:" + problem.id
+                ? askFirst("Dispute this report? It goes to PlantHub to review. This can't be undone.", "problem-dispute", "Yes, dispute it", "Go back", extra)
+                : '<div class="mt-3 flex flex-wrap gap-2">' +
+                    button("Accept", "open:accept:" + text(problem.id), "small") +
+                    button("Dispute", "open:dispute:" + text(problem.id), "small") +
+                  "</div>";
+          }
+        }
+        return (
+          '<li class="py-3 border-b border-ink-50 dark:border-ink-800 last:border-0">' +
+            '<p class="font-medium text-sm">' + head + "</p>" +
+            (problem.note ? '<p class="mt-1 text-sm whitespace-pre-line">&ldquo;' + text(problem.note) + "&rdquo;</p>" : "") +
+            '<p class="mt-1 text-[13px] text-ink-700 dark:text-stone-300">' + body + " Reported " + momentText(problem.at) + ".</p>" +
+            actions +
+          "</li>"
+        );
+      }).join("");
+
+      return card("Problems reported", '<ul class="mt-1">' + items + "</ul>");
+    }
+
+    function historyHtml() {
+      return card("History",
+        '<ol class="timeline mt-3">' +
+          order.events.map(function (event) {
+            return "<li><time>" + momentText(event.at) + "</time>" + text(event.text) + "</li>";
+          }).join("") +
+        "</ol>");
+    }
+
+    // PREVIEW ONLY. Stand-ins for the people a reviewer can't sign in as,
+    // and for time passing. None of this exists on a real site.
+    function previewHtml() {
+      const buyer = order.side === "buyer";
+      const waitingProblem = order.problems.find(function (problem) { return problem.status === "waiting"; });
+      // The demo grower can be signed in with one click. A grower who signed
+      // up here has their own account, and the hint must not send the
+      // reviewer to the wrong one.
+      const asGrower = function (what) {
+        return "To " + what + " as the grower, sign out and " +
+          (order.growerIsDemo ? "choose the demo grower on the sign-in page." : "sign in with that grower's own account.");
+      };
+      let parts = [];
+
+      if (buyer && order.status === "awaiting") {
+        parts.push(order.growerHasAccount ? asGrower("answer")
+          : "This grower has no account to sign in with, so you can stand in for them. " +
+            button("Pretend the grower accepted", "preview-grower:accept", "small") + " " +
+            button("Pretend the grower declined", "preview-grower:decline", "small"));
+      }
+      if (buyer && order.status === "pickup") {
+        parts.push(order.growerHasAccount ? asGrower("mark the pickup")
+          : "This grower has no account to sign in with. " +
+            button("Pretend the grower marked it picked up", "preview-grower:picked-up", "small"));
+      }
+      if (buyer && order.status === "delivery-requested") {
+        parts.push("The carrier's own jobs page is built next. Until then: " +
+          button("Pretend the carrier accepted", "preview-carrier:yes", "small") + " " +
+          button("Pretend the carrier declined", "preview-carrier:no", "small"));
+      }
+      if (buyer && waitingProblem) {
+        parts.push(order.growerHasAccount ? asGrower("answer the wrong-grade report")
+          : "Stand in for the grower on the wrong-grade report: " +
+            button("Pretend the grower accepted it", "preview-grower:problem-accept", "small", ' data-problem="' + text(waitingProblem.id) + '"') + " " +
+            button("Pretend the grower disputed it", "preview-grower:problem-dispute", "small", ' data-problem="' + text(waitingProblem.id) + '"'));
+      }
+      if (order.confirmedAt && new Date().toISOString() < order.problemDeadline) {
+        parts.push("Nobody can wait two days to see the report button close. " + button("Skip ahead " + PH.PROBLEM_HOURS + " hours", "preview-skip", "small"));
+      }
+      if (!buyer && (order.status === "accepted" || order.status === "delivery-requested" || order.status === "delivery-booked")) {
+        parts.push("To make the buyer's next move, sign out and sign in as the buyer who placed this order.");
+      }
+      if (!parts.length) return "";
+
+      return (
+        '<section class="auth-note">' +
+          '<h2 class="font-semibold">Preview tools</h2>' +
+          '<p class="mt-0.5">These exist only in this preview, so every step can be tried from one browser.</p>' +
+          parts.map(function (part) { return '<p class="mt-3 leading-loose">' + part + "</p>"; }).join("") +
+        "</section>"
+      );
+    }
+
+    // How the plants get to the buyer, once that is settled.
+    function arrangedHtml() {
+      const job = order.job;
+      if (order.method === "pickup") {
+        return card("Pickup", '<p class="mt-2 text-sm">From ' + text(order.nurseryName) + " in " + text(order.nurseryCity) +
+          (order.confirmedAt ? ". Picked up on " + momentText(order.confirmedAt) : ", on " + dayText(order.pickupDate)) + ".</p>");
+      }
+      if (!job) return "";
+      const state = job.status === "requested" ? "Waiting for the carrier to accept."
+                  : job.status === "accepted" ? "The carrier accepted."
+                  : "Delivered.";
+      return card("Delivery",
+        '<p class="mt-2 text-sm font-medium">' + text(job.carrierName) + "</p>" +
+        '<p class="text-sm text-ink-700 dark:text-stone-300">' + text(job.fromCity) + " to " + text(job.city) + ", " + job.miles + " miles, on " + dayText(job.date) + ". " + state + "</p>" +
+        '<p class="mt-1 text-[13px] text-ink-400 dark:text-stone-400">Sample carrier and sample mileage.</p>');
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. Draw the page.
+    // -----------------------------------------------------------------------
+    function draw() {
+      document.title = "Order " + order.id + " - PlantHub";
+      $("o-title").textContent = "Order " + order.id;
+      $("o-status").className = orderPillClass(order);
+      $("o-status").textContent = order.statusLabel;
+      $("o-sub").textContent = "Placed " + momentText(order.placedAt) + " · " +
+        (order.side === "buyer" ? "from " + order.nurseryName : "by " + order.buyer.name);
+
+      $("o-body").innerHTML = nextHtml() + arrangedHtml() + linesHtml() + moneyHtml() + problemsHtml() + peopleHtml() + historyHtml() + previewHtml();
+
+      if ($("arrange")) {
+        if (open === "change") fillArrange();
+        syncArrange();
+      }
+      if ($("report")) syncReport();
+    }
+
+    // Changing a choice starts from what was chosen, not from an empty form.
+    function fillArrange() {
+      const job = order.job;
+      const delivery = document.querySelector('input[name="method"][value="delivery"]');
+      if (order.method === "pickup") {
+        $("pickup-date").value = order.pickupDate;
+      } else if (job && !delivery.disabled) {
+        delivery.checked = true;
+        $("job-city").value = job.city;
+        $("job-date").value = job.date;
+        drawCarriers();
+        const current = document.querySelector('input[name="carrier"][value="' + job.carrierId + '"]');
+        if (current) current.checked = true;
+      }
+    }
+
+    // Show the half of the pickup-or-delivery form that matches the choice.
+    function syncArrange() {
+      const delivery = document.querySelector('input[name="method"]:checked').value === "delivery";
+      document.querySelector('[data-part="pickup"]').hidden = delivery;
+      document.querySelector('[data-part="delivery"]').hidden = !delivery;
+      $("arrange-submit").textContent = delivery ? "Request this delivery" : "Choose pickup";
+      $("arrange-error").hidden = true;
+      if (delivery && !$("carrier-list").innerHTML) drawCarriers();
+    }
+
+    function syncReport() {
+      const grade = document.querySelector('input[name="kind"]:checked').value === "grade";
+      document.querySelector('[data-part="short"]').hidden = grade;
+      document.querySelector('[data-part="grade"]').hidden = !grade;
+      $("report-error").hidden = true;
+    }
+
+    // The report the buyer has been asked to confirm, between "Send report"
+    // and "Yes, send it".
+    let pendingReport = null;
+
+    function askAboutReport(show) {
+      $("report-ask").hidden = !show;
+      $("report-buttons").hidden = show;
+      if (!show) pendingReport = null;
+    }
+
+    // Once a box is being put right, its complaint goes away. And a report
+    // that is changed after "Send report" has to be checked again.
+    function settle(event) {
+      const form = event.target.closest("form");
+      if (!form) return;
+      form.querySelectorAll('[aria-invalid="true"]').forEach(function (box) { box.removeAttribute("aria-invalid"); });
+      const error = $(form.id + "-error");
+      if (error) error.hidden = true;
+      if (form.id === "report" && pendingReport) askAboutReport(false);
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. Wire up the controls.
+    // -----------------------------------------------------------------------
+    const body = $("o-body");
+
+    body.addEventListener("click", function (event) {
+      const pressed = event.target.closest("[data-do]");
+      if (!pressed) return;
+      const action = pressed.dataset.do;
+      const problemId = pressed.dataset.problem;
+
+      // Open or close a box on the page. Nothing is saved yet.
+      if (action.indexOf("open:") === 0) { open = action.slice(5); draw(); return; }
+      if (action === "close") { open = ""; draw(); return; }
+
+      if (action === "cancel-yes") apply(PH.cancelOrder(order.id), "Order cancelled. Nothing was taken.");
+      if (action === "decline-yes") apply(PH.declineOrder(order.id), "Order declined. The plants are back on your listings.");
+      if (action === "picked-up-yes") apply(PH.confirmPickup(order.id), "Marked as picked up. Your payout is released.");
+      if (action === "delivered-yes") apply(PH.confirmDelivery(order.id), "Delivery confirmed.");
+      if (action === "report-back") askAboutReport(false);
+      if (action === "report-yes" && pendingReport) {
+        const result = PH.reportProblem(order.id, pendingReport);
+        if (!result.ok && tooLate(result)) return;
+        apply(result, pendingReport.kind === "short" ? "Short count reported and refunded." : "Report sent to the grower.");
+      }
+      if (action === "problem-accept") apply(PH.answerProblem(order.id, problemId, "accept"), "Report accepted.");
+      if (action === "problem-dispute") apply(PH.answerProblem(order.id, problemId, "dispute"), "Report disputed. PlantHub is reviewing.");
+
+      // Preview tools.
+      if (action === "preview-carrier:yes") apply(PH.previewCarrierAnswer(order.id, true), "Preview: the carrier accepted.");
+      if (action === "preview-carrier:no") apply(PH.previewCarrierAnswer(order.id, false), "Preview: the carrier declined.");
+      if (action === "preview-skip") apply(PH.previewSkipAhead(order.id), "Preview: skipped ahead " + PH.PROBLEM_HOURS + " hours.");
+      if (action.indexOf("preview-grower:") === 0) apply(PH.previewGrower(order.id, action.slice(15), problemId), "Preview: done as the grower.");
+    });
+
+    body.addEventListener("input", settle);
+    body.addEventListener("change", settle);
+
+    // Radio buttons and the city list change what the forms show.
+    body.addEventListener("change", function (event) {
+      if (event.target.name === "method") syncArrange();
+      if (event.target.id === "job-city") drawCarriers();
+      if (event.target.name === "kind") syncReport();
+    });
+
+    body.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const form = event.target;
+
+      // The grower accepts, with the dead-plants tick.
+      if (form.id === "accept") {
+        const result = PH.acceptOrder(order.id, $("accept-dead").checked);
+        if (!result.ok) {
+          refuse("accept-error", result, { dead: "accept-dead" });
+          return;
+        }
+        apply(result, "Order accepted. The payment is held by PlantHub.");
+      }
+
+      // The buyer chooses pickup or delivery.
+      if (form.id === "arrange") {
+        const delivery = document.querySelector('input[name="method"]:checked').value === "delivery";
+        const carrier = document.querySelector('input[name="carrier"]:checked');
+        const result = delivery
+          ? PH.chooseDelivery(order.id, { city: $("job-city").value, carrierId: carrier ? carrier.value : "", date: $("job-date").value })
+          : PH.choosePickup(order.id, $("pickup-date").value);
+        if (!result.ok) {
+          refuse("arrange-error", result, { date: delivery ? "job-date" : "pickup-date", city: "job-city" });
+          return;
+        }
+        apply(result, delivery ? "Delivery requested." : "Pickup chosen.");
+      }
+
+      // The buyer reports a problem. A report can't be taken back (a short
+      // count is refunded on the spot), so it is checked first and then
+      // the buyer is asked. "Yes, send it" is what sends it.
+      if (form.id === "report") {
+        const details = {
+          kind: document.querySelector('input[name="kind"]:checked').value,
+          listingId: $("report-line").value,
+          quantity: $("report-quantity").value,
+          note: $("report-note").value,
+        };
+        const check = PH.checkProblem(order.id, details);
+        if (!check.ok) {
+          if (tooLate(check)) return;
+          refuse("report-error", check, { line: "report-line", quantity: "report-quantity", note: "report-note" });
+          return;
+        }
+        const problem = check.problem;
+        $("report-ask-text").textContent = problem.kind === "short"
+          ? "Report " + problem.quantity.toLocaleString() + " × " + problem.common + " as missing? " + moneyText(problem.refund) +
+            " is refunded to you straight away and taken off the grower's payout. This can't be undone."
+          : "Send this wrong-grade report on " + problem.common + " to the grower? It can't be taken back.";
+        askAboutReport(true);
+        pendingReport = details;
+      }
+    });
+
+    if (user && !order) $("missing").hidden = false;
+    if (order) {
+      $("order").hidden = false;
+      draw();
+    }
+  </script>
+</body>
+</html>

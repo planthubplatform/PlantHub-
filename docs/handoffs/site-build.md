@@ -1,5 +1,5 @@
 # Site build
-Last updated: 12 October 2026
+Last updated: 12 October 2026 (checkout built, at the checkpoint)
 
 ## Lane
 Builds every page of the site on `design-b` as a fully clickable mock, one page
@@ -27,12 +27,17 @@ files; it took over from Website design V2.
   16px cards.
 
 ## In progress
-The light factory is set up in `docs/factory/` and the questionnaire is fully
-answered (12 Oct). The six specs are written in `docs/factory/specs/`
-(checkout, transport, encyclopedia, news, plant-doc, site-wide). Waiting for
-Kendrick to read the specs and say go. Nothing is built from them yet.
+The light factory is running (`docs/factory/README.md`). The questionnaire is
+answered and the six specs are written. **Checkout is built** and the run is
+stopped at the checkpoint, waiting for Kendrick. What happened is in
+`docs/factory/report.md`; the choices parked along the way are items 7 to 19
+in `docs/review-later.md`.
 
-Page 3 is waiting on Kendrick's review; pages 1 and 2 were approved with "go".
+Next, when Kendrick says to continue: `transport`, then `encyclopedia`,
+`news`, `plant-doc`, `site-wide`, each by its spec in `docs/factory/specs/`.
+
+Page 3 (grower page and inquiries) was never reviewed on its own; it is
+reviewed together with checkout at the checkpoint.
 
 ## Decisions
 - **Mock back end is localStorage, in one file (`store.js`).** No server exists
@@ -63,6 +68,18 @@ Page 3 is waiting on Kendrick's review; pages 1 and 2 were approved with "go".
   and transporters get a box saying so. My default for open question 1.
 - **Opening `inquiries.html` marks everything read**; the "New" mark stays for
   that visit so the reader can see what was new.
+- **An order is a copy, not a pointer.** Each order line copies the listing as
+  it was, price included, so a later edit to the listing doesn't change the
+  order. The basket is the opposite: it keeps only which listing and how many,
+  and reads the price live.
+- **Stock comes off when the order is placed**, by writing the nursery's
+  overlay in `store.js` (`changeStock`), and goes back on decline or cancel.
+  The "updated" date is left alone: only the grower confirms freshness.
+- **Carrier, grower and time stand-ins are preview tools**, in one marked box
+  on the buyer's order page (`PH.preview...`). `previewCarrierAnswer` is
+  temporary: remove it and its two buttons when `jobs.html` exists.
+- **A carrier's insurance is never stored as yes or no.** `PH.carriers()` works
+  out `insured` from the expiry date each time it is called.
 - **Account page links only to pages that exist.** Each new page adds its own
   link there, so there is never a dead link.
 
@@ -90,6 +107,17 @@ below is the earlier page-by-page plan it replaces:
 8. Retire `soon.html` once nothing links to it.
 
 ## Gotchas
+- **Long shell commands are cut off on this PC** (heredocs over a few thousand
+  characters arrive truncated). Write scripts with the Write tool, then run them.
+- **The Browser pane's 1280-wide screenshots come out tiny.** For readable
+  desktop screenshots, and for scripted click-throughs, drive a headless Chrome
+  from a small Node script (Node 24 has `WebSocket` built in, so nothing needs
+  installing). Phone-width screenshots in the pane are fine.
+- **`data/nurseries.js` is not loaded on every page.** `PH.addToBasket` and
+  friends only find listings on pages that load it (directory, grower, basket,
+  orders, order, inventory).
+- The preview for this folder is the `planthub` entry in this folder's own
+  `.claude/launch.json`, on port 5173.
 - **Sample listing dates are fixed**, so they age: by 8 Oct every listing is 8+
   days old and "updated this week" reads 0 until a grower confirms. Only the
   demo grower's nursery (Sample Grower 01) can be confirmed from the site.
@@ -109,6 +137,10 @@ below is the earlier page-by-page plan it replaces:
 - Pushing is Kendrick's: hand over the command, don't push.
 
 ## Key files
+- `basket.html`, `basket.js`, `orders.html`, `order.html` — the basket,
+  checking out, and orders for both sides.
+- `data/carriers.js`, `data/distances.js` — sample carriers and mileage.
+- `docs/factory/` — the run's rules, specs, report and screenshots.
 - `store.js` — mock accounts, nurseries and listings, and the header's account
   corner; the `PH` object.
 - `shared.js` — freshness helpers and the listing vocabulary.
