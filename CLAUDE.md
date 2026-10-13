@@ -106,6 +106,16 @@ Rules that are easy to break:
 - **10 Oct 2026 — One shape rule.** Buttons and tags are pills, cards are 16px (`.auth-card`, `.data-card`), boxes you type in are 8px. No em dashes in text a visitor can see.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
+- **12 Oct 2026 — Factory questionnaire answered.** Every answer is recorded in
+  `docs/factory/questionnaire.md` (the permanent record) and turned into the
+  specs in `docs/factory/specs/`. Highlights: landscapers and Personal accounts
+  can order (not growers or transporters); one basket split into one order per
+  grower, $250 minimum per grower; the grower accepts or declines each order;
+  a grower's carriers are an approved list plus an off-by-default "also allow
+  any carrier I haven't blocked" switch; carriers accept or decline each job;
+  no carrier ratings; Encyclopedia, News and Plant Doc are public and use
+  invented or draft-labelled content; English only. These settle the mock only.
+
 ### Operating model (locked 6 Oct 2026, from the operating-model session)
 
 Source of truth: the "PlantHub Operating Model v1" doc

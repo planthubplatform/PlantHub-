@@ -31,23 +31,27 @@ kept separately, in the "Road Block 2" doc linked from
    Alternative: let them list first and ask for the city later.
    Where: `drawNurseryLine` in `inventory.html`.
 
-4. **Can a Personal account send inquiries and, later, order wholesale?**
-   Built: yes, the same as a landscaper.
-   Alternative: Personal accounts browse and learn only.
-   Where: `ACCOUNT_TYPES` in `store.js`. Also question 3 in Road Block 2.
-
-5. **Should the sample listings look like a normal week?**
-   Built: sample dates are fixed, so they age. Only the demo grower's nursery
-   can be confirmed from the site; the other nine read as 10+ days old.
-   Alternative: shift the sample dates on load so a realistic share look fresh.
-   Where: `data/nurseries.js`, `nurseries()` in `store.js`.
-
 6. **Does the directory footer's promise still hold?**
    Built: the footer still says "No ads, no paywall, no paid placement."
    Alternative: soften or remove it if subscriptions or paid placement are
    on the table. Also question 9 in Road Block 2.
    Where: the footer in `directory.html`.
 
+7. **Is the delivery fee paid separately from the plants?** (parked 12 Oct, from
+   the checkout spec)
+   Built (in the spec): the plants are paid at checkout and held; the delivery
+   fee is a second pretend bank charge once the buyer picks a carrier, held
+   until delivery. `CLAUDE.md` says the buyer picks delivery after paying, so
+   the fee can't be in the first charge.
+   Alternative: choose pickup or delivery before paying, one charge.
+
+8. **Where does a grower manage approved carriers?** (parked 12 Oct)
+   Built (in the spec): a "Delivery settings" section on `orders.html`.
+   Alternative: a section on `inventory.html` or `account.html`.
+
 ## Decided
 
-Nothing yet.
+- **Item 4, Personal accounts** (12 Oct, questionnaire C1): Personal accounts can
+  inquire and order wholesale, same $250 minimum. Growers and transporters can't.
+- **Item 5, sample dates** (12 Oct, questionnaire W3): sample dates shift on
+  load so a realistic mix looks fresh. Built in the site-wide page.

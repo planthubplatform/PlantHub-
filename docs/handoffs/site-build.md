@@ -1,5 +1,5 @@
 # Site build
-Last updated: 10 October 2026
+Last updated: 12 October 2026
 
 ## Lane
 Builds every page of the site on `design-b` as a fully clickable mock, one page
@@ -27,13 +27,12 @@ files; it took over from Website design V2.
   16px cards.
 
 ## In progress
-The light factory is set up in `docs/factory/` (12 Oct) but not ready to run:
-`questionnaire.md` has no answers yet and `specs/` holds only the template.
-Next: ask Kendrick the questionnaire in chat, section by section, write the
-answers in, write the five page specs plus `site-wide`, and get his go.
+The light factory is set up in `docs/factory/` and the questionnaire is fully
+answered (12 Oct). The six specs are written in `docs/factory/specs/`
+(checkout, transport, encyclopedia, news, plant-doc, site-wide). Waiting for
+Kendrick to read the specs and say go. Nothing is built from them yet.
 
-Nothing uncommitted. Page 3 is waiting on Kendrick's review; pages 1 and 2
-were approved with "go".
+Page 3 is waiting on Kendrick's review; pages 1 and 2 were approved with "go".
 
 ## Decisions
 - **Mock back end is localStorage, in one file (`store.js`).** No server exists
