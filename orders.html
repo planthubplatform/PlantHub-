@@ -64,7 +64,7 @@
           <h2 id="delivery-title" class="font-display font-semibold text-2xl tracking-tight">Delivery settings</h2>
           <p class="mt-1 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
             Plants that arrive dead are your cost, so a buyer can only pick a carrier you allow.
-            Tick the carriers you trust. With nobody allowed, your orders are pickup only.
+            Approve the carriers you trust. With nobody approved, your orders are pickup only.
           </p>
 
           <div class="auth-card mt-5">
@@ -75,13 +75,13 @@
               <input type="checkbox" id="allow-any" class="mt-0.5 w-4 h-4 accent-clay-600">
               <span>
                 <span class="font-medium">Also allow any carrier I haven't blocked</span>
-                <span class="block text-[13px] text-ink-700 dark:text-stone-300">Off, only the carriers you tick are offered. On, every insured carrier is, unless you block it.</span>
+                <span class="block text-[13px] text-ink-700 dark:text-stone-300">Off, only the carriers you approve are offered. On, every insured carrier is offered unless you block it.</span>
               </span>
             </label>
 
             <div id="carriers" class="mt-4 border-t border-ink-100 dark:border-ink-700"></div>
           </div>
-          <p class="mt-3 text-[13px] text-ink-400 dark:text-stone-400">Every carrier here is sample data. A carrier whose insurance has lapsed is never offered to a buyer, ticked or not.</p>
+          <p class="mt-3 text-[13px] text-ink-400 dark:text-stone-400">Every carrier here is sample data. A carrier whose insurance has lapsed is never offered to a buyer, approved or not.</p>
         </section>
       </div>
     </div>
@@ -124,7 +124,7 @@
       const buyer = order.side === "buyer";
       const job = order.job;
       switch (order.status) {
-        case "awaiting": return buyer ? "Waiting for the grower to accept. Nothing has been taken yet." : "Accept or decline this order.";
+        case "awaiting": return buyer ? "Waiting for the grower to accept. You have not been charged." : "Accept or decline this order.";
         case "accepted": return buyer ? "Choose pickup or delivery." : "Waiting for the buyer to choose pickup or delivery.";
         case "pickup": return (buyer ? "Collect on " : "The buyer collects on ") + dayText(order.pickupDate) + ".";
         case "delivery-requested": return "Waiting for " + job.carrierName + " to accept the delivery.";
@@ -135,8 +135,8 @@
             ? (buyer ? "Waiting for the grower to answer your wrong-grade report." : "Answer the buyer's wrong-grade report.")
             : (buyer ? (order.canReport ? "You can report a problem until " + momentText(order.problemDeadline) + "." : "A report on this order is still being settled.") : "Your payout has been released.");
         case "complete": return "Finished.";
-        case "declined": return buyer ? "The grower declined. Nothing was taken." : "You declined this order.";
-        default: return buyer ? "You cancelled this order. Nothing was taken." : "The buyer cancelled before you answered.";
+        case "declined": return buyer ? "The grower declined. You were not charged." : "You declined this order.";
+        default: return buyer ? "You cancelled this order. You were not charged." : "The buyer cancelled before you answered.";
       }
     }
 
@@ -148,7 +148,7 @@
       // fee and their payout. The fee is never shown to the buyer. An order
       // that was declined or cancelled shows what it was for and no more.
       const amounts = buyer
-        ? (order.live ? "Total " + moneyText(money.total) : "Plants " + moneyText(money.subtotal) + " · nothing was taken")
+        ? (order.live ? "Total " + moneyText(money.total) : "Plants " + moneyText(money.subtotal) + " · not charged")
         : (order.live
             ? "Order total " + moneyText(money.subtotal) + " · PlantHub fee " + Math.round(PH.FEE_RATE * 100) + "% " + moneyText(money.fee) +
               " · Your payout " + moneyText(money.payout)
@@ -268,7 +268,7 @@
 
     $("allow-any").addEventListener("change", function (event) {
       saved(PH.setAllowAnyCarrier(event.target.checked),
-            event.target.checked ? "Saved. Any carrier you haven't blocked is now offered." : "Saved. Only the carriers you tick are offered.");
+            event.target.checked ? "Saved. Any carrier you haven't blocked is now offered." : "Saved. Only the carriers you approve are offered.");
     });
 
     $("carriers").addEventListener("change", function (event) {

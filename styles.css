@@ -942,3 +942,58 @@ a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
   .auth-input, .choice input { color-scheme: dark; }
   .auth-input[aria-invalid="true"] { border-color: #e0a877; box-shadow: 0 0 0 1px #e0a877; }
 }
+
+/* ---------------------------------------------------------------------------
+   The account page (account.html)
+--------------------------------------------------------------------------- */
+
+/* "Your pages": one row of links under the name, one cell per page, with a
+   hairline between cells. The row has exactly as many columns as there are
+   links (--links, set by the page). On a phone the cells go two to a row,
+   and an odd one out at the end takes the full width so no cell is empty. */
+.account-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: #d6e0db;                /* ink-100: shows through as the hairlines */
+  border: 1px solid #d6e0db;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+.account-nav-link { display: block; padding: 1rem 1.25rem; background: #fff; transition: background 150ms; }
+.account-nav-link:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.account-nav-link:hover { background: #faf6ef; }
+.account-nav-link:hover .account-nav-name { color: #8a4a22; }
+.account-nav-link:focus-visible { outline: none; box-shadow: inset 0 0 0 2px #c2703c; }
+.account-nav-name { display: block; font-weight: 600; font-size: 0.9375rem; }
+.account-nav-note { display: block; margin-top: 0.125rem; font-size: 0.8125rem; color: #4a6b5a; }
+.account-nav-note-waiting { color: #8a4a22; font-weight: 500; }
+@media (min-width: 640px) {
+  .account-nav { grid-template-columns: repeat(var(--links, 4), minmax(0, 1fr)); }
+  .account-nav-link:last-child:nth-child(odd) { grid-column: auto; }
+}
+
+/* "Account settings": one card, a row per subject. The subject is named on
+   the left and its boxes and buttons sit on the right. On a phone the name
+   sits above them. A hairline separates one subject from the next. */
+.settings-row { display: grid; gap: 1rem 2rem; padding: 1.5rem 0; }
+.settings-row:first-child { padding-top: 0; }
+.settings-row:last-child { padding-bottom: 0; }
+.settings-row + .settings-row { border-top: 1px solid #eef2f0; }
+.settings-row[hidden] { display: none; }
+.settings-name { font-weight: 600; font-size: 0.9375rem; }
+.settings-help { margin-top: 0.25rem; font-size: 0.8125rem; color: #4a6b5a; }
+@media (min-width: 768px) {
+  .settings-row { grid-template-columns: 13rem minmax(0, 1fr); }
+}
+
+@media (prefers-color-scheme: dark) {
+  .account-nav { background: #24402f; border-color: #24402f; }
+  .account-nav-link { background: #122117; }
+  .account-nav-link:hover { background: #1b3328; }
+  .account-nav-link:hover .account-nav-name { color: #e0a877; }
+  .account-nav-note { color: #bccdc4; }
+  .account-nav-note-waiting { color: #e0a877; }
+  .settings-row + .settings-row { border-top-color: #1b3328; }
+  .settings-help { color: #bccdc4; }
+}

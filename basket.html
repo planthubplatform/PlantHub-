@@ -75,7 +75,7 @@
         <div id="empty-row" hidden class="mt-6">
           <button type="button" id="empty-start" class="auth-link text-sm">Empty the basket</button>
           <div id="empty-ask" hidden class="ask-first mt-3">
-            <p class="text-sm text-clay-700 dark:text-clay-300">Take everything out of your basket?</p>
+            <p class="text-sm text-clay-700 dark:text-clay-300">Remove everything from your basket?</p>
             <div class="mt-3 flex flex-wrap gap-3">
               <button type="button" id="empty-yes" class="auth-button account-button-small account-button-danger-solid">Yes, empty it</button>
               <button type="button" id="empty-no" class="auth-button auth-button-outline account-button-small">Keep it</button>
@@ -116,7 +116,7 @@
 
             <form id="bank-form" data-part="bank-pick" hidden class="mt-3" novalidate>
               <p class="text-sm text-ink-700 dark:text-stone-300">
-                PlantHub takes bank transfers (ACH) only, never cards. Choose the bank the payment will come from.
+                PlantHub is paid by bank transfer (ACH) only, never by card. Choose the bank you will pay from.
               </p>
               <fieldset class="mt-4 grid gap-3 sm:grid-cols-2">
                 <legend class="sr-only">Your bank</legend>
@@ -136,12 +136,14 @@
             <dl class="money-list mt-3">
               <div><dt>Plants</dt><dd id="sum-plants"></dd></div>
               <div><dt>Sales tax</dt><dd class="text-ink-400 dark:text-stone-400">Not worked out in this preview</dd></div>
-              <div class="money-total"><dt>Bank payment to authorize</dt><dd id="sum-total"></dd></div>
+              <div class="money-total"><dt>Order total</dt><dd id="sum-total"></dd></div>
             </dl>
+            <!-- When the buyer is charged, in the plainest words there are. -->
             <ul class="mt-4 space-y-1.5 text-sm text-ink-700 dark:text-stone-300 list-disc pl-5">
-              <li>Nothing is taken until <span data-grower></span> accepts the order. If they decline, nothing is taken at all.</li>
-              <li>Once they accept, the payment is taken and PlantHub holds it until you have the plants.</li>
-              <li>Then you choose pickup or delivery. Delivery is a separate charge, agreed when you pick a carrier.</li>
+              <li>You are not charged when you place the order.</li>
+              <li>If <span data-grower></span> accepts it, your bank is charged <span data-total></span>. PlantHub holds the money until you have the plants.</li>
+              <li>If they decline, you pay nothing.</li>
+              <li>After they accept, you choose pickup or delivery. Delivery costs extra, and you see the price before you pick a carrier.</li>
             </ul>
             <p id="place-error" role="alert" hidden class="auth-error mt-4"></p>
             <button type="button" id="place" class="mt-5 auth-button account-button-small">Place order</button>
@@ -154,7 +156,7 @@
       <section id="placed-view" hidden class="auth-card">
         <h1 id="placed-title" class="font-display font-semibold text-3xl tracking-tight"></h1>
         <p id="placed-text" class="mt-3 text-sm text-ink-700 dark:text-stone-300"></p>
-        <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">When they accept, you choose pickup or delivery on the order's page.</p>
+        <p id="placed-next-step" class="mt-2 text-sm text-ink-700 dark:text-stone-300"></p>
         <div class="mt-5 flex flex-wrap gap-3">
           <a id="placed-order" href="orders.html" class="auth-button account-button-small">View this order</a>
           <a id="placed-next" href="directory.html" class="auth-button auth-button-outline account-button-small"></a>
@@ -348,7 +350,7 @@
       PH.removeFromBasket(button.closest("[data-line]").dataset.line);
       drawBasket();
       cornerChanged();
-      toast("Taken out of your basket.");
+      toast("Removed from your basket.");
     });
 
     // Emptying the whole basket asks first.
@@ -422,6 +424,7 @@
 
       $("sum-plants").textContent = moneyText(group.subtotal);
       $("sum-total").textContent = moneyText(group.subtotal);
+      document.querySelectorAll("[data-total]").forEach(function (spot) { spot.textContent = moneyText(group.subtotal); });
       drawBank();
     }
 
@@ -462,8 +465,9 @@
     function drawPlaced(order) {
       const more = PH.basketCount() > 0;
       $("placed-title").textContent = "Order " + order.id + " placed";
-      $("placed-text").textContent = order.nurseryName + " has been asked to accept it. Your bank payment of " +
-        moneyText(order.money.subtotal) + " is authorized, and is only taken if they accept.";
+      $("placed-text").textContent = "We sent your order to " + order.nurseryName + ". You have not been charged.";
+      $("placed-next-step").textContent = "If they accept, your bank is charged " + moneyText(order.money.subtotal) +
+        ". Then you choose pickup or delivery on the order's page.";
       $("placed-order").href = "order.html?id=" + encodeURIComponent(order.id);
       $("placed-next").textContent = more ? "Back to your basket" : "Keep browsing";
       $("placed-next").href = more ? "basket.html" : "directory.html";

@@ -52,6 +52,10 @@ order is placed), `styles.css`, `CLAUDE.md` file table.
   eligible carriers with a delivery cost for each, and picks one. The carrier
   sees a "requested" job (handled by the transport spec). The buyer confirms
   "Delivered" when it arrives; the payout then shows as released.
+- A buyer can change a pickup, or a delivery request the carrier hasn't
+  answered, by pressing "Change pickup or delivery", confirming that the
+  current choice is cancelled, and choosing again. (Added 13 Oct after the
+  owner's review.)
 - A buyer can open an order within 48 hours of pickup or delivery and press
   "Report a problem": short count (refund at unit price, shown at once) or wrong
   grade (the grower accepts or disputes; a dispute reads "PlantHub is

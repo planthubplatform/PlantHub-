@@ -2,10 +2,18 @@
 <!--
   account.html — the signed-in person's own page.
 
-  What it holds today: who you are, your contact details, your password,
-  and the ways out (sign out, delete the account). Each later part of the
-  site (a grower's inventory, a buyer's orders, a carrier's rates) gets its
-  own page and a link from here when it is built.
+  Three parts, top to bottom:
+
+    1. Who you are: your name and the kind of account.
+    2. Your pages: one row of links to the places this kind of account uses
+       (the plant directory, basket, orders, inquiries, inventory). Each
+       link says where things stand ("1 waiting for you"), so the row is a
+       summary as well as a way to get around.
+    3. Account settings: one card with a row per subject. The subject is
+       named on the left and its boxes and buttons sit on the right.
+
+  Every kind of account gets the same page with different links and rows:
+  buyers have a basket and a bank, growers have an inventory, and so on.
 
   PROTOTYPE ONLY. Everything is saved by store.js in this browser. Nobody
   signed in? The page sends them to signin.html and comes back afterwards.
@@ -35,12 +43,12 @@
   </header>
 
   <main class="page flex-1 py-8">
-    <div class="mx-auto w-full max-w-2xl space-y-6">
+    <div class="mx-auto w-full max-w-4xl">
 
       <!-- Shown once, straight after signing up. -->
-      <p id="welcome" role="status" hidden class="auth-note"></p>
+      <p id="welcome" role="status" hidden class="auth-note mb-6"></p>
 
-      <!-- ===== Who you are =============================================== -->
+      <!-- ===== 1. Who you are ============================================= -->
       <section class="flex items-center gap-4">
         <span id="big-initial" class="account-initial" aria-hidden="true"></span>
         <div class="min-w-0">
@@ -49,126 +57,127 @@
         </div>
       </section>
 
-      <!-- ===== Where to go ================================================ -->
-      <!-- Growers only: the way to their listings. -->
-      <section id="inventory-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-ink-700 dark:text-stone-300">Keep your listings current: add plants, change counts and prices, confirm what's still accurate.</p>
-        <a href="inventory.html" class="auth-button account-button-small">Manage your inventory</a>
-      </section>
+      <!-- ===== 2. Your pages ============================================== -->
+      <!-- One row of links, drawn by the script for the kind of account. -->
+      <nav id="pages" class="account-nav mt-6" aria-label="Your pages"></nav>
 
-      <!-- Buyers and growers: their orders. Buyers also get their basket. -->
-      <section id="orders-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
-        <p id="orders-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
-        <div class="flex flex-wrap gap-3">
-          <a href="basket.html" id="basket-link" hidden class="auth-button auth-button-outline account-button-small">Your basket</a>
-          <a href="orders.html" id="orders-button" class="auth-button auth-button-outline account-button-small"></a>
-        </div>
-      </section>
+      <!-- ===== 3. Account settings ======================================== -->
+      <h2 class="mt-10 font-display font-semibold text-xl tracking-tight">Account settings</h2>
 
-      <!-- Buyers: the bank their orders are paid from. Pretend, like every
-           payment here: it is picked from a list at checkout, never typed. -->
-      <section id="bank-card" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
-        <p id="bank-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
-        <button type="button" id="bank-disconnect" hidden class="auth-button auth-button-outline account-button-small">Disconnect</button>
-      </section>
+      <div class="auth-card mt-4">
 
-      <!-- Buyers and growers: their conversations. -->
-      <section id="inquiries-link" hidden class="auth-card flex flex-wrap items-center justify-between gap-3">
-        <p id="inquiries-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
-        <a href="inquiries.html" class="auth-button auth-button-outline account-button-small">Open inquiries</a>
-      </section>
-
-      <section class="auth-card flex flex-wrap items-center justify-between gap-3">
-        <p class="text-sm text-ink-700 dark:text-stone-300">See what growers have, with prices and how fresh each listing is.</p>
-        <a href="directory.html" id="directory-link" class="auth-button account-button-small">Open the plant directory</a>
-      </section>
-
-      <!-- ===== Your details ============================================== -->
-      <section class="auth-card" aria-labelledby="details-title">
-        <h2 id="details-title" class="font-display font-semibold text-xl tracking-tight">Your details</h2>
-        <form id="profile-form" class="mt-5 space-y-4" novalidate>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="auth-label" for="name">Name</label>
-              <input class="auth-input" id="name" type="text" autocomplete="name">
+        <!-- Your details -->
+        <section class="settings-row" aria-labelledby="details-title">
+          <div>
+            <h3 id="details-title" class="settings-name">Your details</h3>
+            <p id="details-help" class="settings-help"></p>
+          </div>
+          <form id="profile-form" class="space-y-4" novalidate>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="auth-label" for="name">Name</label>
+                <input class="auth-input" id="name" type="text" autocomplete="name">
+              </div>
+              <div>
+                <label class="auth-label" for="email">Email</label>
+                <input class="auth-input" id="email" type="email" autocomplete="email">
+              </div>
+              <div>
+                <label class="auth-label" for="phone">Phone <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+                <input class="auth-input" id="phone" type="tel" autocomplete="tel">
+              </div>
+              <!-- Not asked of Personal accounts: they have no business. -->
+              <div id="business-field">
+                <label class="auth-label" for="business"><span id="business-label">Business name</span> <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+                <input class="auth-input" id="business" type="text" autocomplete="organization">
+              </div>
             </div>
-            <div>
-              <label class="auth-label" for="email">Email</label>
-              <input class="auth-input" id="email" type="email" autocomplete="email">
+            <p id="profile-error" role="alert" hidden class="auth-error"></p>
+            <div class="flex items-center gap-4">
+              <button type="submit" class="auth-button account-button-small">Save details</button>
+              <span id="profile-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Saved.</span>
             </div>
-            <div>
-              <label class="auth-label" for="phone">Phone <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
-              <input class="auth-input" id="phone" type="tel" autocomplete="tel">
+          </form>
+        </section>
+
+        <!-- Buyers: the bank their orders are paid from. Pretend, like every
+             payment here: it is picked from a list at checkout, never typed. -->
+        <section id="bank-row" class="settings-row" aria-labelledby="bank-title" hidden>
+          <div>
+            <h3 id="bank-title" class="settings-name">Bank</h3>
+            <p class="settings-help">Orders are paid by bank transfer (ACH). No cards.</p>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p id="bank-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
+            <button type="button" id="bank-disconnect" hidden class="auth-button auth-button-outline account-button-small">Disconnect</button>
+          </div>
+        </section>
+
+        <!-- Tax exempt (landscapers who said so at sign-up).
+             PARKED: read-only until a Florida CPA signs off (see CLAUDE.md). -->
+        <section id="tax-row" class="settings-row" aria-labelledby="tax-title" hidden>
+          <div>
+            <h3 id="tax-title" class="settings-name">Tax exempt certificate</h3>
+            <p class="settings-help">Recorded and not yet used. How PlantHub treats sales tax is not decided.</p>
+          </div>
+          <dl class="grid gap-x-6 gap-y-3 sm:grid-cols-3 text-sm">
+            <div><dt class="text-ink-400 dark:text-stone-400">Certificate number</dt><dd id="tax-number" class="font-medium"></dd></div>
+            <div><dt class="text-ink-400 dark:text-stone-400">Expires</dt><dd id="tax-expires" class="font-medium"></dd></div>
+            <div class="min-w-0"><dt class="text-ink-400 dark:text-stone-400">File</dt><dd id="tax-file" class="font-medium truncate"></dd></div>
+          </dl>
+        </section>
+
+        <!-- Password -->
+        <section class="settings-row" aria-labelledby="password-title">
+          <div>
+            <h3 id="password-title" class="settings-name">Password</h3>
+            <p class="settings-help">At least 8 characters.</p>
+          </div>
+          <form id="password-form" class="space-y-4" novalidate>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label class="auth-label" for="old-password">Current password</label>
+                <input class="auth-input" id="old-password" type="password" autocomplete="current-password">
+              </div>
+              <div>
+                <label class="auth-label" for="new-password">New password</label>
+                <input class="auth-input" id="new-password" type="password" autocomplete="new-password">
+              </div>
             </div>
-            <!-- Not asked of Personal accounts: they have no business. -->
-            <div id="business-field">
-              <label class="auth-label" for="business"><span id="business-label">Business name</span> <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
-              <input class="auth-input" id="business" type="text" autocomplete="organization">
+            <p id="password-error" role="alert" hidden class="auth-error"></p>
+            <div class="flex items-center gap-4">
+              <button type="submit" class="auth-button account-button-small">Change password</button>
+              <span id="password-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Password changed.</span>
+            </div>
+          </form>
+        </section>
+
+        <!-- The ways out -->
+        <section class="settings-row" aria-labelledby="leave-title">
+          <div>
+            <h3 id="leave-title" class="settings-name">Leaving</h3>
+            <p class="settings-help">Sign out of this browser, or close the account for good.</p>
+          </div>
+          <div>
+            <div class="flex flex-wrap gap-3">
+              <button type="button" data-sign-out class="auth-button auth-button-outline account-button-small">Sign out</button>
+              <button type="button" id="delete-start" class="auth-button auth-button-outline account-button-small account-button-danger">Delete this account</button>
+            </div>
+
+            <!-- Opens when "Delete this account" is pressed: a second look
+                 before something that can't be undone. -->
+            <div id="delete-confirm" hidden class="ask-first mt-4">
+              <p id="delete-question" class="text-sm text-clay-700 dark:text-clay-300">Delete this account for good? This can't be undone.</p>
+              <div class="mt-3 flex flex-wrap gap-3">
+                <button type="button" id="delete-yes" class="auth-button account-button-small account-button-danger-solid">Yes, delete it</button>
+                <button type="button" id="delete-no" class="auth-button auth-button-outline account-button-small">Keep my account</button>
+              </div>
             </div>
           </div>
-          <p id="profile-error" role="alert" hidden class="auth-error"></p>
-          <div class="flex items-center gap-4">
-            <button type="submit" class="auth-button account-button-small">Save details</button>
-            <span id="profile-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Saved.</span>
-          </div>
-        </form>
-      </section>
+        </section>
+      </div>
 
-      <!-- ===== Tax exempt (landscapers who said so at sign-up) ============
-           PARKED: read-only until a Florida CPA signs off (see CLAUDE.md). -->
-      <section id="tax-card" class="auth-card" aria-labelledby="tax-title" hidden>
-        <h2 id="tax-title" class="font-display font-semibold text-xl tracking-tight">Tax exempt certificate</h2>
-        <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-3 text-sm">
-          <div><dt class="text-ink-400 dark:text-stone-400">Certificate number</dt><dd id="tax-number" class="font-medium"></dd></div>
-          <div><dt class="text-ink-400 dark:text-stone-400">Expires</dt><dd id="tax-expires" class="font-medium"></dd></div>
-          <div class="min-w-0"><dt class="text-ink-400 dark:text-stone-400">File</dt><dd id="tax-file" class="font-medium truncate"></dd></div>
-        </dl>
-        <p class="auth-hint">How PlantHub treats sales tax is not decided yet, so this is recorded and not yet used.</p>
-      </section>
-
-      <!-- ===== Password =================================================== -->
-      <section class="auth-card" aria-labelledby="password-title">
-        <h2 id="password-title" class="font-display font-semibold text-xl tracking-tight">Password</h2>
-        <form id="password-form" class="mt-5 space-y-4" novalidate>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label class="auth-label" for="old-password">Current password</label>
-              <input class="auth-input" id="old-password" type="password" autocomplete="current-password">
-            </div>
-            <div>
-              <label class="auth-label" for="new-password">New password</label>
-              <input class="auth-input" id="new-password" type="password" autocomplete="new-password">
-              <p class="auth-hint">At least 8 characters.</p>
-            </div>
-          </div>
-          <p id="password-error" role="alert" hidden class="auth-error"></p>
-          <div class="flex items-center gap-4">
-            <button type="submit" class="auth-button account-button-small">Change password</button>
-            <span id="password-saved" role="status" hidden class="text-sm text-ink-400 dark:text-stone-400">Password changed.</span>
-          </div>
-        </form>
-      </section>
-
-      <!-- ===== Ways out =================================================== -->
-      <section class="auth-card" aria-labelledby="leave-title">
-        <h2 id="leave-title" class="font-display font-semibold text-xl tracking-tight">Leaving</h2>
-        <div class="mt-4 flex flex-wrap gap-3">
-          <button type="button" data-sign-out class="auth-button auth-button-outline account-button-small">Sign out</button>
-          <button type="button" id="delete-start" class="auth-button auth-button-outline account-button-small account-button-danger">Delete this account</button>
-        </div>
-
-        <!-- Opens when "Delete this account" is pressed: a second look
-             before something that can't be undone. -->
-        <div id="delete-confirm" hidden class="mt-4 rounded-lg border border-clay-300 dark:border-clay-700 bg-clay-50 dark:bg-ink-900 px-4 py-3">
-          <p id="delete-question" class="text-sm text-clay-700 dark:text-clay-300">Delete this account for good? This can't be undone.</p>
-          <div class="mt-3 flex flex-wrap gap-3">
-            <button type="button" id="delete-yes" class="auth-button account-button-small account-button-danger-solid">Yes, delete it</button>
-            <button type="button" id="delete-no" class="auth-button auth-button-outline account-button-small">Keep my account</button>
-          </div>
-        </div>
-      </section>
-
-      <p class="auth-note">
+      <p class="auth-note mt-6">
         Preview: this account is saved only in this browser and is not real.
         <button type="button" id="reset-demo" class="auth-link">Reset the preview</button>
         to wipe every account made here and start again with the four demo accounts.
@@ -178,7 +187,8 @@
 
   <script src="store.js"></script>
   <!-- Deleting an account cancels its unanswered orders, which puts plants
-       back on listings, so the sample nurseries have to be loaded here. -->
+       back on listings, so the sample nurseries have to be loaded here. They
+       are also what the grower's "Inventory" link counts. -->
   <script src="data/nurseries.js"></script>
   <script>
     let user = PH.currentUser();
@@ -201,17 +211,84 @@
       return isNaN(date) ? isoDate : date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
 
+    function plural(count, word) { return count + " " + word + (count === 1 ? "" : "s"); }
+
+    // ---- 2. Your pages ------------------------------------------------------
+    // The links this kind of account gets, in the order they are used most.
+    // Each is { name, href, note, waiting }: `note` is the line under the
+    // name, and `waiting` is how many things there need this person, which
+    // turns the note clay and puts the number beside the name.
+    function pageLinks() {
+      const replies = PH.unreadInquiries();
+      const toAnswer = PH.ordersWaiting();
+      const orders = PH.myOrders().length;
+      const directory = { name: "Plant directory", href: "directory.html", note: "Browse listings and prices" };
+
+      if (user.side === "Buyer") {
+        const lines = PH.basketCount();
+        return [
+          directory,
+          { name: "Basket", href: "basket.html", note: lines ? plural(lines, "line") + " to check out" : "Nothing in it yet" },
+          { name: "Orders", href: "orders.html", waiting: toAnswer,
+            note: toAnswer ? toAnswer + " waiting for you" : orders ? plural(orders, "order") + " placed" : "None placed yet" },
+          { name: "Inquiries", href: "inquiries.html", waiting: replies,
+            note: replies ? (replies === 1 ? "1 reply" : replies + " replies") + " waiting" : "Your questions to growers" },
+        ];
+      }
+
+      if (user.type === "grower") {
+        const nursery = user.nurseryId ? PH.nursery(user.nurseryId) : null;
+        const listings = nursery ? nursery.plants.length : 0;
+        return [
+          { name: "Inventory", href: "inventory.html", note: listings ? plural(listings, "listing") + " to keep current" : "Add your first listing" },
+          { name: "Orders to fill", href: "orders.html", waiting: toAnswer,
+            note: toAnswer ? toAnswer + " waiting for your answer" : orders ? plural(orders, "order") + " so far" : "None yet" },
+          { name: "Inquiries", href: "inquiries.html", waiting: replies,
+            note: replies ? replies + " waiting for you" : "Questions from buyers" },
+          directory,
+        ];
+      }
+
+      // Transport companies get their jobs and profile with the transport
+      // pages. Until then, the directory is the one place they can go.
+      return [directory];
+    }
+
+    function drawPages() {
+      const links = pageLinks();
+      const nav = document.getElementById("pages");
+      // The row has exactly as many columns as there are links.
+      nav.style.setProperty("--links", links.length);
+      nav.innerHTML = links.map(function (link) {
+        return (
+          '<a class="account-nav-link" href="' + link.href + '">' +
+            '<span class="account-nav-name">' + PH.escapeHtml(link.name) +
+              (link.waiting ? ' <span class="corner-count">' + link.waiting + "</span>" : "") + "</span>" +
+            '<span class="account-nav-note' + (link.waiting ? " account-nav-note-waiting" : "") + '">' + PH.escapeHtml(link.note) + "</span>" +
+          "</a>"
+        );
+      }).join("");
+    }
+
     // ---- Fill the page from the account -----------------------------------
     function draw() {
       document.getElementById("big-initial").textContent = user.name.charAt(0).toUpperCase();
       document.getElementById("account-name").textContent = user.name;
       document.getElementById("account-kind").textContent =
-        user.typeName + " account (" + user.side.toLowerCase() + ") · since " + niceDate(user.created);
+        user.typeName + " account (" + user.side.toLowerCase() + "), since " + niceDate(user.created);
+
+      drawPages();
 
       document.getElementById("name").value = user.name;
       document.getElementById("email").value = user.email;
       document.getElementById("phone").value = user.phone || "";
       document.getElementById("business").value = user.business || "";
+
+      // Who gets to see these details depends on the kind of account.
+      document.getElementById("details-help").textContent =
+        user.side === "Buyer" ? "A grower is given these with each order and inquiry you send."
+        : user.type === "grower" ? "Buyers see your nursery's name. They are never shown your phone or email."
+        : "How PlantHub reaches you.";
 
       // The business box is worded for the kind of account, and hidden for
       // Personal accounts.
@@ -219,40 +296,15 @@
       document.getElementById("business-label").textContent =
         user.type === "grower" ? "Nursery name" : user.type === "transporter" ? "Company name" : "Business name";
 
-      // Growers get their inventory as the main button; the directory
-      // button steps back to an outline so only one is filled in.
-      const grower = user.type === "grower";
-      document.getElementById("inventory-link").hidden = !grower;
-      document.getElementById("directory-link").classList.toggle("auth-button-outline", grower);
-
-      // Everyone but transport companies has inquiries.
-      const waiting = PH.unreadInquiries();
-      document.getElementById("inquiries-link").hidden = user.type === "transporter";
-      document.getElementById("inquiries-text").textContent =
-        (grower ? "Questions buyers have sent your nursery." : "Your questions to growers, and their replies.") +
-        (waiting ? " " + waiting + (waiting === 1 ? " is" : " are") + " waiting for you." : "");
-
-      // Orders: buyers see what they ordered, growers what they have to
-      // fill. Transport companies get their jobs with the transport pages.
-      const toAnswer = PH.ordersWaiting();
-      const lines = PH.basketCount();
-      document.getElementById("orders-link").hidden = user.type === "transporter";
-      document.getElementById("orders-button").textContent = grower ? "Orders to fill" : "My orders";
-      document.getElementById("basket-link").hidden = user.side !== "Buyer";
-      document.getElementById("basket-link").textContent = "Your basket" + (lines ? " (" + lines + ")" : "");
-      document.getElementById("orders-text").textContent =
-        (grower ? "Orders buyers have sent your nursery, and which carriers may deliver them." : "Your basket, and the orders you have placed with growers.") +
-        (toAnswer ? " " + toAnswer + (toAnswer === 1 ? " is" : " are") + " waiting for you." : "");
-
       // The bank, for buyers. Connected at checkout; it can be let go here.
-      document.getElementById("bank-card").hidden = user.side !== "Buyer";
+      document.getElementById("bank-row").hidden = user.side !== "Buyer";
       document.getElementById("bank-disconnect").hidden = !user.bank;
       document.getElementById("bank-text").textContent = user.bank
-        ? "Orders are paid by bank transfer from " + user.bank.name + " ····" + user.bank.last4 + ". Sample bank: nothing real is connected."
-        : "No bank connected yet. You choose one the first time you check out. PlantHub takes bank transfers (ACH) only.";
+        ? user.bank.name + " ····" + user.bank.last4 + " is connected. Sample bank: nothing real is connected."
+        : "No bank connected yet. You choose one the first time you check out.";
 
       const tax = user.taxExempt;
-      document.getElementById("tax-card").hidden = !tax;
+      document.getElementById("tax-row").hidden = !tax;
       if (tax) {
         document.getElementById("tax-number").textContent = tax.number;
         document.getElementById("tax-expires").textContent = niceDate(tax.expires);

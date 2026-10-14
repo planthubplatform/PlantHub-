@@ -2,14 +2,16 @@
 <!--
   order.html — one order, for the buyer who placed it or the grower filling it.
 
-  Reached from the orders list: order.html?id=PH-1001. The page says where
-  the order stands, what happens next and whose move it is, and holds every
-  action on an order:
+  Reached from the orders list: order.html?id=PH-1001. The page is laid out
+  to be read from the top and answered at the bottom: where the order
+  stands, then the plants, the money and the people, and last of all the
+  thing this person can do about it. It holds every action on an order:
 
     grower   accept or decline; mark a pickup as picked up; answer a
              wrong-grade report
-    buyer    cancel before the grower answers; choose pickup or delivery;
-             confirm a delivery; report a problem within 48 hours
+    buyer    cancel before the grower answers; choose pickup or delivery,
+             and change that choice while it is still pending; confirm a
+             delivery; report a problem within 48 hours
 
   The two sides see different money. The buyer sees what they pay. The
   grower sees the order total, PlantHub's 3% fee and their payout. The buyer
@@ -93,8 +95,8 @@
     let order = user ? PH.order(orderId) : null;
 
     // Which box is open on the page: "" for none, or the name of a second
-    // look ("cancel", "decline", "delivered", "picked-up", a problem answer),
-    // or "change" (choosing pickup or delivery again), or "report".
+    // look ("cancel", "decline", "delivered", "picked-up", "change", a
+    // problem answer), or "report" (the report-a-problem form).
     let open = "";
 
     // -----------------------------------------------------------------------
@@ -145,6 +147,9 @@
       order = result.order;
       open = "";
       draw();
+      // The action sits at the bottom of the page and what it changed is
+      // said at the top, so go back up to it.
+      window.scrollTo({ top: 0, behavior: "smooth" });
       toast(message);
       // The count beside "Orders" in the top corner may have changed.
       document.dispatchEvent(new Event("planthub:account-changed"));
@@ -185,9 +190,9 @@
     // 3. "What happens next": the part of the page that changes most.
     // -----------------------------------------------------------------------
 
-    // Choosing pickup or delivery. Used the first time, and again if the
-    // buyer changes their mind before anything is confirmed.
-    function arrangeHtml(changing) {
+    // Choosing pickup or delivery. The button that settles it is the last
+    // thing in the form, after the city, the date and the carriers.
+    function arrangeHtml() {
       const delivery = PH.deliveryOptions(order.id, "");
       const day = PH.today();
       const cities = PH.deliveryCities().map(function (city) { return '<option value="' + text(city) + '">' + text(city) + "</option>"; }).join("");
@@ -227,13 +232,12 @@
               "</div>" +
             "</div>" +
             '<div id="carrier-list" class="mt-4"></div>' +
-            '<p class="auth-hint">Delivery is a separate bank charge, taken when the carrier accepts and held until the plants arrive. Miles here are sample mileage, not road-accurate.</p>' +
+            '<p class="auth-hint">Delivery is charged separately, and only once the carrier accepts. PlantHub holds the money until the plants arrive. Miles here are sample mileage, not road-accurate.</p>' +
           "</div>" +
 
           '<p id="arrange-error" role="alert" hidden class="auth-error"></p>' +
           '<div class="flex flex-wrap gap-3">' +
             '<button type="submit" id="arrange-submit" class="auth-button account-button-small">Choose pickup</button>' +
-            (changing ? button("Leave it as it is", "close", "outline") : "") +
           "</div>" +
         "</form>"
       );
@@ -327,73 +331,118 @@
       );
     }
 
-    // The heading, the explanation and the actions for where the order
-    // stands, for whichever side is looking.
-    function nextHtml() {
+    // Where the order stands, for whichever side is looking, in two parts:
+    //
+    //   title, words   what is going on. Drawn at the top of the page.
+    //   action         what this person can do now, or null. Drawn at the
+    //                  BOTTOM of the page, under the plants, the money and
+    //                  the people, so the order is read first and answered
+    //                  last. { title, words, body, jump }
+    //
+    // `jump` is the wording of a link from the top straight down to the
+    // action, given when the next move is this person's.
+    function stage() {
       const buyer = order.side === "buyer";
       const money = order.money;
       const job = order.job;
       const grower = text(order.nurseryName);
       const buyerName = text(order.buyer.name);
+      const total = moneyText(money.subtotal);
+      const hours = PH.PROBLEM_HOURS;
       const until = order.problemDeadline ? momentText(order.problemDeadline) : "";
       const openReport = order.problems.some(function (problem) { return problem.status === "waiting"; });
+      const buttons = function (html) { return '<div class="mt-4 flex flex-wrap gap-3">' + html + "</div>"; };
       let title = "";
       let words = "";
-      let actions = "";
+      let extra = "";
+      let action = null;
 
       if (order.status === "awaiting" && buyer) {
         title = "Waiting for " + grower + " to accept";
-        words = "Your bank payment of " + moneyText(money.subtotal) + " is authorized and not yet taken. If they decline, nothing is taken at all.";
-        actions = open === "cancel"
-          ? askFirst("Cancel this order? The plants go back on the grower's listing.", "cancel-yes", "Yes, cancel it", "Keep the order")
-          : '<div class="mt-4">' + button("Cancel order", "open:cancel", "outline") + "</div>";
+        words = "You have not been charged. If they accept, your bank is charged " + total + ". If they decline, you pay nothing.";
+        action = {
+          title: "Changed your mind?",
+          words: "You can cancel this order until the grower answers.",
+          body: open === "cancel"
+            ? askFirst("Cancel this order? You won't be charged, and the plants go back on the grower's listing.", "cancel-yes", "Yes, cancel it", "Keep the order")
+            : buttons(button("Cancel order", "open:cancel", "outline")),
+        };
 
       } else if (order.status === "awaiting") {
-        title = "Accept or decline this order";
-        words = buyerName + " wants the plants below. Accepting takes their bank payment of " + moneyText(money.subtotal) +
-                ", and PlantHub holds it until the order is picked up or delivered. The plants are already off your listings. Declining puts them back.";
-        actions = open === "decline"
-          ? askFirst("Decline this order? The buyer is told, nothing is taken from them, and the plants go back on your listings.", "decline-yes", "Yes, decline it", "Keep the order")
-          : '<form id="accept" class="mt-4" novalidate>' +
-              '<label class="flex items-start gap-3 text-sm">' +
-                '<input type="checkbox" id="accept-dead" class="mt-0.5 w-4 h-4 accent-clay-600">' +
-                "<span>I accept that plants arriving dead are my cost. A carrier's insurance covers accidents in transit.</span>" +
-              "</label>" +
-              '<p id="accept-error" role="alert" hidden class="auth-error mt-3"></p>' +
-              '<div class="mt-4 flex flex-wrap gap-3">' +
-                '<button type="submit" class="auth-button account-button-small">Accept order</button>' +
-                button("Decline", "open:decline", "outline") +
-              "</div>" +
-            "</form>";
+        title = "New order from " + buyerName;
+        words = "Look over the plants and your payout, then accept or decline at the bottom of the page. The plants are already set aside for this order.";
+        action = {
+          jump: "Go to accept or decline",
+          title: "Accept or decline",
+          words: "If you accept, the buyer's bank is charged " + total + " and PlantHub holds the money until the order is picked up or delivered. " +
+                 "If you decline, the buyer is not charged and the plants go back on your listings.",
+          body: open === "decline"
+            ? askFirst("Decline this order? The buyer is told and is not charged, and the plants go back on your listings.", "decline-yes", "Yes, decline it", "Keep the order")
+            : '<form id="accept" class="mt-4" novalidate>' +
+                '<label class="flex items-start gap-3 text-sm">' +
+                  '<input type="checkbox" id="accept-conditions" class="mt-0.5 w-4 h-4 accent-clay-600">' +
+                  "<span>I accept the conditions: plants that arrive dead are at my cost. A carrier's insurance covers accidents in transit.</span>" +
+                "</label>" +
+                '<p id="accept-error" role="alert" hidden class="auth-error mt-3"></p>' +
+                '<div class="mt-4 flex flex-wrap gap-3">' +
+                  '<button type="submit" class="auth-button account-button-small">Accept order</button>' +
+                  button("Decline", "open:decline", "outline") +
+                "</div>" +
+              "</form>",
+        };
 
       } else if (order.status === "accepted" && buyer) {
-        title = "Choose pickup or delivery";
-        words = (order.carrierDeclined ? text(order.carrierDeclined) + " declined the delivery, and nothing was taken for it. Pick another carrier, or switch to pickup. " : "") +
-                grower + " accepted your order. Your payment of " + moneyText(money.subtotal) + " has been taken and PlantHub is holding it.";
-        actions = arrangeHtml(false);
+        title = grower + " accepted your order";
+        words = (order.carrierDeclined ? text(order.carrierDeclined) + " declined the delivery, and you were not charged for it. " : "") +
+                "Your bank was charged " + total + ", and PlantHub is holding the money until you have the plants. " +
+                "Look over the order, then choose pickup or delivery at the bottom of the page.";
+        action = {
+          jump: "Go to pickup or delivery",
+          title: "Choose pickup or delivery",
+          words: order.carrierDeclined ? "Pick another carrier, or switch to pickup." : "",
+          body: arrangeHtml(),
+        };
 
       } else if (order.status === "accepted") {
         title = "Waiting for the buyer to choose pickup or delivery";
-        words = "You accepted this order. The payment of " + moneyText(money.subtotal) + " has been taken and PlantHub is holding it." +
+        words = "You accepted this order. The buyer has paid " + total + ", and PlantHub is holding the money." +
                 (order.carrierDeclined ? " " + text(order.carrierDeclined) + " declined the delivery, so the buyer is choosing again." : "");
 
       } else if (order.status === "pickup" && buyer) {
         title = "Ready for pickup on " + dayText(order.pickupDate);
-        words = "Collect from " + grower + " in " + text(order.nurseryCity) + ". When you have the plants, the grower marks the order as picked up. That releases their payout and starts your " + PH.PROBLEM_HOURS + " hours to report a problem.";
-        actions = open === "change" ? arrangeHtml(true) : '<div class="mt-4">' + button("Change the date, or switch to delivery", "open:change", "outline") + "</div>";
+        words = "Collect from " + grower + " in " + text(order.nurseryCity) + ". When you have the plants, the grower marks the order as picked up. " +
+                "That pays the grower and starts your " + hours + " hours to report a problem.";
+        action = {
+          title: "Need to change it?",
+          words: "You can cancel this pickup and choose again, a different date or delivery, until the plants are picked up.",
+          body: open === "change"
+            ? askFirst("Cancel your pickup on " + dayText(order.pickupDate) + "? You then choose pickup or delivery again.", "change-yes", "Yes, cancel the pickup", "Keep it")
+            : buttons(button("Change pickup or delivery", "open:change", "outline")),
+        };
 
       } else if (order.status === "pickup") {
         title = "Pickup on " + dayText(order.pickupDate);
-        words = buyerName + " collects from you. When they have the plants, mark the order as picked up. That releases your payout of " + moneyText(money.payout) + ".";
-        actions = open === "picked-up"
-          ? askFirst("Has " + buyerName + " collected every plant on this order? This can't be undone.", "picked-up-yes", "Yes, picked up", "Not yet")
-          : '<div class="mt-4">' + button("Mark as picked up", "open:picked-up") + "</div>";
+        words = buyerName + " collects the plants from you.";
+        action = {
+          title: "Has the buyer collected?",
+          words: "Mark the order as picked up once they have every plant. That releases your payout of " + moneyText(money.payout) + ".",
+          body: open === "picked-up"
+            ? askFirst("Has " + buyerName + " collected every plant on this order? This can't be undone.", "picked-up-yes", "Yes, picked up", "Not yet")
+            : buttons(button("Mark as picked up", "open:picked-up")),
+        };
 
       } else if (order.status === "delivery-requested" && buyer) {
         title = "Waiting for " + text(job.carrierName) + " to accept";
         words = "You asked for delivery to " + text(job.city) + " on " + dayText(job.date) + ": " + job.miles + " miles, " + moneyText(job.cost) +
-                ". The delivery charge is authorized, and only taken if they accept.";
-        actions = open === "change" ? arrangeHtml(true) : '<div class="mt-4">' + button("Pick another carrier, or switch to pickup", "open:change", "outline") + "</div>";
+                ". You are charged for delivery only if they accept.";
+        action = {
+          title: "Need to change it?",
+          words: "You can cancel this request and choose again, another carrier or pickup, until the carrier accepts.",
+          body: open === "change"
+            ? askFirst("Cancel the delivery request you sent to " + text(job.carrierName) + "? You have not been charged for it. You then choose pickup or delivery again.",
+                       "change-yes", "Yes, cancel the request", "Keep it")
+            : buttons(button("Change pickup or delivery", "open:change", "outline")),
+        };
 
       } else if (order.status === "delivery-requested") {
         title = "Delivery requested";
@@ -401,10 +450,15 @@
 
       } else if (order.status === "delivery-booked" && buyer) {
         title = "Delivery booked for " + dayText(job.date);
-        words = text(job.carrierName) + " delivers to " + text(job.city) + ". When the plants arrive, confirm it here. That releases the payment to the grower and the carrier, and starts your " + PH.PROBLEM_HOURS + " hours to report a problem.";
-        actions = open === "delivered"
-          ? askFirst("Have all the plants arrived? Confirming releases the payment. This can't be undone.", "delivered-yes", "Yes, delivered", "Not yet")
-          : '<div class="mt-4">' + button("Confirm delivered", "open:delivered") + "</div>";
+        words = text(job.carrierName) + " accepted, and delivers to " + text(job.city) + ". Your bank was charged " + moneyText(job.cost) +
+                " for the delivery. It can no longer be changed here.";
+        action = {
+          title: "Have the plants arrived?",
+          words: "Confirm the delivery once every plant is there. That pays the grower and the carrier, and starts your " + hours + " hours to report a problem.",
+          body: open === "delivered"
+            ? askFirst("Have all the plants arrived? Confirming pays the grower and the carrier. This can't be undone.", "delivered-yes", "Yes, delivered", "Not yet")
+            : buttons(button("Confirm delivered", "open:delivered")),
+        };
 
       } else if (order.status === "delivery-booked") {
         title = "Delivery booked for " + dayText(job.date);
@@ -413,10 +467,14 @@
       } else if ((order.status === "picked-up" || order.status === "delivered") && buyer) {
         title = order.statusLabel + " on " + momentText(order.confirmedAt);
         if (order.canReport) {
-          words = "Something wrong? You have until " + until + " to report a short count or a wrong grade.";
-          actions = open === "report" ? reportHtml() : '<div class="mt-4">' + button("Report a problem", "open:report", "outline") + "</div>";
+          words = "The grower has been paid. If something is wrong, you can report it until " + until + ".";
+          action = {
+            title: "Something wrong?",
+            words: "Report a short count or a wrong grade. You have until " + until + ".",
+            body: open === "report" ? reportHtml() : buttons(button("Report a problem", "open:report", "outline")),
+          };
         } else {
-          words = "The " + PH.PROBLEM_HOURS + " hours for reporting a new problem have passed. The report below is still being settled.";
+          words = "The " + hours + " hours for reporting a new problem have passed. The report below is still being settled.";
         }
 
       } else if (order.status === "picked-up" || order.status === "delivered") {
@@ -429,24 +487,43 @@
       } else if (order.status === "complete") {
         title = "Complete";
         words = buyer
-          ? "The plants were " + plantsWord() + " on " + momentText(order.confirmedAt) + ". The " + PH.PROBLEM_HOURS + " hours for reporting a problem have passed."
+          ? "The plants were " + plantsWord() + " on " + momentText(order.confirmedAt) + ". The " + hours + " hours for reporting a problem have passed."
           : "The plants were " + plantsWord() + " on " + momentText(order.confirmedAt) + ", and your payout has been released.";
 
       } else if (order.status === "declined") {
         title = buyer ? grower + " declined this order" : "You declined this order";
-        words = buyer ? "Nothing was taken from your bank, and the plants are back on the grower's listing." : "Nothing was taken from the buyer, and the plants are back on your listings.";
-        if (buyer) actions = '<div class="mt-4"><a href="directory.html" class="auth-button auth-button-outline account-button-small inline-block">Open the plant directory</a></div>';
+        words = buyer ? "You were not charged, and the plants are back on the grower's listing." : "The buyer was not charged, and the plants are back on your listings.";
+        if (buyer) extra = '<div class="mt-4"><a href="directory.html" class="auth-button auth-button-outline account-button-small inline-block">Open the plant directory</a></div>';
 
       } else {
         title = buyer ? "You cancelled this order" : "The buyer cancelled this order";
-        words = buyer ? "Nothing was taken from your bank, and the plants are back on the grower's listing." : "They withdrew it before you answered. The plants are back on your listings.";
+        words = buyer ? "You were not charged, and the plants are back on the grower's listing." : "They withdrew it before you answered. The plants are back on your listings.";
       }
 
+      return { title: title, words: words, extra: extra, action: action };
+    }
+
+    // The top of the page: where the order stands.
+    function summaryHtml(now) {
       return (
         '<section class="auth-card">' +
-          '<h2 class="font-display font-semibold text-xl tracking-tight">' + title + "</h2>" +
-          '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + words + "</p>" +
-          actions +
+          '<h2 class="font-display font-semibold text-xl tracking-tight">' + now.title + "</h2>" +
+          '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + now.words + "</p>" +
+          (now.action && now.action.jump ? '<p class="mt-3 text-sm"><a class="auth-link" href="#your-move">' + now.action.jump + "</a></p>" : "") +
+          now.extra +
+        "</section>"
+      );
+    }
+
+    // The bottom of the page: what this person can do about it.
+    function actionHtml(now) {
+      const action = now.action;
+      if (!action) return "";
+      return (
+        '<section id="your-move" class="auth-card">' +
+          '<h2 class="font-display font-semibold text-xl tracking-tight">' + action.title + "</h2>" +
+          (action.words ? '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + action.words + "</p>" : "") +
+          action.body +
         "</section>"
       );
     }
@@ -492,13 +569,13 @@
           (money.refunds ? moneyRow("Refunded for short count", lessText(money.refunds)) : "") +
           (job ? moneyRow("Delivery by " + text(job.carrierName) + ", " + job.miles + " miles", moneyText(job.cost)) : "") +
           (order.live ? moneyRow("Sales tax", '<span class="text-ink-400 dark:text-stone-400">Not worked out in this preview</span>', "money-note") : "") +
-          moneyRow(order.live ? "Total" : "Taken from your bank", moneyText(money.total), "money-total");
+          moneyRow(order.live ? "Total" : "Charged to your bank", moneyText(money.total), "money-total");
 
-        line = money.payment === "authorized" ? "Authorized with " + bank + ". Not taken yet."
-             : money.payment === "none" ? "Nothing was taken from " + bank + "."
+        line = money.payment === "pending" ? "Not charged yet. " + bank + " is charged if the grower accepts."
+             : money.payment === "none" ? bank + " was not charged."
              : order.confirmedAt ? "Paid by bank transfer from " + bank + "."
              : "Paid by bank transfer from " + bank + ". PlantHub holds it until you have the plants.";
-        if (job && job.status === "requested") line += " The delivery charge is authorized, and taken if the carrier accepts.";
+        if (job && job.status === "requested") line += " You are charged for delivery only if the carrier accepts.";
       } else {
         rows = moneyRow("Order total", moneyText(money.subtotal)) +
           (money.refunds ? moneyRow("Refunded to the buyer for short count", lessText(money.refunds)) : "") +
@@ -543,7 +620,7 @@
         let head, body, actions = "";
         if (problem.kind === "short") {
           head = "Short count: " + problem.quantity.toLocaleString() + " × " + text(problem.common) + " missing";
-          body = "Refunded " + moneyText(problem.refund) + (grower ? " to the buyer, taken off your payout." : " to your bank.");
+          body = "Refunded " + moneyText(problem.refund) + (grower ? " to the buyer, deducted from your payout." : " to your bank.");
         } else {
           head = "Wrong grade: " + text(problem.common);
           body = problem.status === "waiting" ? (grower ? "Accept the report, or dispute it." : "Waiting for the grower to answer.")
@@ -665,29 +742,15 @@
       $("o-sub").textContent = "Placed " + momentText(order.placedAt) + " · " +
         (order.side === "buyer" ? "from " + order.nurseryName : "by " + order.buyer.name);
 
-      $("o-body").innerHTML = nextHtml() + arrangedHtml() + linesHtml() + moneyHtml() + problemsHtml() + peopleHtml() + historyHtml() + previewHtml();
+      // Read first, answer last: where it stands, how the plants travel,
+      // the plants, the money, the people, anything reported, and only then
+      // what this person can do. The history and the preview box trail it.
+      const now = stage();
+      $("o-body").innerHTML = summaryHtml(now) + arrangedHtml() + linesHtml() + moneyHtml() + peopleHtml() + problemsHtml() +
+                              actionHtml(now) + historyHtml() + previewHtml();
 
-      if ($("arrange")) {
-        if (open === "change") fillArrange();
-        syncArrange();
-      }
+      if ($("arrange")) syncArrange();
       if ($("report")) syncReport();
-    }
-
-    // Changing a choice starts from what was chosen, not from an empty form.
-    function fillArrange() {
-      const job = order.job;
-      const delivery = document.querySelector('input[name="method"][value="delivery"]');
-      if (order.method === "pickup") {
-        $("pickup-date").value = order.pickupDate;
-      } else if (job && !delivery.disabled) {
-        delivery.checked = true;
-        $("job-city").value = job.city;
-        $("job-date").value = job.date;
-        drawCarriers();
-        const current = document.querySelector('input[name="carrier"][value="' + job.carrierId + '"]');
-        if (current) current.checked = true;
-      }
     }
 
     // Show the half of the pickup-or-delivery form that matches the choice.
@@ -743,7 +806,8 @@
       if (action.indexOf("open:") === 0) { open = action.slice(5); draw(); return; }
       if (action === "close") { open = ""; draw(); return; }
 
-      if (action === "cancel-yes") apply(PH.cancelOrder(order.id), "Order cancelled. Nothing was taken.");
+      if (action === "cancel-yes") apply(PH.cancelOrder(order.id), "Order cancelled. You were not charged.");
+      if (action === "change-yes") apply(PH.cancelArrangement(order.id), "Cancelled. Choose pickup or delivery again.");
       if (action === "decline-yes") apply(PH.declineOrder(order.id), "Order declined. The plants are back on your listings.");
       if (action === "picked-up-yes") apply(PH.confirmPickup(order.id), "Marked as picked up. Your payout is released.");
       if (action === "delivered-yes") apply(PH.confirmDelivery(order.id), "Delivery confirmed.");
@@ -777,14 +841,14 @@
       event.preventDefault();
       const form = event.target;
 
-      // The grower accepts, with the dead-plants tick.
+      // The grower accepts, with the conditions checked.
       if (form.id === "accept") {
-        const result = PH.acceptOrder(order.id, $("accept-dead").checked);
+        const result = PH.acceptOrder(order.id, $("accept-conditions").checked);
         if (!result.ok) {
-          refuse("accept-error", result, { dead: "accept-dead" });
+          refuse("accept-error", result, { conditions: "accept-conditions" });
           return;
         }
-        apply(result, "Order accepted. The payment is held by PlantHub.");
+        apply(result, "Order accepted. PlantHub is holding the buyer's payment.");
       }
 
       // The buyer chooses pickup or delivery.
@@ -820,8 +884,8 @@
         const problem = check.problem;
         $("report-ask-text").textContent = problem.kind === "short"
           ? "Report " + problem.quantity.toLocaleString() + " × " + problem.common + " as missing? " + moneyText(problem.refund) +
-            " is refunded to you straight away and taken off the grower's payout. This can't be undone."
-          : "Send this wrong-grade report on " + problem.common + " to the grower? It can't be taken back.";
+            " is refunded to you straight away and deducted from the grower's payout. This can't be undone."
+          : "Send this wrong-grade report on " + problem.common + " to the grower? This can't be undone.";
         askAboutReport(true);
         pendingReport = details;
       }

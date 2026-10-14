@@ -56,9 +56,11 @@
     PH.myOrders()               the signed-in person's orders, newest first
     PH.order(id)                one of them, or null
     PH.cancelOrder(id)          buyer, while the grower hasn't answered
-    PH.acceptOrder(id, agreed)  grower; `agreed` is the dead-plants tick
+    PH.acceptOrder(id, agreed)  grower; `agreed` is the conditions checkbox
     PH.declineOrder(id)         grower; the plants go back on the listing
     PH.choosePickup(id, date)   buyer, once the grower has accepted
+    PH.cancelArrangement(id)    buyer: drop a pending pickup or delivery
+                                request and choose again
     PH.deliveryOptions(id, city)  the carriers a buyer may pick, with costs
     PH.chooseDelivery(id, { city, carrierId, date })
     PH.confirmPickup(id)        grower: the buyer collected
@@ -316,8 +318,8 @@ const PH = (function () {
       copy.state = asBuyer ? "cancelled" : "declined";
       giveBack(copy);
       note(copy, asBuyer
-        ? "The buyer closed their account, so the order was cancelled. Nothing was taken from the bank."
-        : "The grower closed their account, so the order was declined. Nothing was taken from the buyer's bank.");
+        ? "The buyer closed their account, so the order was cancelled. The buyer was not charged."
+        : "The grower closed their account, so the order was declined. The buyer was not charged.");
       return copy;
     }));
     const baskets = read(BASKETS_KEY) || {};
@@ -897,7 +899,7 @@ const PH = (function () {
       const found = findListing(line.nurseryId, line.listingId);
       const available = found ? found.plant.quantity : 0;
       if (available < 1) {
-        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was taken out of your basket.");
+        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was removed from your basket.");
       } else if (available < line.quantity) {
         notes.push(line.nurseryName + " now has " + available.toLocaleString() + " of " + line.name +
                    ", so your " + line.quantity.toLocaleString() + " was changed to " + available.toLocaleString() + ".");
@@ -1113,8 +1115,8 @@ const PH = (function () {
       delivery: delivery,
       // What the buyer pays in the end, delivery included.
       total: live ? cents(net + delivery) : 0,
-      // The buyer's payment: "authorized" (not taken yet), "paid" or "none".
-      payment: copy.state === "awaiting" ? "authorized" : copy.state === "accepted" ? "paid" : "none",
+      // The buyer's payment: "pending" (not charged yet), "paid" or "none".
+      payment: copy.state === "awaiting" ? "pending" : copy.state === "accepted" ? "paid" : "none",
     };
     // PlantHub's fee and the payout are the grower's business. They are
     // only put on the copy a grower gets, so a buyer's page can't show them.
@@ -1231,7 +1233,7 @@ const PH = (function () {
       method: null,
       jobs: [],
       problems: [],
-      events: [{ at: now, text: "Order placed. The bank payment of " + dollars(group.subtotal) + " is authorized and not yet taken." }],
+      events: [{ at: now, text: "Order placed for " + dollars(group.subtotal) + ". The buyer has not been charged yet." }],
     };
 
     if (!write(ORDERS_KEY, [order].concat(list))) {
@@ -1275,25 +1277,25 @@ const PH = (function () {
       if (order.state !== "awaiting") return { ok: false, error: "The grower has already answered this order, so it can't be cancelled here." };
       order.state = "cancelled";
       giveBack(order);
-      note(order, "The buyer cancelled the order. Nothing was taken from the bank, and the plants went back on the listing.");
+      note(order, "The buyer cancelled the order. The buyer was not charged, and the plants went back on the listing.");
     });
   }
 
-  // The grower says yes. `agreed` is the tick on "plants that arrive dead
-  // are my cost": the grower accepts that with every order.
+  // The grower says yes. `agreed` is the checkbox on the conditions (plants
+  // that arrive dead are the grower's cost): accepted with every order.
   function accept(order, agreed) {
     if (order.state !== "awaiting") return { ok: false, error: "This order has already been answered." };
-    if (agreed !== true) return { ok: false, field: "dead", error: "Tick the box to accept that plants arriving dead are your cost." };
+    if (agreed !== true) return { ok: false, field: "conditions", error: "Check the box to accept the conditions." };
     order.state = "accepted";
     order.acceptedAt = new Date().toISOString();
-    note(order, "The grower accepted. The bank payment of " + dollars(order.subtotal) + " was taken, and PlantHub is holding it.");
+    note(order, "The grower accepted. The buyer's bank was charged " + dollars(order.subtotal) + ", and PlantHub is holding the money.");
   }
 
   function decline(order) {
     if (order.state !== "awaiting") return { ok: false, error: "This order has already been answered." };
     order.state = "declined";
     giveBack(order);
-    note(order, "The grower declined. Nothing was taken from the buyer's bank, and the plants went back on the listing.");
+    note(order, "The grower declined. The buyer was not charged, and the plants went back on the listing.");
   }
 
   function acceptOrder(id, agreed) {
@@ -1341,6 +1343,31 @@ const PH = (function () {
       order.pickupDate = date;
       delete order.carrierDeclined;
       note(order, "The buyer chose pickup on " + niceDay(date) + ".");
+    });
+  }
+
+  // The buyer changes their mind about a pickup or a delivery that is still
+  // pending: the pickup hasn't happened, or the carrier hasn't answered.
+  // The choice is cancelled outright, and the order goes back to "choose
+  // pickup or delivery". It is a real step with a note in the history, not
+  // a form to be fiddled with, so the page asks before calling this. Once
+  // a carrier has accepted, it is too late to change here.
+  function cancelArrangement(id) {
+    return changeOrder(id, ["buyer"], function (order) {
+      const problem = arrangingProblem(order);
+      if (problem) return { ok: false, error: problem };
+      const job = currentJob(order);
+      if (order.method === "pickup") {
+        note(order, "The buyer cancelled the pickup on " + niceDay(order.pickupDate) + " and is choosing again.");
+      } else if (job) {
+        note(order, "The buyer cancelled the delivery request to " + job.carrierName + " and is choosing again. The buyer was not charged for it.");
+      } else {
+        return { ok: false, error: "There is no pickup or delivery to change yet." };
+      }
+      withdrawJob(order);
+      order.method = null;
+      delete order.pickupDate;
+      delete order.carrierDeclined;
     });
   }
 
@@ -1414,7 +1441,7 @@ const PH = (function () {
         requestedAt: new Date().toISOString(),
       });
       note(order, "The buyer asked " + pick.carrier.name + " to deliver to " + details.city + " on " + niceDay(details.date) +
-                  ", for " + dollars(pick.cost) + ". The delivery charge is authorized and not yet taken.");
+                  ", for " + dollars(pick.cost) + ". The buyer is charged for it only if the carrier accepts.");
     });
   }
 
@@ -1425,12 +1452,12 @@ const PH = (function () {
     if (!job || job.status !== "requested") return { ok: false, error: "There is no delivery waiting for an answer." };
     if (accept) {
       job.status = "accepted";
-      note(order, job.carrierName + " accepted the delivery. The delivery charge of " + dollars(job.cost) + " was taken, and PlantHub is holding it.");
+      note(order, job.carrierName + " accepted the delivery. The buyer's bank was charged " + dollars(job.cost) + " for it, and PlantHub is holding the money.");
     } else {
       job.status = "declined";
       order.method = null;
       order.carrierDeclined = job.carrierName;
-      note(order, job.carrierName + " declined the delivery. Nothing was taken for it. The buyer picks another carrier or pickup.");
+      note(order, job.carrierName + " declined the delivery. The buyer was not charged for it, and picks another carrier or pickup.");
     }
   }
 
@@ -1513,7 +1540,7 @@ const PH = (function () {
       return {
         ok: true, problem: problem,
         text: "The buyer reported " + quantity.toLocaleString() + " " + line.common + " missing. " + dollars(problem.refund) +
-              " was refunded to the buyer and taken off the grower's payout.",
+              " was refunded to the buyer and deducted from the grower's payout.",
       };
     }
 
@@ -1718,6 +1745,7 @@ const PH = (function () {
     acceptOrder: acceptOrder,
     declineOrder: declineOrder,
     choosePickup: choosePickup,
+    cancelArrangement: cancelArrangement,
     deliveryOptions: deliveryOptions,
     chooseDelivery: chooseDelivery,
     confirmPickup: confirmPickup,

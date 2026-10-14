@@ -1,5 +1,5 @@
 # Site build
-Last updated: 12 October 2026 (checkout built, at the checkpoint)
+Last updated: 13 October 2026 (checkout built and revised after the owner's review; at the checkpoint)
 
 ## Lane
 Builds every page of the site on `design-b` as a fully clickable mock, one page
@@ -32,6 +32,14 @@ answered and the six specs are written. **Checkout is built** and the run is
 stopped at the checkpoint, waiting for Kendrick. What happened is in
 `docs/factory/report.md`; the choices parked along the way are items 7 to 19
 in `docs/review-later.md`.
+
+Kendrick reviewed checkout on 13 Oct and asked for four changes, all made:
+the final action sits at the bottom of the order page, money is "charged" and
+"paid" (never "taken"), a pending pickup or delivery can be changed by
+cancelling it with a confirm, and `account.html` was rebuilt as a row of page
+links over one settings card. The first three are now rules in `CLAUDE.md`
+and lines in `docs/factory/done-checklist.md`, so the remaining pages follow
+them from the start.
 
 Next, when Kendrick says to continue: `transport`, then `encyclopedia`,
 `news`, `plant-doc`, `site-wide`, each by its spec in `docs/factory/specs/`.
@@ -80,6 +88,11 @@ reviewed together with checkout at the checkpoint.
   temporary: remove it and its two buttons when `jobs.html` exists.
 - **A carrier's insurance is never stored as yes or no.** `PH.carriers()` works
   out `insured` from the expiry date each time it is called.
+- **An order page has two halves** (`stage()` in `order.html`): what is going
+  on, drawn at the top, and what this person can do, drawn at the bottom
+  under the plants, money and people. New order states add to both.
+- **The account page's links are a list in one function** (`pageLinks()` in
+  `account.html`). A new page for a kind of account is one more entry there.
 - **Account page links only to pages that exist.** Each new page adds its own
   link there, so there is never a dead link.
 

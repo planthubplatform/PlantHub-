@@ -17,6 +17,10 @@ for review; the reviewer checks again without taking the builder's word.
       values get a plain message next to the problem; nothing is lost.
 - [ ] Anything that can't be undone asks first.
 - [ ] After a change, the page says it worked.
+- [ ] Read first, answer last: on a page that ends in a decision, the button
+      that settles it is at the bottom, after everything it acts on.
+- [ ] A choice that is still pending can be changed, in two steps: cancel it
+      (with an "are you sure?"), then choose again.
 - [ ] The browser's Back button and a page refresh leave things sensible.
 
 ## Accounts
@@ -41,6 +45,11 @@ for review; the reviewer checks again without taking the builder's word.
 - [ ] Green is used only for freshness and the logo dot.
 - [ ] Cards, buttons, spacing and type match the existing pages.
 - [ ] Empty states are designed, not blank: no orders yet, no results.
+
+## It reads plainly
+- [ ] Money: a buyer is "charged" or "not charged", a grower is "paid". Never
+      "taken" or "authorized".
+- [ ] "Check the box", not "tick". No sentence a visitor has to read twice.
 
 ## It is honest
 - [ ] Every invented business, person, article and price is visibly sample data.

@@ -85,15 +85,15 @@ kept separately, in the "Road Block 2" doc linked from
     Alternative: a real mapping service, which the mock can't have.
 
 14. **Can a buyer cancel after the grower accepts?** (checkout)
-    Built: no. A buyer can cancel only while the order is "awaiting grower".
-    Before the plants are confirmed they can still switch between pickup and
-    delivery, or change the date, unless a carrier has already accepted.
+    Built: no. A buyer can cancel the order only while it is "awaiting
+    grower". After that they can still change how they get the plants (item
+    28), but not back out of the order.
     Alternative: allow a cancel with a refund up to some point.
     Where: `cancelOrder` and `arrangingProblem` in `store.js`.
 
 15. **"Basket" or "cart"?** (checkout) Built: "basket", the questionnaire's
-    word. Spelling in what a visitor reads is American ("authorized").
-    Dates still read "12 Oct", as on the older pages.
+    word. Spelling in what a visitor reads is American. Dates still read
+    "12 Oct", as on the older pages.
 
 16. **Orders on a phone.** (checkout) Built: the basket stays in the header on
     a phone, but "Orders" and "Inquiries" don't fit and are reached from the
@@ -168,7 +168,33 @@ kept separately, in the "Road Block 2" doc linked from
     place (item 24), so those orders show again. "Reset the preview" clears
     them. A real account can't be re-made this way.
 
+28. **Changing a pending pickup or delivery.** (checkout, owner's review 13
+    Oct) Built as asked: "Change pickup or delivery" opens an "are you sure?"
+    that cancels the pickup or the delivery request, and the buyer chooses
+    again from scratch. Each change is written into the order's history.
+    Still open: there is no limit on how many times, and once a carrier has
+    accepted the delivery it can't be changed at all (the buyer has been
+    charged for it by then).
+    Alternative: a limit of, say, two changes; or allow cancelling a booked
+    delivery with a refund and a notice to the carrier.
+    Where: `cancelArrangement` in `store.js`, the "Need to change it?" card in
+    `order.html`.
+
+29. **The account page's layout.** (owner's review 13 Oct) Built: the name,
+    then one row of links for that kind of account (buyers: Plant directory,
+    Basket, Orders, Inquiries; growers: Inventory, Orders to fill, Inquiries,
+    Plant directory; transporters: Plant directory only, until their pages
+    exist), then one "Account settings" card with a row per subject. Each
+    link says where things stand ("1 waiting for you").
+    Still open: whether a grower's row should also link to their public page,
+    and what a transporter's row holds once the transport pages are built.
+
 ## Decided
+
+- **Where the final action sits** (13 Oct, owner): at the bottom of the page,
+  after what it acts on. Recorded in `CLAUDE.md` and the done checklist.
+- **Words about money** (13 Oct, owner): "charged" and "paid", never "taken"
+  or "authorized". "Check the box", not "tick". Recorded in `CLAUDE.md`.
 
 - **Item 4, Personal accounts** (12 Oct, questionnaire C1): Personal accounts can
   inquire and order wholesale, same $250 minimum. Growers and transporters can't.

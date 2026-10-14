@@ -89,7 +89,7 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | `inventory.html` | A grower's own listings: one-tap "still accurate" (all, or one row), quantity and price edited in the row, add / edit / remove, photos, and the nursery's name and city. Growers only. |
 | `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
-| `account.html` | The signed-in person's page: links to their orders, basket and inquiries, the bank a buyer connected, details, password, sign out, delete. Sends signed-out visitors to sign in first. |
+| `account.html` | The signed-in person's page, in three parts: who they are; "Your pages", one row of links for their kind of account (directory, basket, orders, inquiries, inventory), each saying where things stand; and "Account settings", one card with a row per subject (details, bank, password, leaving). Sends signed-out visitors to sign in first. |
 | `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
@@ -97,6 +97,9 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 Rules that are easy to break:
 - **Green means fresh.** Green is only for how recently a listing was confirmed (and the logo dot). Hover and selected states use clay.
 - **Sample data stays labelled.** `data/nurseries.js` is invented. Never present it as real businesses.
+- **Read first, answer last.** On a page that ends in a decision (accept an order, choose a delivery, confirm, report), what there is to review comes first and the button that settles it comes last, at the bottom. The top of the page only says where things stand. (Owner, 13 Oct 2026.)
+- **Plain words about money.** A buyer is "charged" or "not charged"; a grower is "paid". Never "taken", "authorized" or "payment is taken". Say "check the box", not "tick". (Owner, 13 Oct 2026.)
+- **Changing your mind takes two steps.** A pending choice (a pickup, a delivery request) is changed by cancelling it, after an "are you sure?", and choosing again. It is never an open form that can be fiddled with.
 - **Order status tags are never green.** Clay means "your move", sand means done, a dashed outline means the order came to nothing (`orderPillClass` in `shared.js`).
 - **The buyer never sees PlantHub's 3%.** Only the grower's side of an order shows the fee and the payout, and `store.js` only puts them on the copy of an order a grower gets. An order's history is read by both sides, so it never states the payout: beside the order total, that gives the fee away.
 - **A page that changes stock must load `data/nurseries.js`.** Placing, declining or cancelling an order, and deleting an account, all move plants on or off listings.
@@ -118,6 +121,7 @@ Rules that are easy to break:
 - **10 Oct 2026 — One shape rule.** Buttons and tags are pills, cards are 16px (`.auth-card`, `.data-card`), boxes you type in are 8px. No em dashes in text a visitor can see.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
+- **13 Oct 2026 — Owner's review of checkout.** Four changes, which also bind the pages still to build: the final action on a page goes at the bottom, after what it acts on; money is described as "charged" and "paid"; a pending pickup or delivery can be changed by cancelling it with a confirm; and the account page is a row of page links over one settings card, not a stack of cards.
 - **12 Oct 2026 — Factory questionnaire answered.** Every answer is recorded in
   `docs/factory/questionnaire.md` (the permanent record) and turned into the
   specs in `docs/factory/specs/`. Highlights: landscapers and Personal accounts
