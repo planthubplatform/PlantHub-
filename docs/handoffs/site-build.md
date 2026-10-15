@@ -149,6 +149,20 @@ below is the earlier page-by-page plan it replaces:
   the background. Retry, or check with `javascript_tool` / `read_page`.
 - Pushing is Kendrick's: hand over the command, don't push.
 
+## Shareable preview link
+https://claude.ai/artifact/WcJ635k193vKXCDPuixrg6 is a clickable copy of the
+design-b site for Kendrick's partner (published 14 Oct 2026, private until
+Kendrick shares it from the page's Share menu). It is a snapshot: it does not
+follow the branch, so republish to the same URL after each page is built.
+How the copy is made from this folder: copy every .html, .js, .css, .svg and
+`data/*.js`; pin Tailwind to `https://cdn.tailwindcss.com/3.4.17` (the host
+only accepts pinned versions); make `index.html` the main page by removing its
+doctype, html, head and body tags and setting the body classes from a
+one-line script (the host wraps the main page itself); and move grower.html's
+inline script into a `grower.js` beside it (the host's publish check mistook
+the page for a different kind of page while the script was inline). Each
+viewer's pretend data stays in their own browser, as it does locally.
+
 ## Key files
 - `basket.html`, `basket.js`, `orders.html`, `order.html` — the basket,
   checking out, and orders for both sides.
