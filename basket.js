@@ -8,7 +8,7 @@
     openAddToOrder(nursery, listing)
 
   The box asks how many, says what that comes to, and puts the line in the
-  basket (store.js keeps it). Nothing is paid here: the basket page is where
+  basket (store.js keeps it). Nothing is paid here: the cart page is where
   an order is checked out, one grower at a time.
 
   Signed-out visitors are sent to sign in and brought back to the same
@@ -55,11 +55,11 @@
 
     // After adding.
     '<div data-view="added" hidden>' +
-      '<h2 class="font-display font-semibold text-2xl tracking-tight">Added to your basket</h2>' +
+      '<h2 class="font-display font-semibold text-2xl tracking-tight">Added to your cart</h2>' +
       '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300" data-fill="added"></p>' +
       '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300" data-fill="minimum"></p>' +
       '<div class="mt-5 flex flex-wrap gap-3">' +
-        '<a href="basket.html" class="auth-button account-button-small">View your basket</a>' +
+        '<a href="basket.html" class="auth-button account-button-small">View your cart</a>' +
         '<button type="button" data-close class="auth-button auth-button-outline account-button-small">Keep browsing</button>' +
       "</div>" +
     "</div>" +
@@ -80,7 +80,7 @@
   const errorBox = document.getElementById("add-error");
 
   let target = null;   // { nursery, listing } the open box is about
-  let addedAt = 0;     // when "Added to your basket" last appeared
+  let addedAt = 0;     // when "Added to your cart" last appeared
 
   // "3 × $438 = $1,314.00", as the number is typed.
   function showTotal() {
@@ -146,17 +146,17 @@
     const group = result.group;
     fill("added").textContent = Number(quantity).toLocaleString() + " × " + target.listing.common + " from " + target.nursery.name + ".";
     fill("minimum").textContent = group.ready
-      ? "Your basket with this grower is " + moneyText(group.subtotal) + ", which meets the " + minOrderText() + " minimum."
-      : "Your basket with this grower is " + moneyText(group.subtotal) + ". Add " + moneyText(group.short) + " more to reach the " + minOrderText() + " minimum.";
+      ? "Your cart with this grower is " + moneyText(group.subtotal) + ", which meets the " + minOrderText() + " minimum."
+      : "Your cart with this grower is " + moneyText(group.subtotal) + ". Add " + moneyText(group.short) + " more to reach the " + minOrderText() + " minimum.";
     view("added");
     addedAt = Date.now();
 
-    // The basket count in the top corner has gone up.
+    // The cart count in the top corner has gone up.
     document.dispatchEvent(new Event("planthub:account-changed"));
   });
 
   dialog.addEventListener("click", function (event) {
-    // "View your basket" and "Keep browsing" appear right where "Add to
+    // "View your cart" and "Keep browsing" appear right where "Add to
     // order" was. The second press of a double-click would land on one of
     // them and whisk the message away unread, so presses in the first half
     // second after it appears are ignored.

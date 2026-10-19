@@ -228,7 +228,7 @@
         const lines = PH.basketCount();
         return [
           directory,
-          { name: "Basket", href: "basket.html", note: lines ? plural(lines, "line") + " to check out" : "Nothing in it yet" },
+          { name: "Cart", href: "basket.html", note: lines ? plural(lines, "line") + " to check out" : "Nothing in it yet" },
           { name: "Orders", href: "orders.html", waiting: toAnswer,
             note: toAnswer ? toAnswer + " waiting for you" : orders ? plural(orders, "order") + " placed" : "None placed yet" },
           { name: "Inquiries", href: "inquiries.html", waiting: replies,

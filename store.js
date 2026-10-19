@@ -812,11 +812,11 @@ const PH = (function () {
     return changeMyCarrierRules(function (rules) { rules.allowAny = !!yes; });
   }
 
-  // ---- 8. The basket --------------------------------------------------------
+  // ---- 8. The cart --------------------------------------------------------
   // A buyer collects listings from any number of growers in one basket. It
   // is shown grouped by grower, because each grower's group becomes its own
   // order: its own $250 minimum, its own pickup or delivery, its own payout.
-  // The basket keeps only which listing and how many; the price is read
+  // The cart keeps only which listing and how many; the price is read
   // from the listing each time, so it is always the grower's current one.
 
   function cents(amount) { return Math.round(amount * 100) / 100; }
@@ -852,7 +852,7 @@ const PH = (function () {
     return plant ? { nursery: nursery, plant: plant } : null;
   }
 
-  // The basket, one group per grower:
+  // The cart, one group per grower:
   //   { nurseryId, nurseryName, nursery, lines, subtotal, short, ready }
   // `short` is how many dollars the group is under the minimum, and `ready`
   // says it can be checked out. Each line has the live listing, the
@@ -890,8 +890,8 @@ const PH = (function () {
   }
 
   // Stock moves while plants sit in a basket: another buyer orders some, or
-  // the grower changes the count. This brings the basket back in line and
-  // reports what it changed, so the basket page can say so once.
+  // the grower changes the count. This brings the cart back in line and
+  // reports what it changed, so the cart page can say so once.
   function tidyBasket() {
     const notes = [];
     const kept = [];
@@ -899,7 +899,7 @@ const PH = (function () {
       const found = findListing(line.nurseryId, line.listingId);
       const available = found ? found.plant.quantity : 0;
       if (available < 1) {
-        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was removed from your basket.");
+        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was removed from your cart.");
       } else if (available < line.quantity) {
         notes.push(line.nurseryName + " now has " + available.toLocaleString() + " of " + line.name +
                    ", so your " + line.quantity.toLocaleString() + " was changed to " + available.toLocaleString() + ".");
@@ -938,7 +938,7 @@ const PH = (function () {
       return {
         ok: false, field: "quantity",
         error: "The grower has " + found.plant.quantity.toLocaleString() + " of these" +
-               (already ? ", and " + already.toLocaleString() + (already === 1 ? " is" : " are") + " already in your basket." : "."),
+               (already ? ", and " + already.toLocaleString() + (already === 1 ? " is" : " are") + " already in your cart." : "."),
       };
     }
 
@@ -951,7 +951,7 @@ const PH = (function () {
   function setBasketQuantity(listingId, quantityText) {
     const lines = basketLines();
     const line = lines.find(function (other) { return other.listingId === listingId; });
-    if (!line) return { ok: false, error: "That line is no longer in your basket." };
+    if (!line) return { ok: false, error: "That line is no longer in your cart." };
     const found = findListing(line.nurseryId, listingId);
     const quantity = wholeNumber(quantityText);
     if (!quantity) return { ok: false, error: "Enter a whole number of at least 1, or remove the line." };
@@ -1197,10 +1197,10 @@ const PH = (function () {
     if (!canBuy()) return { ok: false, error: "Orders are placed from buyer accounts." };
 
     const group = basket().find(function (other) { return other.nurseryId === nurseryId; });
-    if (!group || !group.lines.length) return { ok: false, error: "There is nothing from this grower in your basket." };
+    if (!group || !group.lines.length) return { ok: false, error: "There is nothing from this grower in your cart." };
     if (!group.nursery) return { ok: false, error: "That grower is no longer listed." };
     const moved = group.lines.find(function (line) { return line.quantity < 1 || line.quantity !== line.wanted; });
-    if (moved) return { ok: false, error: "The stock of " + moved.name + " has changed. Go back to your basket and check the quantities." };
+    if (moved) return { ok: false, error: "The stock of " + moved.name + " has changed. Go back to your cart and check the quantities." };
     if (!group.ready) return { ok: false, error: "This grower's order is under the $" + MIN_ORDER_DOLLARS + " minimum." };
     if (!user.bank) return { ok: false, field: "bank", error: "Connect a bank before placing the order." };
 
@@ -1676,10 +1676,10 @@ const PH = (function () {
       // basket drawing with the number of lines in it.
       const lines = basketCount();
       const basketLink = user.side !== "Buyer" ? "" :
-        '<a href="basket.html" class="corner-basket" title="Your basket" aria-label="Your basket, ' + lines + (lines === 1 ? " line" : " lines") + '">' +
+        '<a href="basket.html" class="corner-basket" title="Your cart" aria-label="Your cart, ' + lines + (lines === 1 ? " line" : " lines") + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
             '<path d="M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9z"/><path d="M8 9l3-6M16 9l-3-6"/></svg>' +
-          '<span class="corner-basket-word">Basket</span>' +
+          '<span class="corner-basket-word">Cart</span>' +
           (lines ? '<span class="corner-count">' + lines + "</span>" : "") +
         "</a>";
 
