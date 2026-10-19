@@ -28,10 +28,12 @@
 </head>
 <body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
 
-  <header class="page py-4">
+  <header class="page flex items-center justify-between py-4">
     <a href="index.html" class="font-display font-semibold text-xl tracking-tight inline-flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
       PlantHub<span class="w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
     </a>
+    <!-- The light-or-dark switch (store.js draws it). -->
+    <div data-theme-toggle></div>
   </header>
 
   <main class="page flex-1 flex flex-col items-center py-8">

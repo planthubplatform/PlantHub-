@@ -198,6 +198,13 @@ kept separately, in the "Road Block 2" doc linked from
     entries are written, as drafts for a horticulturist to check. Plant Doc
     covers 11 symptoms.
 
+31. **Sign out on a phone** (19 Oct). The light/dark switch now sits first in
+    the top corner. On a phone there was no room for it as well as Sign out,
+    so the corner's Sign out is hidden there; it is on the account page (tap
+    the round letter), under "Leaving". On a computer nothing changed.
+    Alternative: a menu behind the round letter holding Sign out and the
+    switch.
+
 ## Decided
 
 - **Where the final action sits** (13 Oct, owner): at the bottom of the page,

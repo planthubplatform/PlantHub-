@@ -159,6 +159,15 @@ file explains at the top how to add or write an entry. Checked by the builder
 in a real browser (all four pages, phone, dark, no console errors); not
 reviewed by the page-reviewer.
 
+## Light and dark (19 Oct 2026)
+A sun/moon switch is first in every page's top corner (and in the sign-in
+and sign-up headers). theme.js applies the choice before the page draws and
+remembers it per device; with no choice made it follows the device. All of
+`styles.css`'s dark rules were moved from `@media (prefers-color-scheme:
+dark)` to `html.dark ...`, and Tailwind is set to `darkMode: 'class'`.
+Checked: every page in both modes, the choice carrying across pages, a
+light choice on a dark device, phone headers. No console errors.
+
 ## Shareable preview link
 https://claude.ai/artifact/WcJ635k193vKXCDPuixrg6 is a clickable copy of the
 design-b site for Kendrick's partner (published 14 Oct 2026, private until

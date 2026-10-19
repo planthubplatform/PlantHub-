@@ -94,7 +94,7 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | `encyclopedia.html` + `data/plants.js` | Plant Encyclopedia, a first simple version: an entry for every plant in the listings, all 41 written, with search, a kind-of-plant filter, and who has each plant now. One entry is `encyclopedia.html#sabal-palm`. Draft notes, labelled as not reviewed by a horticulturist. |
 | `news.html` + `data/news.js` | Plant News, a first simple version: a few invented sample articles in three topics, each labelled "Sample article". One article is `news.html#<id>`. |
 | `plant-doc.html` + `data/plant-doc.js` | Plant Doc, a first simple version: three questions (kind of plant, part, what it looks like), then the likely causes from a fixed list, with what to do and links to the encyclopedia and the directory. No AI, and it says so. |
-| `theme.js` | Colours and fonts for every page (the Tailwind config). |
+| `theme.js` | Colours and fonts for every page (the Tailwind config), and light or dark: it follows the device until the sun/moon switch in the top corner is pressed, then remembers that choice on the device. |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
 
 Rules that are easy to break:
@@ -108,6 +108,7 @@ Rules that are easy to break:
 - **A page that changes stock must load `data/nurseries.js`.** Placing, declining or cancelling an order, and deleting an account, all move plants on or off listings.
 - **No bank or card details are ever typed.** The buyer picks an invented bank from a list and that is the whole step.
 - **Preview tools are marked as preview.** Anything that stands in for a person or for time passing (`PH.preview...` in `store.js`) sits in the "Preview tools" box and says it exists only in the preview.
+- **Dark mode is a class.** theme.js puts `dark` on `<html>`; Tailwind's `dark:` classes and the `html.dark ...` rules in `styles.css` follow it. Never write `@media (prefers-color-scheme: dark)` for page colours, or the switch stops working for that part.
 - Script order on pages with deliveries: `shared.js`, `store.js`, `data/nurseries.js`, `data/carriers.js`, `data/distances.js`, then the page's own script.
 - Tailwind comes from `cdn.tailwindcss.com`. Cloud sandboxes block that address, so screenshots there need a locally built copy of the CSS.
 

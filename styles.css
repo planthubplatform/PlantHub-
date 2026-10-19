@@ -74,17 +74,9 @@
   outline-offset: 1px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .filter-tag {
-    border-color: #1b3328;
-    background: #122117;
-    color: #d6e0db;
-  }
-  .filter-tag:hover {
-    border-color: #c2703c;
-    background: #1b3328;
-  }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .filter-tag { border-color: #1b3328; background: #122117; color: #d6e0db; }
+html.dark .filter-tag:hover { border-color: #c2703c; background: #1b3328; }
 
 /* The filter panel's heading is a <summary>, which browsers draw with their
    own little triangle. We draw our own chevron instead, so theirs is hidden. */
@@ -152,15 +144,10 @@ tbody .listing-row:first-child {
   border-top: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .listing-row {
-    border-top-color: #122117;
-  }
-  .listing-row:hover,
-  .listing-row.is-open {
-    background: rgba(6, 15, 10, 0.5);
-  }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .listing-row { border-top-color: #122117; }
+html.dark .listing-row:hover,
+html.dark .listing-row.is-open { background: rgba(6, 15, 10, 0.5); }
 
 /* ---------------------------------------------------------------------------
    4. Reading comfort in a dense table
@@ -245,12 +232,11 @@ table {
 
 .door:focus-visible .door-circle { box-shadow: 0 0 0 3px #e0a877; } /* clay-300 */
 
-@media (prefers-color-scheme: dark) {
-  .door-circle { background: #122117; border-color: #24402f; color: #d6e0db; }
-  .door-label { color: #d6e0db; }
-  .door:hover .door-circle,
-  .door:focus-visible .door-circle { background: #1b3328; color: #e0a877; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .door-circle { background: #122117; border-color: #24402f; color: #d6e0db; }
+html.dark .door-label { color: #d6e0db; }
+html.dark .door:hover .door-circle,
+html.dark .door:focus-visible .door-circle { background: #1b3328; color: #e0a877; }
 
 @media (min-width: 640px) {
   .door { width: 8.5rem; }            /* every label fits on one line */
@@ -304,22 +290,20 @@ table {
 .auth-link:hover { text-decoration: underline; }
 
 
-@media (prefers-color-scheme: dark) {
-  .auth-card { background: #122117; border-color: #24402f; }
-  .auth-label { color: #d6e0db; }
-  .auth-input { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
-  .auth-button { background: #faf6ef; color: #0b1710; }
-  .auth-button:hover { background: #f2e9dc; }
-  .auth-link { color: #e0a877; }
-        }
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .auth-card { background: #122117; border-color: #24402f; }
+html.dark .auth-label { color: #d6e0db; }
+html.dark .auth-input { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
+html.dark .auth-button { background: #faf6ef; color: #0b1710; }
+html.dark .auth-button:hover { background: #f2e9dc; }
+html.dark .auth-link { color: #e0a877; }
 
 /* Second-choice button: same shape, outlined instead of filled. */
 .auth-button-outline { background: transparent; color: #0b1710; border: 1px solid #0b1710; }
 .auth-button-outline:hover { background: #f2e9dc; }
-@media (prefers-color-scheme: dark) {
-  .auth-button-outline { background: transparent; color: #faf6ef; border-color: #faf6ef; }
-  .auth-button-outline:hover { background: #1b3328; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .auth-button-outline { background: transparent; color: #faf6ef; border-color: #faf6ef; }
+html.dark .auth-button-outline:hover { background: #1b3328; }
 
 /* ---------------------------------------------------------------------------
    Sign-up steps (signup.html)
@@ -359,10 +343,9 @@ table {
 .step-back::before { content: "\2190  "; }   /* a left arrow */
 .step-back:hover { color: #a95c2d; text-decoration: underline; }
 
-@media (prefers-color-scheme: dark) {
-  .step-back { color: #bccdc4; }
-  .step-back:hover { color: #e0a877; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .step-back { color: #bccdc4; }
+html.dark .step-back:hover { color: #e0a877; }
 
 @media (max-width: 639px) {
   .step-title { font-size: 1.875rem; }
@@ -394,10 +377,10 @@ table {
 }
 .spec-unit-fixed { width: 3rem; padding-left: 0.4rem; font-size: 12px; color: #4a6b5a; }
 
-@media (prefers-color-scheme: dark) {
-  .spec-input, .spec-unit { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
-  .spec-unit-fixed { color: #bccdc4; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .spec-input,
+html.dark .spec-unit { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
+html.dark .spec-unit-fixed { color: #bccdc4; }
 
 /* Tick boxes in the filter rail: clay when ticked, except "Updated this
    week", which is about freshness and so gets the green. */
@@ -499,22 +482,21 @@ table {
 .account-button-danger-solid { background: #8a4a22; color: #faf6ef; }
 .account-button-danger-solid:hover { background: #a95c2d; }
 
-@media (prefers-color-scheme: dark) {
-  .auth-error { color: #e0a877; }
-  .auth-note { background: #0b1710; border-color: #8a4a22; color: #e0a877; }
-  .auth-hint { color: #bccdc4; }
-  .demo-button { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
-  .demo-button:hover { border-color: #e0a877; color: #e0a877; }
-  .corner-button { border-color: #1b3328; color: #e7e5e4; }
-  .corner-button:hover { border-color: #c2703c; color: #e0a877; }
-  .corner-name:hover .corner-text { color: #e0a877; }
-  .corner-initial,
-  .account-initial { background: #1b3328; color: #f5f5f4; }
-  .account-button-danger { color: #e0a877; border-color: #8a4a22; }
-  .account-button-danger:hover { background: #1b3328; }
-  .account-button-danger-solid { background: #c2703c; color: #0b1710; }
-  .account-button-danger-solid:hover { background: #e0a877; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .auth-error { color: #e0a877; }
+html.dark .auth-note { background: #0b1710; border-color: #8a4a22; color: #e0a877; }
+html.dark .auth-hint { color: #bccdc4; }
+html.dark .demo-button { background: #0b1710; border-color: #24402f; color: #f5f5f4; }
+html.dark .demo-button:hover { border-color: #e0a877; color: #e0a877; }
+html.dark .corner-button { border-color: #1b3328; color: #e7e5e4; }
+html.dark .corner-button:hover { border-color: #c2703c; color: #e0a877; }
+html.dark .corner-name:hover .corner-text { color: #e0a877; }
+html.dark .corner-initial,
+html.dark .account-initial { background: #1b3328; color: #f5f5f4; }
+html.dark .account-button-danger { color: #e0a877; border-color: #8a4a22; }
+html.dark .account-button-danger:hover { background: #1b3328; }
+html.dark .account-button-danger-solid { background: #c2703c; color: #0b1710; }
+html.dark .account-button-danger-solid:hover { background: #e0a877; }
 
 /* On a phone the name would crowd the wordmark: keep just the round letter. */
 @media (max-width: 639px) {
@@ -651,25 +633,24 @@ table {
 }
 .toast[hidden] { display: none; }
 
-@media (prefers-color-scheme: dark) {
-  .inventory-list { background: #122117; border-color: #24402f; }
-  .inventory-row + .inventory-row { border-top-color: #24402f; }
-  .inventory-field-label { color: #bccdc4; }
-  .row-button { border-color: #24402f; }
-  .row-button:hover { border-color: #c2703c; color: #e0a877; }
-  .row-button:disabled { border-color: #24402f; }
-  .row-button-main { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
-  .row-button-main:hover { background: #f2e9dc; border-color: #f2e9dc; color: #0b1710; }
-  .row-button-main:disabled { background: transparent; border-color: #24402f; color: inherit; }
-  .row-button-danger { background: #c2703c; border-color: #c2703c; color: #0b1710; }
-  .row-button-danger:hover { background: #e0a877; color: #0b1710; }
-  .grade-tick span { border-color: #24402f; }
-  .grade-tick input:checked + span { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
-  .photo-thumb img { border-color: #24402f; }
-  .photo-thumb figcaption { color: #bccdc4; }
-  .photo-thumb button { background: #faf6ef; color: #0b1710; }
-  .toast { background: #faf6ef; color: #0b1710; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .inventory-list { background: #122117; border-color: #24402f; }
+html.dark .inventory-row + .inventory-row { border-top-color: #24402f; }
+html.dark .inventory-field-label { color: #bccdc4; }
+html.dark .row-button { border-color: #24402f; }
+html.dark .row-button:hover { border-color: #c2703c; color: #e0a877; }
+html.dark .row-button:disabled { border-color: #24402f; }
+html.dark .row-button-main { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
+html.dark .row-button-main:hover { background: #f2e9dc; border-color: #f2e9dc; color: #0b1710; }
+html.dark .row-button-main:disabled { background: transparent; border-color: #24402f; color: inherit; }
+html.dark .row-button-danger { background: #c2703c; border-color: #c2703c; color: #0b1710; }
+html.dark .row-button-danger:hover { background: #e0a877; color: #0b1710; }
+html.dark .grade-tick span { border-color: #24402f; }
+html.dark .grade-tick input:checked + span { background: #faf6ef; border-color: #faf6ef; color: #0b1710; }
+html.dark .photo-thumb img { border-color: #24402f; }
+html.dark .photo-thumb figcaption { color: #bccdc4; }
+html.dark .photo-thumb button { background: #faf6ef; color: #0b1710; }
+html.dark .toast { background: #faf6ef; color: #0b1710; }
 
 /* A hidden card stays hidden even when a layout class sets its display. */
 .auth-card[hidden] { display: none; }
@@ -742,21 +723,21 @@ textarea.auth-input { display: block; resize: vertical; }
 .message-own { background: #f2e9dc; }
 .message-meta { font-size: 0.75rem; font-weight: 500; color: #4a6b5a; margin-bottom: 0.125rem; }
 
-@media (prefers-color-scheme: dark) {
-  .data-card { background: #122117; border-color: #24402f; }
-  .grower-link { color: #e7e5e4; text-decoration-color: #24402f; }
-  .grower-link:hover { color: #e0a877; text-decoration-color: #c2703c; }
-  .profile-row + .profile-row { border-top-color: #1b3328; }
-  .corner-link:hover { color: #e0a877; }
-  .corner-count, .new-mark { background: #c2703c; color: #0b1710; }
-  .inquiry-dialog { background: #122117; border-color: #24402f; color: #f5f5f4; }
-  .inquiry-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
-  .inquiry-close { color: #bccdc4; }
-  .inquiry-close:hover { background: #1b3328; color: #f5f5f4; }
-  .message { background: #0b1710; }
-  .message-own { background: #1b3328; }
-  .message-meta { color: #bccdc4; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .data-card { background: #122117; border-color: #24402f; }
+html.dark .grower-link { color: #e7e5e4; text-decoration-color: #24402f; }
+html.dark .grower-link:hover { color: #e0a877; text-decoration-color: #c2703c; }
+html.dark .profile-row + .profile-row { border-top-color: #1b3328; }
+html.dark .corner-link:hover { color: #e0a877; }
+html.dark .corner-count,
+html.dark .new-mark { background: #c2703c; color: #0b1710; }
+html.dark .inquiry-dialog { background: #122117; border-color: #24402f; color: #f5f5f4; }
+html.dark .inquiry-dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+html.dark .inquiry-close { color: #bccdc4; }
+html.dark .inquiry-close:hover { background: #1b3328; color: #f5f5f4; }
+html.dark .message { background: #0b1710; }
+html.dark .message-own { background: #1b3328; }
+html.dark .message-meta { color: #bccdc4; }
 
 /* On a phone the corner keeps to the round letter and the buttons. */
 @media (max-width: 639px) {
@@ -897,9 +878,8 @@ select.auth-input, input[type="date"].auth-input { height: 2.875rem; }
    number typed just before may have switched it back on. */
 a.auth-button[aria-disabled="true"] { opacity: 0.45; cursor: default; }
 a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
-@media (prefers-color-scheme: dark) {
-  a.auth-button[aria-disabled="true"]:hover { background: #faf6ef; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark a.auth-button[aria-disabled="true"]:hover { background: #faf6ef; }
 
 /* The search box in the header of the directory and the grower page. A
    signed-in buyer's corner is long (Inquiries, Orders, Basket, name, Sign
@@ -920,28 +900,28 @@ a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
   .corner-basket-word { display: none; }
 }
 
-@media (prefers-color-scheme: dark) {
-  .corner-basket:hover { color: #e0a877; }
-  .status-pill { border-color: #24402f; color: #d6e0db; }
-  .status-pill-you { background: #c2703c; border-color: #c2703c; color: #0b1710; }
-  .status-pill-done { background: #1b3328; border-color: #1b3328; }
-  .status-pill-off { color: #bccdc4; }
-  .basket-line + .basket-line { border-top-color: #1b3328; }
-  .minimum-bar { background: #1b3328; }
-  .choice { border-color: #24402f; }
-  .choice:has(input:checked) { border-color: #c2703c; background: #1b3328; }
-  .ask-first { border-color: #8a4a22; background: #0b1710; }
-  .money-list .money-total { border-top-color: #24402f; }
-  .timeline { border-left-color: #24402f; }
-  .timeline li::before { background: #4a6b5a; }
-  .timeline time { color: #bccdc4; }
-  .part-title { color: #bccdc4; }
-  .carrier-row + .carrier-row { border-top-color: #1b3328; }
-  /* Tell the browser these boxes sit on a dark page, so the calendar
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .corner-basket:hover { color: #e0a877; }
+html.dark .status-pill { border-color: #24402f; color: #d6e0db; }
+html.dark .status-pill-you { background: #c2703c; border-color: #c2703c; color: #0b1710; }
+html.dark .status-pill-done { background: #1b3328; border-color: #1b3328; }
+html.dark .status-pill-off { color: #bccdc4; }
+html.dark .basket-line + .basket-line { border-top-color: #1b3328; }
+html.dark .minimum-bar { background: #1b3328; }
+html.dark .choice { border-color: #24402f; }
+html.dark .choice:has(input:checked) { border-color: #c2703c; background: #1b3328; }
+html.dark .ask-first { border-color: #8a4a22; background: #0b1710; }
+html.dark .money-list .money-total { border-top-color: #24402f; }
+html.dark .timeline { border-left-color: #24402f; }
+html.dark .timeline li::before { background: #4a6b5a; }
+html.dark .timeline time { color: #bccdc4; }
+html.dark .part-title { color: #bccdc4; }
+html.dark .carrier-row + .carrier-row { border-top-color: #1b3328; }
+/* Tell the browser these boxes sit on a dark page, so the calendar
      button, the pick-list arrow and the round ticks are drawn light. */
-  .auth-input, .choice input { color-scheme: dark; }
-  .auth-input[aria-invalid="true"] { border-color: #e0a877; box-shadow: 0 0 0 1px #e0a877; }
-}
+html.dark .auth-input,
+html.dark .choice input { color-scheme: dark; }
+html.dark .auth-input[aria-invalid="true"] { border-color: #e0a877; box-shadow: 0 0 0 1px #e0a877; }
 
 /* ---------------------------------------------------------------------------
    The account page (account.html)
@@ -987,16 +967,15 @@ a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
   .settings-row { grid-template-columns: 13rem minmax(0, 1fr); }
 }
 
-@media (prefers-color-scheme: dark) {
-  .account-nav { background: #24402f; border-color: #24402f; }
-  .account-nav-link { background: #122117; }
-  .account-nav-link:hover { background: #1b3328; }
-  .account-nav-link:hover .account-nav-name { color: #e0a877; }
-  .account-nav-note { color: #bccdc4; }
-  .account-nav-note-waiting { color: #e0a877; }
-  .settings-row + .settings-row { border-top-color: #1b3328; }
-  .settings-help { color: #bccdc4; }
-}
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .account-nav { background: #24402f; border-color: #24402f; }
+html.dark .account-nav-link { background: #122117; }
+html.dark .account-nav-link:hover { background: #1b3328; }
+html.dark .account-nav-link:hover .account-nav-name { color: #e0a877; }
+html.dark .account-nav-note { color: #bccdc4; }
+html.dark .account-nav-note-waiting { color: #e0a877; }
+html.dark .settings-row + .settings-row { border-top-color: #1b3328; }
+html.dark .settings-help { color: #bccdc4; }
 
 /* ---------------------------------------------------------------------------
    Lists and tiles for the Transport, Encyclopedia and News pages.
@@ -1029,8 +1008,33 @@ a.auth-button[aria-disabled="true"]:hover { background: #0b1710; }
 .plant-tile:hover { border-color: #c2703c; }
 .plant-tile:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; }
 
-@media (prefers-color-scheme: dark) {
-  .list-row + .list-row { border-top-color: #1b3328; }
-  .list-row-link:hover { background: #1b3328; }
-  .plant-tile { background: #122117; border-color: #24402f; }
+/* Dark mode: theme.js puts the class "dark" on <html>. */
+html.dark .list-row + .list-row { border-top-color: #1b3328; }
+html.dark .list-row-link:hover { background: #1b3328; }
+html.dark .plant-tile { background: #122117; border-color: #24402f; }
+
+/* ---------------------------------------------------------------------------
+   The light-or-dark switch, first in the top corner of every page.
+--------------------------------------------------------------------------- */
+.theme-toggle {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid #bccdc4;          /* ink-200 */
+  color: #24402f;
+  transition: border-color 150ms, color 150ms;
+}
+.theme-toggle svg { width: 1rem; height: 1rem; }
+.theme-toggle:hover { border-color: #c2703c; color: #8a4a22; }
+.theme-toggle:focus-visible { outline: none; box-shadow: 0 0 0 2px #c2703c; }
+html.dark .theme-toggle { border-color: #24402f; color: #e7e5e4; }
+html.dark .theme-toggle:hover { border-color: #c2703c; color: #e0a877; }
+
+/* On a phone the corner has no room for Sign out as well as the switch:
+   it is on the account page, under "Leaving". */
+@media (max-width: 639px) {
+  .corner-signout { display: none; }
 }

@@ -3,6 +3,9 @@
 
   Each page loads Tailwind from its CDN and then this file, which hands
   Tailwind the palette below. One file, so every page matches.
+
+  It also decides light or dark, before the page is drawn (see the end of
+  this file).
 */
 
 /*
@@ -17,6 +20,9 @@
   the one thing this site has that the competition doesn't.
 */
 tailwind.config = {
+  // Dark mode follows the class "dark" on <html>, which the end of this
+  // file sets, rather than only the device's own setting.
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -59,3 +65,47 @@ tailwind.config = {
     },
   },
 };
+
+/*
+  Light or dark.
+
+  The site starts in whichever the device is set to. The round sun-or-moon
+  button in the top corner of every page (drawn by store.js) switches it,
+  and that choice is remembered on this device until it is switched again.
+
+  This is the one thing kept in the browser's storage outside store.js. It
+  has to be read before the page is drawn, or the page would flash light
+  before turning dark, and store.js only loads at the end of the page. It is
+  a display preference, not pretend data, so "Reset the preview" keeps it.
+*/
+(function () {
+  const KEY = "planthub.theme";
+  const deviceDark = window.matchMedia("(prefers-color-scheme: dark)");
+  let remembered = null;   // used when the browser won't keep anything
+
+  function chosen() {
+    try { return localStorage.getItem(KEY) || remembered; } catch (error) { return remembered; }
+  }
+
+  function apply() {
+    const choice = chosen();
+    const dark = choice ? choice === "dark" : deviceDark.matches;
+    document.documentElement.classList.toggle("dark", dark);
+    // Form controls and scroll bars follow too.
+    document.documentElement.style.colorScheme = dark ? "dark" : "light";
+    document.dispatchEvent(new Event("planthub:theme-changed"));
+  }
+
+  window.PlantHubTheme = {
+    isDark: function () { return document.documentElement.classList.contains("dark"); },
+    toggle: function () {
+      remembered = this.isDark() ? "light" : "dark";
+      try { localStorage.setItem(KEY, remembered); } catch (error) { /* kept for this page only */ }
+      apply();
+    },
+  };
+
+  apply();
+  // With nothing chosen yet, follow the device if its setting changes.
+  deviceDark.addEventListener("change", apply);
+})();

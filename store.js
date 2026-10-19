@@ -1627,11 +1627,39 @@ const PH = (function () {
     });
   }
 
+  // The light-or-dark switch, first in the corner. theme.js does the
+  // switching; this only draws the button: a moon while the page is light
+  // (press for dark), a sun while it is dark (press for light).
+  const MOON = '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>';
+  const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+
+  function themeButton() {
+    const dark = !!window.PlantHubTheme && window.PlantHubTheme.isDark();
+    const label = dark ? "Switch to light mode" : "Switch to dark mode";
+    return (
+      '<button type="button" class="theme-toggle" data-theme-button aria-label="' + label + '" title="' + label + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          (dark ? SUN : MOON) +
+        "</svg>" +
+      "</button>"
+    );
+  }
+
+  // Pages without an account corner (sign in, sign up) mark where the
+  // switch goes with <div data-theme-toggle></div>.
+  function drawThemeButtons() {
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (spot) { spot.innerHTML = themeButton(); });
+    document.querySelectorAll("[data-account-corner] [data-theme-button]").forEach(function (button) {
+      button.outerHTML = themeButton();
+    });
+  }
+
   function drawAccountCorner() {
     const user = currentUser();
+    document.querySelectorAll("[data-theme-toggle]").forEach(function (spot) { spot.innerHTML = themeButton(); });
     document.querySelectorAll("[data-account-corner]").forEach(function (corner) {
       if (!user) {
-        corner.innerHTML = '<a href="signin.html" class="corner-button">Sign in</a>';
+        corner.innerHTML = themeButton() + '<a href="signin.html" class="corner-button">Sign in</a>';
         return;
       }
       // Buyers and growers get a way to their conversations and their
@@ -1655,14 +1683,22 @@ const PH = (function () {
           (lines ? '<span class="corner-count">' + lines + "</span>" : "") +
         "</a>";
 
-      corner.innerHTML = inbox + basketLink +
+      corner.innerHTML = themeButton() + inbox + basketLink +
         '<a href="account.html" class="corner-name" title="Your account">' +
           '<span class="corner-initial" aria-hidden="true">' + escapeHtml(user.name.charAt(0).toUpperCase()) + "</span>" +
           '<span class="corner-text">' + escapeHtml(user.name) + "</span>" +
         "</a>" +
-        '<button type="button" class="corner-button" data-sign-out>Sign out</button>';
+        // On a phone there is no room for this as well; the account page
+        // (the round letter) has Sign out under "Leaving".
+        '<button type="button" class="corner-button corner-signout" data-sign-out>Sign out</button>';
     });
   }
+
+  document.addEventListener("click", function (event) {
+    if (!event.target.closest("[data-theme-button]") || !window.PlantHubTheme) return;
+    window.PlantHubTheme.toggle();
+  });
+  document.addEventListener("planthub:theme-changed", drawThemeButtons);
 
   document.addEventListener("click", function (event) {
     if (!event.target.closest("[data-sign-out]")) return;
