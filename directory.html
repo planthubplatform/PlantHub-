@@ -64,7 +64,7 @@
         <input
           type="search"
           id="search"
-          placeholder="Search a plant, nursery or city"
+          placeholder="Search a plant, vendor or city"
           autocomplete="off"
           class="w-full rounded-full pl-11 pr-20 py-2.5 text-base sm:text-sm
                  bg-white dark:bg-ink-900 border border-ink-100 dark:border-ink-700 shadow-sm
@@ -141,6 +141,9 @@
               </label>
             </div>
 
+            <!-- Which state the vendor is in. app.js draws it from the data. -->
+            <div data-facet="state" class="facet"></div>
+
             <!-- The four ways a listing is described. A value belongs to ONE
                  of them only. app.js draws the tick-box lists and every count.
                  1. Container size: a pick list. -->
@@ -215,7 +218,7 @@
               <option value="qty">Most in stock</option>
               <option value="price">Lowest price</option>
               <option value="plant">Plant A to Z</option>
-              <option value="nursery">Nursery A to Z</option>
+              <option value="nursery">Vendor A to Z</option>
             </select>
           </div>
         </div>

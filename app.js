@@ -166,9 +166,10 @@ PH.nurseries().forEach(function (nursery) {
 //    group of tick boxes needs. Ticking two boxes in one group means
 //    "either of these".
 // ---------------------------------------------------------------------------
-const TICK_FACETS = ["container", "grades", "photos", "city"];
+const TICK_FACETS = ["state", "container", "grades", "photos", "city"];
 
 const chosen = {
+  state: new Set(),
   container: new Set(),
   grades: new Set(),
   photos: new Set(),
@@ -180,6 +181,7 @@ const chosen = {
 const minimum = { caliper: null, height: null, spread: null, clearTrunk: null };
 
 const FACET_LABEL = {
+  state: "State",
   container: "Container size",
   grades: "Grade and features",
   photos: "Photos",
@@ -188,8 +190,9 @@ const FACET_LABEL = {
 
 // The full list of options a facet offers, in order. Container, grade and
 // photo options always show, even at zero, so a buyer can see the whole
-// vocabulary. Cities come from the data.
+// vocabulary. States and cities come from the data.
 function facetOptions(facet) {
+  if (facet === "state") return Array.from(new Set(LISTINGS.map(function (l) { return l.nursery.state; }))).sort();
   if (facet === "container") return CONTAINERS;
   if (facet === "grades") return GRADES;
   if (facet === "photos") return PHOTO_OPTIONS;
@@ -199,6 +202,7 @@ function facetOptions(facet) {
 // Which of a facet's values does this listing have? Always a list, because a
 // listing can carry several grades.
 function facetValues(listing, facet) {
+  if (facet === "state") return [listing.nursery.state];
   if (facet === "container") return [listing.container];
   if (facet === "grades") return listing.grades;
   if (facet === "photos") return [listing.photos > 0 ? "With photos" : "No photos"];
@@ -378,23 +382,46 @@ function rowHtml(listing, words, index) {
   const specs = specText(listing);
   const grades = listing.grades.join(", ");
 
-  // Container, specs and grade get their own columns on a wide screen (1280px
-  // and up). Below that there isn't room, so they ride along under the plant name.
+  // Container and specs (grades included) get their own columns on a wide
+  // screen (1280px and up). Below that there isn't room, so they ride along
+  // under the plant name.
   const detailsMobile =
     '<span class="xl:hidden block text-[11px] text-ink-400 dark:text-stone-400 mt-0.5">' +
       escapeHtml([listing.container, specs, grades].filter(Boolean).join(" · ")) +
     '</span>';
 
-  // On a phone the nursery column is hidden too, so its name goes here.
+  // On a phone the state and vendor columns are hidden too, so they go here.
   const nurseryMobile =
     '<span class="sm:hidden block text-[12px] text-ink-700 dark:text-stone-300 mt-1">' +
-      '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a> · " + highlight(n.city, words) +
+      '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a> · " + highlight(n.city + ", " + n.state, words) +
     '</span>';
+
+  // How long ago the vendor confirmed it: a coloured dot and "3d".
+  const updatedCell =
+      '<td class="py-2 pl-3 pr-3 align-top whitespace-nowrap">' +
+        '<span class="inline-flex items-center gap-1.5 text-[12px] ' + style.text + '" ' +
+              'title="' + escapeHtml(listing.updated || "no date given") + '">' +
+          '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' +
+          agoShort(listing.days) +
+        "</span></td>";
 
   const main =
     '<tr class="listing-row" data-row="' + index + '" tabindex="0" role="button" ' +
         'aria-expanded="false" aria-controls="detail-' + index + '">' +
-      '<td class="py-2 pl-3 pr-3 align-top">' +
+      // Left to right: last updated, state, vendor, plant, container,
+      // specs (grades included), price, quantity.
+      updatedCell +
+
+      '<td class="hidden sm:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
+        highlight(n.state, words) + "</td>" +
+
+      '<td class="hidden sm:table-cell py-2 pr-3 align-top">' +
+        '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a>" +
+        '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
+          highlight(n.city, words) + "</span>" +
+      "</td>" +
+
+      '<td class="py-2 pr-3 align-top">' +
         '<span class="font-medium text-ink-900 dark:text-stone-100">' +
           highlight(listing.common, words) + "</span>" + photoBadge(listing) +
         '<span class="block italic text-[12px] text-ink-400 dark:text-stone-400">' +
@@ -402,34 +429,21 @@ function rowHtml(listing, words, index) {
         nurseryMobile + detailsMobile +
       "</td>" +
 
-      '<td class="hidden sm:table-cell py-2 pr-3 align-top">' +
-        '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a>" +
-        '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
-          highlight(n.city + ", " + n.state, words) + "</span>" +
-      "</td>" +
-
       '<td class="hidden xl:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
         escapeHtml(listing.container) + "</td>" +
 
-      '<td class="hidden xl:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
-        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(specs) + "</span></td>" +
-
+      // Specs: the measurements, then the grades and features under them.
       '<td class="hidden xl:table-cell py-2 pr-3 align-top">' +
-        '<span class="text-[12px] text-ink-700 dark:text-stone-300">' + escapeHtml(grades) + "</span></td>" +
-
-      '<td class="py-2 pr-3 align-top text-right tabular-nums font-medium whitespace-nowrap">' +
-        listing.quantity.toLocaleString() + "</td>" +
+        '<span class="block text-[12px] text-ink-700 dark:text-stone-300 whitespace-nowrap">' + escapeHtml(specs) + "</span>" +
+        (grades ? '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' + escapeHtml(grades) + "</span>" : "") +
+      "</td>" +
 
       '<td class="py-2 pr-3 align-top text-right tabular-nums whitespace-nowrap">' +
         '<span class="font-medium text-ink-900 dark:text-stone-100">' + priceText(listing.price) + "</span>" +
       "</td>" +
 
-      '<td class="py-2 pr-3 align-top text-right whitespace-nowrap">' +
-        '<span class="inline-flex items-center gap-1.5 text-[12px] ' + style.text + '" ' +
-              'title="' + escapeHtml(listing.updated || "no date given") + '">' +
-          '<span class="w-1.5 h-1.5 rounded-full ' + style.dot + '"></span>' +
-          agoShort(listing.days) +
-        "</span></td>" +
+      '<td class="py-2 pr-3 align-top text-right tabular-nums font-medium whitespace-nowrap">' +
+        listing.quantity.toLocaleString() + "</td>" +
     "</tr>";
 
   // Hidden until the row is clicked: the small print, and the two things a
@@ -471,14 +485,14 @@ function tableHtml(rows, words) {
     '<thead>' +
       '<tr class="text-left text-[11px] uppercase tracking-wider text-ink-400 dark:text-stone-400 ' +
           'bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
-        '<th class="py-2 pl-3 pr-3 font-semibold">Plant</th>' +
-        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">Nursery</th>' +
+        '<th class="py-2 pl-3 pr-3 font-semibold">Last updated</th>' +
+        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">State</th>' +
+        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">Vendor</th>' +
+        '<th class="py-2 pr-3 font-semibold">Plant</th>' +
         '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Container</th>' +
         '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Specs</th>' +
-        '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Grade</th>' +
-        '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
         '<th class="py-2 pr-3 font-semibold text-right">Price</th>' +
-        '<th class="py-2 pr-3 font-semibold text-right">Updated</th>' +
+        '<th class="py-2 pr-3 font-semibold text-right">Qty</th>' +
       "</tr>" +
     "</thead>";
 
@@ -499,7 +513,7 @@ function promptHtml() {
   return '<div class="rounded-2xl border border-dashed border-ink-100 dark:border-ink-700 ' +
               'px-4 py-12 text-center text-[13px] text-ink-400 dark:text-stone-400">' +
     '<p class="text-base font-medium text-ink-800 dark:text-stone-200">Search for a plant to see who has it</p>' +
-    '<p class="mt-1.5">Type a plant, a nursery or a city above, or pick a filter. Freshest listings come first.</p>' +
+    '<p class="mt-1.5">Type a plant, a vendor or a city above, or pick a filter. Freshest listings come first.</p>' +
     '<div class="mt-4 flex flex-wrap justify-center gap-2">' +
       examples.map(function (text) {
         return '<button type="button" class="filter-tag" data-example="' + escapeHtml(text) + '">' + escapeHtml(text) + "</button>";
@@ -515,7 +529,7 @@ function emptyHtml(query, filtersAreOn) {
       '<p class="mt-1.5">Remove a filter above, or reset them all.</p>'
     : '<p><strong class="text-ink-800 dark:text-stone-200">No listings for &ldquo;' +
       escapeHtml(query) + "&rdquo;</strong></p>" +
-      '<p class="mt-1.5">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by nursery or city.</p>';
+      '<p class="mt-1.5">Try a shorter search, like <em>palm</em> or <em>oak</em>, or search by vendor or city.</p>';
 
   return '<div class="rounded-2xl border border-dashed border-ink-100 dark:border-ink-700 ' +
               'bg-white dark:bg-ink-900 px-4 py-10 text-center text-[13px] ' +
@@ -577,7 +591,7 @@ function render() {
 
   countLine.textContent =
     rows.length.toLocaleString() + (rows.length === 1 ? " listing" : " listings") +
-    " · " + nurseries.size + (nurseries.size === 1 ? " nursery" : " nurseries") +
+    " · " + nurseries.size + (nurseries.size === 1 ? " vendor" : " vendors") +
     " · " + fresh + " updated this week";
 
   shownRows = rows;
