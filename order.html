@@ -357,42 +357,8 @@
       let extra = "";
       let action = null;
 
-      if (order.status === "awaiting" && buyer) {
-        title = "Waiting for " + grower + " to accept";
-        words = "You have not been charged. If they accept, your bank is charged " + total + ". If they decline, you pay nothing.";
-        action = {
-          title: "Changed your mind?",
-          words: "You can cancel this order until the grower answers.",
-          body: open === "cancel"
-            ? askFirst("Cancel this order? You won't be charged, and the plants go back on the grower's listing.", "cancel-yes", "Yes, cancel it", "Keep the order")
-            : buttons(button("Cancel order", "open:cancel", "outline")),
-        };
-
-      } else if (order.status === "awaiting") {
-        title = "New order from " + buyerName;
-        words = "Look over the plants and your payout, then accept or decline at the bottom of the page. The plants are already set aside for this order.";
-        action = {
-          jump: "Go to accept or decline",
-          title: "Accept or decline",
-          words: "If you accept, the buyer's bank is charged " + total + " and PlantHub holds the money until the order is picked up or delivered. " +
-                 "If you decline, the buyer is not charged and the plants go back on your listings.",
-          body: open === "decline"
-            ? askFirst("Decline this order? The buyer is told and is not charged, and the plants go back on your listings.", "decline-yes", "Yes, decline it", "Keep the order")
-            : '<form id="accept" class="mt-4" novalidate>' +
-                '<label class="flex items-start gap-3 text-sm">' +
-                  '<input type="checkbox" id="accept-conditions" class="mt-0.5 w-4 h-4 accent-clay-600">' +
-                  "<span>I accept the conditions: plants that arrive dead are at my cost. A carrier's insurance covers accidents in transit.</span>" +
-                "</label>" +
-                '<p id="accept-error" role="alert" hidden class="auth-error mt-3"></p>' +
-                '<div class="mt-4 flex flex-wrap gap-3">' +
-                  '<button type="submit" class="auth-button account-button-small">Accept order</button>' +
-                  button("Decline", "open:decline", "outline") +
-                "</div>" +
-              "</form>",
-        };
-
-      } else if (order.status === "accepted" && buyer) {
-        title = grower + " accepted your order";
+      if (order.status === "accepted" && buyer) {
+        title = "Order placed with " + grower;
         words = (order.carrierDeclined ? text(order.carrierDeclined) + " declined the delivery, and you were not charged for it. " : "") +
                 "Your bank was charged " + total + ", and PlantHub is holding the money until you have the plants. " +
                 "Look over the order, then choose pickup or delivery at the bottom of the page.";
@@ -404,8 +370,9 @@
         };
 
       } else if (order.status === "accepted") {
-        title = "Waiting for the buyer to choose pickup or delivery";
-        words = "You accepted this order. The buyer has paid " + total + ", and PlantHub is holding the money." +
+        title = "Sold to " + buyerName + ": waiting for pickup or delivery";
+        words = "The buyer has paid " + total + ", and PlantHub is holding the money. They are choosing pickup or delivery. " +
+                "If you can't fill a line, take it off under Plants and the buyer is refunded for it." +
                 (order.carrierDeclined ? " " + text(order.carrierDeclined) + " declined the delivery, so the buyer is choosing again." : "");
 
       } else if (order.status === "pickup" && buyer) {
@@ -495,6 +462,12 @@
         words = buyer ? "You were not charged, and the plants are back on the grower's listing." : "The buyer was not charged, and the plants are back on your listings.";
         if (buyer) extra = '<div class="mt-4"><a href="directory.html" class="auth-button auth-button-outline account-button-small inline-block">Open the plant directory</a></div>';
 
+      } else if (order.money.payment === "refunded") {
+        // Cancelled because the grower couldn't fill any of it.
+        title = buyer ? grower + " couldn't fill this order" : "You couldn't fill this order";
+        words = buyer ? "Every line came off the order, and you were refunded in full." : "Every line came off the order, and the buyer was refunded in full.";
+        if (buyer) extra = '<div class="mt-4"><a href="directory.html" class="auth-button auth-button-outline account-button-small inline-block">Open the plant directory</a></div>';
+
       } else {
         title = buyer ? "You cancelled this order" : "The buyer cancelled this order";
         words = buyer ? "You were not charged, and the plants are back on the grower's listing." : "They withdrew it before you answered. The plants are back on your listings.";
@@ -533,13 +506,25 @@
     // -----------------------------------------------------------------------
     function linesHtml() {
       const rows = order.lines.map(function (line) {
+        // A line the grower couldn't fill stays listed, struck through.
+        const gone = order.problems.some(function (problem) { return problem.kind === "unfilled" && problem.listingId === line.listingId; });
+        const extra = ' data-line="' + text(line.listingId) + '"';
+        const unfill = !order.canUnfill || gone ? ""
+          : open === "unfill:" + line.listingId
+            ? askFirst("Take " + line.quantity.toLocaleString() + " × " + text(line.common) + " off this order? The buyer is refunded " +
+                       moneyText(line.total) + " for it. This can't be undone.", "unfill-yes", "Yes, I can't fill it", "Go back", extra)
+            : '<div class="mt-2">' + button("Can't fill", "open:unfill:" + text(line.listingId), "small") + "</div>";
         return (
-          '<div class="flex justify-between gap-4 py-2.5 border-b border-ink-50 dark:border-ink-800 text-sm">' +
-            '<div class="min-w-0">' +
-              '<p class="font-medium">' + line.quantity.toLocaleString() + " × " + text(line.common) + "</p>" +
-              '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + text(lineDetailText(line)) + " · " + priceText(line.price) + " each</p>" +
+          '<div class="py-2.5 border-b border-ink-50 dark:border-ink-800 text-sm">' +
+            '<div class="flex justify-between gap-4' + (gone ? " line-through text-ink-400 dark:text-stone-500" : "") + '">' +
+              '<div class="min-w-0">' +
+                '<p class="font-medium">' + line.quantity.toLocaleString() + " × " + text(line.common) + "</p>" +
+                '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + text(lineDetailText(line)) + " · " + priceText(line.price) + " each</p>" +
+              "</div>" +
+              '<p class="tabular-nums font-medium whitespace-nowrap">' + moneyText(line.total) + "</p>" +
             "</div>" +
-            '<p class="tabular-nums font-medium whitespace-nowrap">' + moneyText(line.total) + "</p>" +
+            (gone ? '<p class="text-[13px] text-ink-700 dark:text-stone-300">The grower couldn\'t fill this. Refunded.</p>' : "") +
+            unfill +
           "</div>"
         );
       }).join("");
@@ -566,25 +551,24 @@
 
       if (order.side === "buyer") {
         rows = moneyRow("Plants", moneyText(money.subtotal)) +
-          (money.refunds ? moneyRow("Refunded for short count", lessText(money.refunds)) : "") +
+          (money.refunds ? moneyRow("Refunded", lessText(money.refunds)) : "") +
           (job ? moneyRow("Delivery by " + text(job.carrierName) + ", " + job.miles + " miles", moneyText(job.cost)) : "") +
           (order.live ? moneyRow("Sales tax", '<span class="text-ink-400 dark:text-stone-400">Not worked out in this preview</span>', "money-note") : "") +
           moneyRow(order.live ? "Total" : "Charged to your bank", moneyText(money.total), "money-total");
 
-        line = money.payment === "pending" ? "Not charged yet. " + bank + " is charged if the grower accepts."
+        line = money.payment === "refunded" ? "Charged to " + bank + ", then refunded in full."
              : money.payment === "none" ? bank + " was not charged."
              : order.confirmedAt ? "Paid by bank transfer from " + bank + "."
              : "Paid by bank transfer from " + bank + ". PlantHub holds it until you have the plants.";
         if (job && job.status === "requested") line += " You are charged for delivery only if the carrier accepts.";
       } else {
         rows = moneyRow("Order total", moneyText(money.subtotal)) +
-          (money.refunds ? moneyRow("Refunded to the buyer for short count", lessText(money.refunds)) : "") +
+          (money.refunds ? moneyRow("Refunded to the buyer", lessText(money.refunds)) : "") +
           (order.live ? moneyRow("PlantHub fee " + Math.round(PH.FEE_RATE * 100) + "%", lessText(money.fee)) : "") +
           moneyRow("Your payout", moneyText(money.payout), "money-total");
 
         line = money.payoutState === "released" ? "Released to you on " + momentText(order.confirmedAt) + "."
              : money.payoutState === "held" ? "Held by PlantHub until the order is picked up or delivered."
-             : order.state === "awaiting" ? "Paid out after you accept and the order is picked up or delivered."
              : "No payout: the order didn't go ahead.";
       }
 
@@ -618,7 +602,10 @@
 
       const items = order.problems.map(function (problem) {
         let head, body, actions = "";
-        if (problem.kind === "short") {
+        if (problem.kind === "unfilled") {
+          head = "Couldn't fill: " + problem.quantity.toLocaleString() + " × " + text(problem.common);
+          body = "Refunded " + moneyText(problem.refund) + (grower ? " to the buyer, taken off your payout." : " to your bank.");
+        } else if (problem.kind === "short") {
           head = "Short count: " + problem.quantity.toLocaleString() + " × " + text(problem.common) + " missing";
           body = "Refunded " + moneyText(problem.refund) + (grower ? " to the buyer, deducted from your payout." : " to your bank.");
         } else {
@@ -643,13 +630,13 @@
           '<li class="py-3 border-b border-ink-50 dark:border-ink-800 last:border-0">' +
             '<p class="font-medium text-sm">' + head + "</p>" +
             (problem.note ? '<p class="mt-1 text-sm whitespace-pre-line">&ldquo;' + text(problem.note) + "&rdquo;</p>" : "") +
-            '<p class="mt-1 text-[13px] text-ink-700 dark:text-stone-300">' + body + " Reported " + momentText(problem.at) + ".</p>" +
+            '<p class="mt-1 text-[13px] text-ink-700 dark:text-stone-300">' + body + (problem.kind === "unfilled" ? " Taken off " : " Reported ") + momentText(problem.at) + ".</p>" +
             actions +
           "</li>"
         );
       }).join("");
 
-      return card("Problems reported", '<ul class="mt-1">' + items + "</ul>");
+      return card("Changes and problems", '<ul class="mt-1">' + items + "</ul>");
     }
 
     function historyHtml() {
@@ -675,11 +662,16 @@
       };
       let parts = [];
 
-      if (buyer && order.status === "awaiting") {
-        parts.push(order.growerHasAccount ? asGrower("answer")
-          : "This grower has no account to sign in with, so you can stand in for them. " +
-            button("Pretend the grower accepted", "preview-grower:accept", "small") + " " +
-            button("Pretend the grower declined", "preview-grower:decline", "small"));
+      // The grower can take a line off until the plants are handed over.
+      const fillable = order.state === "accepted" && !order.confirmedAt && order.lines.filter(function (line) {
+        return !order.problems.some(function (problem) { return problem.kind === "unfilled" && problem.listingId === line.listingId; });
+      });
+      if (buyer && fillable && fillable.length) {
+        parts.push(order.growerHasAccount ? asGrower("take a line off (can't fill)")
+          : "Stand in for the grower if they can't fill a line: " +
+            fillable.map(function (line) {
+              return button("Pretend they can't fill " + text(line.common), "preview-grower:cant-fill", "small", ' data-problem="' + text(line.listingId) + '"');
+            }).join(" "));
       }
       if (buyer && order.status === "pickup") {
         parts.push(order.growerHasAccount ? asGrower("mark the pickup")
@@ -806,9 +798,8 @@
       if (action.indexOf("open:") === 0) { open = action.slice(5); draw(); return; }
       if (action === "close") { open = ""; draw(); return; }
 
-      if (action === "cancel-yes") apply(PH.cancelOrder(order.id), "Order cancelled. You were not charged.");
       if (action === "change-yes") apply(PH.cancelArrangement(order.id), "Cancelled. Choose pickup or delivery again.");
-      if (action === "decline-yes") apply(PH.declineOrder(order.id), "Order declined. The plants are back on your listings.");
+      if (action === "unfill-yes") apply(PH.cantFill(order.id, pressed.dataset.line), "Taken off the order. The buyer is refunded for it.");
       if (action === "picked-up-yes") apply(PH.confirmPickup(order.id), "Marked as picked up. Your payout is released.");
       if (action === "delivered-yes") apply(PH.confirmDelivery(order.id), "Delivery confirmed.");
       if (action === "report-back") askAboutReport(false);
@@ -840,16 +831,6 @@
     body.addEventListener("submit", function (event) {
       event.preventDefault();
       const form = event.target;
-
-      // The grower accepts, with the conditions checked.
-      if (form.id === "accept") {
-        const result = PH.acceptOrder(order.id, $("accept-conditions").checked);
-        if (!result.ok) {
-          refuse("accept-error", result, { conditions: "accept-conditions" });
-          return;
-        }
-        apply(result, "Order accepted. PlantHub is holding the buyer's payment.");
-      }
 
       // The buyer chooses pickup or delivery.
       if (form.id === "arrange") {

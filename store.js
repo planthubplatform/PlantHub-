@@ -60,9 +60,11 @@
     PH.placeOrder(nurseryId)    turn one grower's group into an order
     PH.myOrders()               the signed-in person's orders, newest first
     PH.order(id)                one of them, or null
-    PH.cancelOrder(id)          buyer, while the grower hasn't answered
-    PH.acceptOrder(id, agreed)  grower; `agreed` is the conditions checkbox
-    PH.declineOrder(id)         grower; the plants go back on the listing
+    PH.cantFill(id, listingId)  grower; takes a line off a placed order and
+                                refunds the buyer for it
+    PH.cancelOrder(id), PH.acceptOrder(id, agreed), PH.declineOrder(id)
+                                kept for orders from before 19 Oct 2026;
+                                new orders are placed and paid at once
     PH.choosePickup(id, date)   buyer, once the grower has accepted
     PH.cancelArrangement(id)    buyer: drop a pending pickup or delivery
                                 request and choose again
@@ -1102,24 +1104,35 @@ const PH = (function () {
   // ---- 10. Orders -------------------------------------------------------------
   // One order is one buyer buying from one grower. What is kept:
   //
-  //   state      "awaiting"   placed, the grower hasn't answered
-  //              "accepted"   the grower said yes; the bank payment is taken
-  //                           and PlantHub holds it
-  //              "declined"   the grower said no; nothing was taken
-  //              "cancelled"  the buyer withdrew it before an answer
+  //   state      "accepted"   placed and paid. The buyer's bank is charged at
+  //                           checkout and PlantHub holds the money. There is
+  //                           no grower approval: keeping listings accurate
+  //                           is the grower's job (owner, 19 Oct 2026).
+  //              "cancelled"  nothing left on it: the grower couldn't fill
+  //                           any of it, and the buyer was refunded
+  //              "awaiting", "declined"  older orders from before 19 Oct,
+  //                           when a grower accepted or declined each one.
+  //                           orders() turns "awaiting" into "accepted".
   //   method     null until the buyer chooses, then "pickup" or "delivery"
   //   jobs       every delivery asked of a carrier, in order. The last one
   //              is the current one unless it was declined or withdrawn.
   //   confirmedAt  when the grower confirmed the pickup, or the buyer the
   //              delivery. The payout is released then, and the buyer's
   //              48 hours to report a problem start.
-  //   problems   short counts and wrong grades the buyer reported
+  //   problems   short counts and wrong grades the buyer reported, and
+  //              lines the grower couldn't fill ("unfilled")
   //   events     the order's history in plain words, for both sides to read
   //
   // The words a page shows ("Ready for pickup", "Delivered") and the money
   // are worked out from these by describeOrder, so every page agrees.
 
-  function orders() { return read(ORDERS_KEY) || []; }
+  // Orders saved before 19 Oct 2026 may still be "awaiting" a grower's
+  // answer that no longer exists; they are read as placed and paid.
+  function orders() {
+    return (read(ORDERS_KEY) || []).map(function (order) {
+      return order.state === "awaiting" ? Object.assign({}, order, { state: "accepted" }) : order;
+    });
+  }
 
   // Orders are numbered PH-1001, PH-1002 and so on.
   function nextOrderId(list) {
@@ -1169,7 +1182,7 @@ const PH = (function () {
     const waitingOnGrower = copy.problems.some(function (problem) { return problem.status === "waiting"; });
 
     let status = copy.state;
-    let label = "Awaiting grower";
+    let label = "Placed";
     if (copy.state === "declined") label = "Declined";
     else if (copy.state === "cancelled") label = "Cancelled";
     else if (copy.state === "accepted") {
@@ -1184,8 +1197,6 @@ const PH = (function () {
         status = "delivery-booked"; label = "Delivery booked";
       } else if (job) {
         status = "delivery-requested"; label = "Delivery requested";
-      } else {
-        label = "Accepted";
       }
     }
 
@@ -1210,8 +1221,9 @@ const PH = (function () {
       delivery: delivery,
       // What the buyer pays in the end, delivery included.
       total: live ? cents(net + delivery) : 0,
-      // The buyer's payment: "pending" (not charged yet), "paid" or "none".
-      payment: copy.state === "awaiting" ? "pending" : copy.state === "accepted" ? "paid" : "none",
+      // The buyer's payment: "paid", "refunded" (charged, then everything
+      // given back) or "none".
+      payment: copy.state === "accepted" ? "paid" : refunds ? "refunded" : "none",
     };
     // PlantHub's fee and the payout are the grower's business. They are
     // only put on the copy a grower gets, so a buyer's page can't show them.
@@ -1227,7 +1239,10 @@ const PH = (function () {
     copy.canReport = copy.side === "buyer" && windowOpen;
     copy.needsYou =
       (copy.side === "buyer" && status === "accepted") ||
-      (copy.side === "grower" && (status === "awaiting" || waitingOnGrower));
+      (copy.side === "grower" && waitingOnGrower);
+    // Can the grower still take a line off ("can't fill")? Only until the
+    // plants are handed over.
+    copy.canUnfill = copy.side === "grower" && copy.state === "accepted" && !confirmed;
     return copy;
   }
 
@@ -1304,7 +1319,9 @@ const PH = (function () {
     const order = {
       id: nextOrderId(list),
       placedAt: now,
-      state: "awaiting",
+      // Placed is paid: no grower approval.
+      state: "accepted",
+      acceptedAt: now,
       buyerId: user.id,
       // What the grower is given about the buyer, as it was when ordered.
       buyer: { name: user.name, email: user.email, phone: user.phone || "", business: user.business || "" },
@@ -1328,15 +1345,14 @@ const PH = (function () {
       method: null,
       jobs: [],
       problems: [],
-      events: [{ at: now, text: "Order placed for " + dollars(group.subtotal) + ". The buyer has not been charged yet." }],
+      events: [{ at: now, text: "Order placed. The buyer's bank was charged " + dollars(group.subtotal) + ", and PlantHub is holding the money until the plants are picked up or delivered." }],
     };
 
     if (!write(ORDERS_KEY, [order].concat(list))) {
       return { ok: false, error: "This browser's storage is full, so the order could not be saved." };
     }
 
-    // The plants come off the listings now, so nobody else can order them
-    // while the grower decides. They go back if the order is declined.
+    // The plants come off the listings now: they are sold.
     const changes = {};
     order.lines.forEach(function (line) { changes[line.listingId] = -line.quantity; });
     changeStock(nurseryId, changes);
@@ -1393,6 +1409,41 @@ const PH = (function () {
     order.state = "declined";
     giveBack(order);
     note(order, "The grower declined. The buyer was not charged, and the plants went back on the listing.");
+  }
+
+  // The grower can't supply a line after all (the listing was wrong). The
+  // line comes off the order and the buyer is refunded for it at once. The
+  // plants don't go back on the listing: they weren't there. With nothing
+  // left, the order is cancelled. A default until the owner settles
+  // short-count credits (docs/review-later.md).
+  function unfill(order, listingId) {
+    if (order.state !== "accepted") return { ok: false, error: "This order can't be changed any more." };
+    if (order.confirmedAt) return { ok: false, error: "The plants have already been handed over. Use a problem report instead." };
+    const line = order.lines.find(function (other) { return other.listingId === listingId; });
+    if (!line) return { ok: false, error: "That plant isn't on this order." };
+    if (order.problems.some(function (problem) { return problem.kind === "unfilled" && problem.listingId === listingId; })) {
+      return { ok: false, error: "That line is already off the order." };
+    }
+    order.problems.push({
+      id: order.id + "-P" + (order.problems.length + 1),
+      kind: "unfilled", listingId: line.listingId, common: line.common,
+      quantity: line.quantity, refund: line.total, status: "refunded",
+      at: new Date().toISOString(),
+    });
+    note(order, "The grower can't fill " + line.quantity.toLocaleString() + " " + line.common + ". " +
+                dollars(line.total) + " was refunded to the buyer.");
+    const left = order.lines.filter(function (other) {
+      return !order.problems.some(function (problem) { return problem.kind === "unfilled" && problem.listingId === other.listingId; });
+    });
+    if (!left.length) {
+      order.state = "cancelled";
+      withdrawJob(order);
+      note(order, "Nothing is left on the order, so it was cancelled. The buyer was refunded in full.");
+    }
+  }
+
+  function cantFill(id, listingId) {
+    return changeOrder(id, ["grower"], function (order) { return unfill(order, listingId); });
   }
 
   function acceptOrder(id, agreed) {
@@ -1606,6 +1657,9 @@ const PH = (function () {
     if (details.kind !== "short" && details.kind !== "grade") return { ok: false, field: "kind", error: "Choose what went wrong." };
     const line = order.lines.find(function (other) { return other.listingId === details.listingId; });
     if (!line) return { ok: false, field: "line", error: "Choose which plant the problem is with." };
+    if (order.problems.some(function (other) { return other.kind === "unfilled" && other.listingId === line.listingId; })) {
+      return { ok: false, field: "line", error: "The grower took that plant off the order, and you were refunded for it." };
+    }
 
     const problem = {
       id: order.id + "-P" + (order.problems.length + 1),
@@ -1696,6 +1750,7 @@ const PH = (function () {
       if (action === "accept") return accept(order, true);
       if (action === "decline") return decline(order);
       if (action === "picked-up") return pickedUp(order);
+      if (action === "cant-fill") return unfill(order, problemId);
       if (action === "problem-accept") return answer(order, problemId, "accept");
       if (action === "problem-dispute") return answer(order, problemId, "dispute");
       return { ok: false, error: "Nothing to do." };
@@ -1871,6 +1926,7 @@ const PH = (function () {
     cancelOrder: cancelOrder,
     acceptOrder: acceptOrder,
     declineOrder: declineOrder,
+    cantFill: cantFill,
     choosePickup: choosePickup,
     cancelArrangement: cancelArrangement,
     deliveryOptions: deliveryOptions,

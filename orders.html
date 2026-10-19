@@ -157,7 +157,6 @@
       const buyer = order.side === "buyer";
       const job = order.job;
       switch (order.status) {
-        case "awaiting": return buyer ? "Waiting for the grower to accept. You have not been charged." : "Accept or decline this order.";
         case "accepted": return buyer ? "Choose pickup or delivery." : "Waiting for the buyer to choose pickup or delivery.";
         case "pickup": return (buyer ? "Collect on " : "The buyer collects on ") + dayText(order.pickupDate) + ".";
         case "delivery-requested": return "Waiting for " + job.carrierName + " to accept the delivery.";
@@ -169,7 +168,9 @@
             : (buyer ? (order.canReport ? "You can report a problem until " + momentText(order.problemDeadline) + "." : "A report on this order is still being settled.") : "Your payout has been released.");
         case "complete": return "Finished.";
         case "declined": return buyer ? "The grower declined. You were not charged." : "You declined this order.";
-        default: return buyer ? "You cancelled this order. You were not charged." : "The buyer cancelled before you answered.";
+        default:
+          if (order.money.payment === "refunded") return buyer ? "The grower couldn't fill it. You were refunded in full." : "You couldn't fill it. The buyer was refunded in full.";
+          return buyer ? "You cancelled this order. You were not charged." : "The buyer cancelled before you answered.";
       }
     }
 
@@ -187,8 +188,7 @@
               " · Your payout " + moneyText(money.payout)
             : "Order total " + moneyText(money.subtotal) + " · no payout");
 
-      const action = order.status === "awaiting" && !buyer ? "Review and answer"
-                   : order.status === "accepted" && buyer ? "Choose pickup or delivery"
+      const action = order.status === "accepted" && buyer ? "Choose pickup or delivery"
                    : order.needsYou ? "Answer the report"
                    : "Open order";
 
@@ -225,7 +225,7 @@
       const done = all.filter(finished);
       $("page-title").textContent = grower ? "Orders to fill" : "Your orders";
       $("intro").textContent = grower
-        ? "Orders buyers have sent your nursery. You accept or decline each one, and PlantHub holds the payment until the plants are handed over."
+        ? "Orders buyers have placed with your nursery. They are paid when placed, and PlantHub holds the money until the plants are handed over."
         : "";
       $("intro").hidden = !grower;
 
@@ -241,7 +241,7 @@
         $("orders").innerHTML = !grower ? "" :
           '<div class="auth-card">' +
             '<p class="font-medium">No orders waiting.</p>' +
-            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here for you to accept or decline. Fresh listings are found first.</p>' +
+            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here. Keep your listings accurate: an order is placed without asking you first. Fresh listings are found first.</p>' +
             '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>' +
           "</div>";
         return;

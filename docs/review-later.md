@@ -205,6 +205,16 @@ kept separately, in the "Road Block 2" doc linked from
     Alternative: a menu behind the round letter holding Sign out and the
     switch.
 
+32. **A grower who can't fill an order** (19 Oct). Orders no longer wait for
+    the grower to accept. Built: until the plants are handed over, the grower
+    can press "Can't fill" on a line; it comes off the order, the buyer is
+    refunded its full price at once, and the plants are not put back on the
+    listing. If nothing is left, the order is cancelled. Open: does a grower
+    who does this get a penalty or a mark on their profile? And the dead-plant
+    conditions growers used to accept with each order: where are they agreed
+    now (at sign-up, once)?
+    Where: `unfill` / `cantFill` in `store.js`, the Plants card in `order.html`.
+
 ## Decided
 
 - **Where the final action sits** (13 Oct, owner): at the bottom of the page,

@@ -140,10 +140,9 @@
             </dl>
             <!-- When the buyer is charged, in the plainest words there are. -->
             <ul class="mt-4 space-y-1.5 text-sm text-ink-700 dark:text-stone-300 list-disc pl-5">
-              <li>You are not charged when you place the order.</li>
-              <li>If <span data-grower></span> accepts it, your bank is charged <span data-total></span>. PlantHub holds the money until you have the plants.</li>
-              <li>If they decline, you pay nothing.</li>
-              <li>After they accept, you choose pickup or delivery. Delivery costs extra, and you see the price before you pick a carrier.</li>
+              <li>When you place the order, your bank is charged <span data-total></span>. PlantHub holds the money until you have the plants.</li>
+              <li>The order goes straight to <span data-grower></span>. There is no waiting for them to accept.</li>
+              <li>Then you choose pickup or delivery. Delivery costs extra, and you see the price before you pick a carrier.</li>
             </ul>
             <p id="place-error" role="alert" hidden class="auth-error mt-4"></p>
             <button type="button" id="place" class="mt-5 auth-button account-button-small">Place order</button>
@@ -470,9 +469,9 @@
     function drawPlaced(order) {
       const more = PH.basketCount() > 0;
       $("placed-title").textContent = "Order " + order.id + " placed";
-      $("placed-text").textContent = "We sent your order to " + order.nurseryName + ". You have not been charged.";
-      $("placed-next-step").textContent = "If they accept, your bank is charged " + moneyText(order.money.subtotal) +
-        ". Then you choose pickup or delivery on the order's page.";
+      $("placed-text").textContent = "We sent your order to " + order.nurseryName + ". Your bank was charged " + moneyText(order.money.subtotal) +
+        ", and PlantHub holds the money until you have the plants.";
+      $("placed-next-step").textContent = "Next, choose pickup or delivery on the order's page.";
       $("placed-order").href = "order.html?id=" + encodeURIComponent(order.id);
       $("placed-next").textContent = more ? "Back to your order" : "Your orders";
       $("placed-next").href = more ? "basket.html" : "orders.html";

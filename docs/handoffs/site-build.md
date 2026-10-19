@@ -27,6 +27,18 @@ files; it took over from Website design V2.
   16px cards.
 
 ## In progress
+**Live changes with Kendrick, 19 Oct** (one or a few at a time, each pushed
+when he says). Done: named orders replace the cart; the directory starts blank
+and the search box is focused; Vendor / Location / Specs columns and a State
+filter; "Staked" removed; sample dates follow today; the Orders page has
+Create order on top and a Completed orders fold. **Now:** checkout overhaul in
+three steps (see the 19 Oct entries in `CLAUDE.md`):
+1. No grower approval; "Can't fill" per line. Built, not yet pushed.
+2. One checkout for the whole named order, with Pickup / Have delivered per
+   grower. Next.
+3. One carrier for the delivered parts, with vehicles and truck space on
+   carrier profiles, and a second carrier for overflow.
+
 The light factory is running (`docs/factory/README.md`). The questionnaire is
 answered and the six specs are written. **Checkout is built** and the run is
 stopped at the checkpoint, waiting for Kendrick. What happened is in
