@@ -408,17 +408,16 @@ function rowHtml(listing, words, index) {
   const main =
     '<tr class="listing-row" data-row="' + index + '" tabindex="0" role="button" ' +
         'aria-expanded="false" aria-controls="detail-' + index + '">' +
-      // Left to right: last updated, state, vendor, plant, container,
+      // Left to right: last updated, location, vendor, plant, container,
       // specs (grades included), price, quantity.
       updatedCell +
 
+      // Location: the vendor's city and state, as "Wellington, FL".
       '<td class="hidden sm:table-cell py-2 pr-3 align-top whitespace-nowrap">' +
-        highlight(n.state, words) + "</td>" +
+        highlight(n.city + ", " + n.state, words) + "</td>" +
 
       '<td class="hidden sm:table-cell py-2 pr-3 align-top">' +
         '<a class="grower-link" href="' + growerHref + '">' + highlight(n.name, words) + "</a>" +
-        '<span class="block text-[12px] text-ink-400 dark:text-stone-400">' +
-          highlight(n.city, words) + "</span>" +
       "</td>" +
 
       '<td class="py-2 pr-3 align-top">' +
@@ -485,8 +484,8 @@ function tableHtml(rows, words) {
     '<thead>' +
       '<tr class="text-left text-[11px] uppercase tracking-wider text-ink-400 dark:text-stone-400 ' +
           'bg-cream dark:bg-ink-950/50 border-b border-ink-100 dark:border-ink-800">' +
-        '<th class="py-2 pl-3 pr-3 font-semibold">Last updated</th>' +
-        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">State</th>' +
+        '<th class="py-2 pl-3 pr-3 font-semibold whitespace-nowrap">Last updated</th>' +
+        '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">Location</th>' +
         '<th class="hidden sm:table-cell py-2 pr-3 font-semibold">Vendor</th>' +
         '<th class="py-2 pr-3 font-semibold">Plant</th>' +
         '<th class="hidden xl:table-cell py-2 pr-3 font-semibold">Container</th>' +
