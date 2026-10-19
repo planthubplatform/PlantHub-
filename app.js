@@ -739,6 +739,14 @@ if (returnId && !startQuery) {
   if (returning) searchBox.value = returning.common;
 }
 
+// The page starts blank and waits for a search, so put the cursor in the box
+// straight away, after anything already typed. Not when coming back to one
+// listing: that opens its "Add to order" box instead.
+if (!returnId) {
+  searchBox.focus();
+  searchBox.setSelectionRange(searchBox.value.length, searchBox.value.length);
+}
+
 // The example searches under the prompt fill the box and search.
 resultsBox.addEventListener("click", function (event) {
   const example = event.target.closest("[data-example]");

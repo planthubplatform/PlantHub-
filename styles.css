@@ -1038,3 +1038,14 @@ html.dark .theme-toggle:hover { border-color: #c2703c; color: #e0a877; }
 @media (max-width: 639px) {
   .corner-signout { display: none; }
 }
+
+/* The Create order button on orders.html: on its own in the middle, a size
+   up from the small buttons. */
+.create-order-button { padding: 0.75rem 2.5rem; font-size: 1rem; }
+
+/* The "Completed orders" fold on orders.html: a small arrow before the
+   heading that turns when it is open, in place of the browser's own. */
+.history > summary { list-style: none; }
+.history > summary::-webkit-details-marker { display: none; }
+.history > summary::before { content: "▸"; display: inline-block; width: 1.1em; transition: transform .15s; }
+.history[open] > summary::before { transform: rotate(90deg); }

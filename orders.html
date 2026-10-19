@@ -56,13 +56,12 @@
         <h1 id="page-title" class="font-display font-semibold text-3xl tracking-tight">Orders</h1>
         <p id="intro" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
 
-        <!-- Buyers: start a named order, and see the ones still being put together. -->
-        <section id="drafts" hidden class="mt-6" aria-labelledby="drafts-title">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 id="drafts-title" class="font-display font-semibold text-xl tracking-tight">Being put together</h2>
-            <button type="button" id="create-start" class="auth-button account-button-small">Create order</button>
-          </div>
-          <form id="create-form" hidden class="auth-card mt-4" novalidate>
+        <!-- Buyers: start a named order. The button sits alone, in the middle,
+             at the top: it is the first thing a buyer comes here to do. -->
+        <section id="create" hidden class="mt-6 text-center">
+          <button type="button" id="create-start" class="auth-button account-button-small create-order-button">Create order</button>
+          <p id="create-hint" hidden class="mt-2 text-sm text-ink-400 dark:text-stone-400">Name it for the job, then add plants from the directory.</p>
+          <form id="create-form" hidden class="auth-card mt-4 mx-auto max-w-md text-left" novalidate>
             <label class="auth-label" for="create-name">Name this order</label>
             <input class="auth-input" id="create-name" maxlength="60" autocomplete="off" placeholder="The job it is for, like Smith residence">
             <p id="create-error" role="alert" hidden class="auth-error mt-2"></p>
@@ -71,12 +70,27 @@
               <button type="button" id="create-cancel" class="auth-button auth-button-outline account-button-small">Cancel</button>
             </div>
           </form>
+        </section>
+
+        <!-- Buyers: named orders still being put together. -->
+        <section id="drafts" hidden class="mt-8" aria-labelledby="drafts-title">
+          <h2 id="drafts-title" class="font-display font-semibold text-xl tracking-tight">Being put together</h2>
           <div id="draft-list" class="mt-4 space-y-3"></div>
         </section>
 
-        <!-- store.js hands over the orders; the script below draws them. -->
-        <h2 id="placed-title" hidden class="mt-8 font-display font-semibold text-xl tracking-tight">Placed orders</h2>
+        <!-- Orders that are placed and not finished. store.js hands them over;
+             the script below draws them. -->
+        <h2 id="placed-title" hidden class="mt-8 font-display font-semibold text-xl tracking-tight">In progress</h2>
         <div id="orders" class="mt-4 space-y-5"></div>
+
+        <!-- Finished orders (complete, declined, cancelled), folded shut at the
+             bottom as a history. A <details> box opens when its line is pressed. -->
+        <details id="history" class="history mt-10">
+          <summary class="font-display font-semibold text-xl tracking-tight cursor-pointer select-none">
+            Completed orders <span id="history-count" class="font-sans font-normal text-sm text-ink-400 dark:text-stone-400"></span>
+          </summary>
+          <div id="history-list" class="mt-4 space-y-5"></div>
+        </details>
 
         <!-- ===== Growers: who may deliver your orders ====================== -->
         <section id="delivery" hidden class="mt-10" aria-labelledby="delivery-title">
@@ -200,23 +214,35 @@
       );
     }
 
+    // An order that has come to an end: nothing more will happen to it.
+    function finished(order) {
+      return order.status === "complete" || order.status === "declined" || order.status === "cancelled";
+    }
+
     function drawOrders() {
-      const list = PH.myOrders();
+      const all = PH.myOrders();
+      const list = all.filter(function (order) { return !finished(order); });
+      const done = all.filter(finished);
       $("page-title").textContent = grower ? "Orders to fill" : "Your orders";
       $("intro").textContent = grower
         ? "Orders buyers have sent your nursery. You accept or decline each one, and PlantHub holds the payment until the plants are handed over."
         : "";
       $("intro").hidden = !grower;
 
+      $("history-count").textContent = "(" + done.length + ")";
+      $("history-list").innerHTML = done.length
+        ? done.map(orderHtml).join("")
+        : '<p class="text-sm text-ink-400 dark:text-stone-400">Finished orders are kept here.</p>';
+
+      // A buyer's page says nothing when no order is in progress: the
+      // Create order button above already says what to do.
+      $("placed-title").hidden = grower || !list.length;
       if (!list.length) {
-        $("orders").innerHTML =
+        $("orders").innerHTML = !grower ? "" :
           '<div class="auth-card">' +
-            (grower
-              ? '<p class="font-medium">No orders yet.</p>' +
-                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here for you to accept or decline. Fresh listings are found first.</p>' +
-                '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>'
-              : '<p class="font-medium">You have not placed an order yet.</p>' +
-                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Press Create order, name it, then add plants from the directory. An order with several growers is sent to each one separately.</p>') +
+            '<p class="font-medium">No orders waiting.</p>' +
+            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here for you to accept or decline. Fresh listings are found first.</p>' +
+            '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>' +
           "</div>";
         return;
       }
@@ -228,8 +254,9 @@
     // -----------------------------------------------------------------------
     function drawDrafts() {
       const list = PH.drafts();
-      $("drafts").hidden = false;
-      $("placed-title").hidden = !PH.myOrders().length;
+      $("create").hidden = false;
+      $("drafts").hidden = !list.length;
+      $("create-hint").hidden = list.length > 0 || PH.myOrders().length > 0;
       $("draft-list").innerHTML = list.map(function (draft) {
         const summary = draft.count
           ? draft.count + (draft.count === 1 ? " plant line" : " plant lines") + " from " + draft.growers + (draft.growers === 1 ? " grower" : " growers") + " · " + moneyText(draft.total)
@@ -257,11 +284,14 @@
 
     $("create-start").addEventListener("click", function () {
       $("create-form").hidden = false;
+      $("create-start").hidden = true;
+      $("create-hint").hidden = true;
       $("create-name").focus();
     });
     $("create-cancel").addEventListener("click", function () {
       $("create-form").hidden = true;
       $("create-error").hidden = true;
+      $("create-start").hidden = false;
     });
     $("create-form").addEventListener("submit", function (event) {
       event.preventDefault();
