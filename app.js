@@ -492,6 +492,22 @@ function tableHtml(rows, words) {
     "</table></div>";
 }
 
+// What to show before anything is searched or filtered: a prompt, and a few
+// searches to try. Each example is a button that fills the search box.
+function promptHtml() {
+  const examples = ["Areca palm", "Live oak", "Clusia", "Podocarpus"];
+  return '<div class="rounded-2xl border border-dashed border-ink-100 dark:border-ink-700 ' +
+              'px-4 py-12 text-center text-[13px] text-ink-400 dark:text-stone-400">' +
+    '<p class="text-base font-medium text-ink-800 dark:text-stone-200">Search for a plant to see who has it</p>' +
+    '<p class="mt-1.5">Type a plant, a nursery or a city above, or pick a filter. Freshest listings come first.</p>' +
+    '<div class="mt-4 flex flex-wrap justify-center gap-2">' +
+      examples.map(function (text) {
+        return '<button type="button" class="filter-tag" data-example="' + escapeHtml(text) + '">' + escapeHtml(text) + "</button>";
+      }).join("") +
+    "</div>" +
+  "</div>";
+}
+
 // What to show when nothing matched. Says which of the two reasons it was.
 function emptyHtml(query, filtersAreOn) {
   const message = filtersAreOn
@@ -529,6 +545,17 @@ function render() {
   TICK_FACETS.forEach(function (facet) { renderFacet(facet, words); });
   renderSpecCounts(words);
   const filtersAreOn = renderActiveFilters();
+
+  // Nothing searched and no filter on: show the prompt, not every listing.
+  const searching = words.length > 0 || filtersAreOn;
+  document.getElementById("results-bar").classList.toggle("hidden", !searching);
+  if (!searching) {
+    showResultsButton.textContent = "Close filters";
+    countLine.textContent = "";
+    shownRows = [];
+    resultsBox.innerHTML = promptHtml();
+    return;
+  }
 
   showResultsButton.textContent = rows.length === 0
     ? "No listings match"
@@ -703,6 +730,23 @@ resultsBox.addEventListener("keydown", function (event) {
 // directory.html?q=clusia. Put it in the box so the results start filtered.
 const startQuery = new URLSearchParams(window.location.search).get("q");
 if (startQuery) searchBox.value = startQuery;
+
+// Coming back from sign-in to a listing with no search in the address: the
+// page would start blank, so search for that listing's plant.
+const returnId = new URLSearchParams(window.location.search).get("open");
+if (returnId && !startQuery) {
+  const returning = LISTINGS.find(function (listing) { return listing.id === returnId; });
+  if (returning) searchBox.value = returning.common;
+}
+
+// The example searches under the prompt fill the box and search.
+resultsBox.addEventListener("click", function (event) {
+  const example = event.target.closest("[data-example]");
+  if (!example) return;
+  searchBox.value = example.dataset.example;
+  render();
+  searchBox.focus();
+});
 
 syncFilterPanel();
 render();

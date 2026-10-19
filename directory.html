@@ -201,7 +201,8 @@
       <!-- ===== Results =============================================== -->
       <section class="min-w-0 flex-1">
 
-        <div class="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+        <!-- Hidden until there is something to count and sort (app.js). -->
+        <div id="results-bar" class="flex flex-wrap items-center justify-between gap-3 mb-2.5">
           <p class="text-[13px] text-ink-400 dark:text-stone-400" id="count"></p>
 
           <div class="flex items-center gap-2">
@@ -222,7 +223,9 @@
         <!-- Any filters currently on, shown as removable tags. -->
         <div id="active-filters" class="flex flex-wrap gap-1.5 mb-2.5 empty:hidden"></div>
 
-        <!-- app.js fills this with the listing table. It starts empty on purpose. -->
+        <!-- app.js fills this with the listing table once something is searched
+             or filtered. Before that it holds a short prompt: a buyer comes
+             here knowing what they want, so nothing is listed up front. -->
         <div id="results"></div>
       </section>
     </div>
