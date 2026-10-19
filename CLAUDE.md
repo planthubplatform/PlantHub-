@@ -94,7 +94,6 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | `encyclopedia.html` + `data/plants.js` | Plant Encyclopedia, a first simple version: an entry for every plant in the listings (some written, the rest "not written yet"), with search, a kind-of-plant filter, and who has each plant now. One entry is `encyclopedia.html#sabal-palm`. Draft notes, labelled as not reviewed by a horticulturist. |
 | `news.html` + `data/news.js` | Plant News, a first simple version: a few invented sample articles in three topics, each labelled "Sample article". One article is `news.html#<id>`. |
 | `plant-doc.html` + `data/plant-doc.js` | Plant Doc, a first simple version: three questions (kind of plant, part, what it looks like), then the likely causes from a fixed list, with what to do and links to the encyclopedia and the directory. No AI, and it says so. |
-| `soon.html` | The old "coming soon" page. Nothing links to it any more; it can go. |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
 

@@ -35,7 +35,7 @@ PORT=5174 python serve.py
 | `directory.html` | The plant directory: filters, the listing table, footer. A front-page search lands here. |
 | `signin.html` | Sign in, with a way to create an account below. A preview: nothing is saved or sent yet. |
 | `signup.html` | Create an account one question at a time: buyer or seller, then which kind, then details. |
-| `soon.html` | The "coming soon" page behind the sections that aren't built yet. |
+| `transport.html`, `encyclopedia.html`, `news.html`, `plant-doc.html` | First simple versions of the other four sections. The full file list is in `CLAUDE.md`. |
 | `theme.js` | The colors and fonts, shared by every page. |
 | `styles.css` | The few styles Tailwind classes can't say cleanly. |
 | `app.js` | The search: filters the data and draws the results. |

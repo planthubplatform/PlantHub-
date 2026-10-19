@@ -117,7 +117,7 @@ below is the earlier page-by-page plan it replaces:
 5. Plant Encyclopedia.
 6. Plant News.
 7. Plant Doc.
-8. Retire `soon.html` once nothing links to it.
+8. Retire `soon.html` once nothing links to it. **Done 19 Oct 2026** (deleted).
 
 ## Gotchas
 - **Long shell commands are cut off on this PC** (heredocs over a few thousand
