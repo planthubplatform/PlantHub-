@@ -205,7 +205,8 @@
       $("page-title").textContent = grower ? "Orders to fill" : "Your orders";
       $("intro").textContent = grower
         ? "Orders buyers have sent your nursery. You accept or decline each one, and PlantHub holds the payment until the plants are handed over."
-        : "Checking out sends each grower their part of an order. The grower accepts it, then you choose pickup or delivery.";
+        : "";
+      $("intro").hidden = !grower;
 
       if (!list.length) {
         $("orders").innerHTML =

@@ -38,7 +38,11 @@
     quantity    EXACT units on hand. Never a bucket like "100+".   1400
     price       Wholesale per unit, in dollars. Required: buyers pay in full
                 at checkout, so every listing needs a real price.    24.5
-    updated     The date the nursery confirmed it, "YYYY-MM-DD".
+    updated     The date the nursery confirmed it, "YYYY-MM-DD". In this
+                sample file the dates are written as of SAMPLE_AS_OF (below)
+                and moved forward to today when the page loads, so the
+                samples keep the same mix of fresh and stale listings
+                however long ago this file was written.
 
   The "updated" date on each plant
   --------------------------------
@@ -374,3 +378,30 @@ const NURSERIES = [
     ]
   }
 ];
+
+// ---------------------------------------------------------------------------
+// Keep the sample dates current.
+// ---------------------------------------------------------------------------
+// The dates above were written as if today were SAMPLE_AS_OF. Left alone,
+// every sample listing would go stale within a few weeks and the freshness
+// colours (the point of the site) would all turn grey. So each date is moved
+// forward by however many days have passed since then: a listing written as
+// "3 days old" is always 3 days old. This is for invented sample data only.
+// Real listings must keep the date the nursery actually confirmed them.
+const SAMPLE_AS_OF = "2026-10-01";
+
+(function () {
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const passed = Math.round((today - new Date(SAMPLE_AS_OF + "T12:00:00")) / msPerDay);
+
+  NURSERIES.forEach(function (nursery) {
+    nursery.plants.forEach(function (plant) {
+      if (!plant.updated) return;
+      const date = new Date(plant.updated + "T12:00:00");
+      date.setDate(date.getDate() + passed);
+      plant.updated = date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0") + "-" + String(date.getDate()).padStart(2, "0");
+    });
+  });
+})();
