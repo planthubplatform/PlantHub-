@@ -40,7 +40,12 @@
     PH.markInquiryRead(id)
     PH.unreadInquiries()        how many have a reply you haven't opened
 
-    PH.basket()                 the signed-in buyer's basket, one group per grower
+    PH.createDraft(name)        start a named order; the directory adds to it
+    PH.drafts()                 the buyer's orders still being put together
+    PH.activeDraft()            the one the directory adds to, or null
+    PH.setActiveDraft(id)
+    PH.deleteDraft(id)
+    PH.basket()                 the open order's plants, one group per grower
     PH.addToBasket(nurseryId, listingId, quantity)
     PH.setBasketQuantity(listingId, quantity)
     PH.removeFromBasket(listingId)
@@ -832,18 +837,99 @@ const PH = (function () {
     return isNaN(date) ? isoDate : date.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   }
 
-  function basketLines() {
+  // A buyer keeps any number of named orders being put together ("drafts").
+  // Stored per buyer as { active: <draft id>, drafts: [{ id, name, lines }] }.
+  // The directory adds plants to the active one. Older saves held a plain
+  // list of lines; that becomes one draft called "My order".
+  function draftBook() {
     const user = signedInRecord();
-    return user ? ((read(BASKETS_KEY) || {})[user.id] || []) : [];
+    if (!user) return { active: "", drafts: [] };
+    let book = (read(BASKETS_KEY) || {})[user.id];
+    if (Array.isArray(book)) {
+      book = book.length ? { active: "d1", drafts: [{ id: "d1", name: "My order", lines: book }] } : null;
+    }
+    if (!book || !Array.isArray(book.drafts)) return { active: "", drafts: [] };
+    if (!book.drafts.some(function (draft) { return draft.id === book.active; })) book.active = book.drafts.length ? book.drafts[0].id : "";
+    return book;
   }
 
-  function saveBasketLines(lines) {
+  function saveDraftBook(book) {
     const user = signedInRecord();
     if (!user) return;
     const all = read(BASKETS_KEY) || {};
-    if (lines.length) all[user.id] = lines;
+    if (book.drafts.length) all[user.id] = book;
     else delete all[user.id];
     write(BASKETS_KEY, all);
+  }
+
+  function activeDraft() {
+    const book = draftBook();
+    return book.drafts.find(function (draft) { return draft.id === book.active; }) || null;
+  }
+
+  // The lines of the order being put together.
+  function basketLines() {
+    const draft = activeDraft();
+    return draft ? draft.lines : [];
+  }
+
+  function saveBasketLines(lines) {
+    const book = draftBook();
+    const draft = book.drafts.find(function (other) { return other.id === book.active; });
+    if (!draft) return;
+    draft.lines = lines;
+    saveDraftBook(book);
+  }
+
+  // Start a new named order and make it the one the directory adds to.
+  function createDraft(nameText) {
+    const user = signedInRecord();
+    if (!user) return { ok: false, error: "Sign in to order." };
+    if (!canBuy()) return { ok: false, error: "Orders are placed from buyer accounts." };
+    const name = String(nameText || "").trim();
+    if (!name) return { ok: false, field: "name", error: "Give the order a name, like the job it is for." };
+    if (name.length > 60) return { ok: false, field: "name", error: "Keep the name under 60 letters." };
+    const book = draftBook();
+    if (book.drafts.some(function (draft) { return draft.name.toLowerCase() === name.toLowerCase(); })) {
+      return { ok: false, field: "name", error: "You already have an order called " + name + ". Pick another name." };
+    }
+    let number = 1;
+    while (book.drafts.some(function (draft) { return draft.id === "d" + number; })) number++;
+    const draft = { id: "d" + number, name: name, lines: [] };
+    book.drafts.push(draft);
+    book.active = draft.id;
+    saveDraftBook(book);
+    return { ok: true, draft: draft };
+  }
+
+  // Every order being put together, with how many lines and what it comes to.
+  function drafts() {
+    const book = draftBook();
+    return book.drafts.map(function (draft) {
+      let total = 0;
+      draft.lines.forEach(function (line) {
+        const found = findListing(line.nurseryId, line.listingId);
+        if (found) total += Math.min(line.quantity, found.plant.quantity) * found.plant.price;
+      });
+      const growers = {};
+      draft.lines.forEach(function (line) { growers[line.nurseryId] = true; });
+      return { id: draft.id, name: draft.name, count: draft.lines.length, growers: Object.keys(growers).length, total: cents(total), active: draft.id === book.active };
+    });
+  }
+
+  function setActiveDraft(id) {
+    const book = draftBook();
+    if (!book.drafts.some(function (draft) { return draft.id === id; })) return { ok: false, error: "That order is gone." };
+    book.active = id;
+    saveDraftBook(book);
+    return { ok: true };
+  }
+
+  function deleteDraft(id) {
+    const book = draftBook();
+    book.drafts = book.drafts.filter(function (draft) { return draft.id !== id; });
+    saveDraftBook(book);
+    return { ok: true };
   }
 
   function findListing(nurseryId, listingId) {
@@ -899,7 +985,7 @@ const PH = (function () {
       const found = findListing(line.nurseryId, line.listingId);
       const available = found ? found.plant.quantity : 0;
       if (available < 1) {
-        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was removed from your cart.");
+        notes.push(line.name + " from " + line.nurseryName + " is no longer available, so it was removed from your order.");
       } else if (available < line.quantity) {
         notes.push(line.nurseryName + " now has " + available.toLocaleString() + " of " + line.name +
                    ", so your " + line.quantity.toLocaleString() + " was changed to " + available.toLocaleString() + ".");
@@ -925,6 +1011,7 @@ const PH = (function () {
     const user = signedInRecord();
     if (!user) return { ok: false, error: "Sign in to order." };
     if (!canBuy()) return { ok: false, error: "Orders are placed from buyer accounts." };
+    if (!activeDraft()) return { ok: false, field: "order", error: "Create an order first, then add plants to it." };
 
     const found = findListing(nurseryId, listingId);
     if (!found || found.plant.quantity < 1) return { ok: false, error: "That listing is no longer available." };
@@ -938,7 +1025,7 @@ const PH = (function () {
       return {
         ok: false, field: "quantity",
         error: "The grower has " + found.plant.quantity.toLocaleString() + " of these" +
-               (already ? ", and " + already.toLocaleString() + (already === 1 ? " is" : " are") + " already in your cart." : "."),
+               (already ? ", and " + already.toLocaleString() + (already === 1 ? " is" : " are") + " already in this order." : "."),
       };
     }
 
@@ -951,7 +1038,7 @@ const PH = (function () {
   function setBasketQuantity(listingId, quantityText) {
     const lines = basketLines();
     const line = lines.find(function (other) { return other.listingId === listingId; });
-    if (!line) return { ok: false, error: "That line is no longer in your cart." };
+    if (!line) return { ok: false, error: "That line is no longer in your order." };
     const found = findListing(line.nurseryId, listingId);
     const quantity = wholeNumber(quantityText);
     if (!quantity) return { ok: false, error: "Enter a whole number of at least 1, or remove the line." };
@@ -1197,10 +1284,10 @@ const PH = (function () {
     if (!canBuy()) return { ok: false, error: "Orders are placed from buyer accounts." };
 
     const group = basket().find(function (other) { return other.nurseryId === nurseryId; });
-    if (!group || !group.lines.length) return { ok: false, error: "There is nothing from this grower in your cart." };
+    if (!group || !group.lines.length) return { ok: false, error: "There is nothing from this grower in your order." };
     if (!group.nursery) return { ok: false, error: "That grower is no longer listed." };
     const moved = group.lines.find(function (line) { return line.quantity < 1 || line.quantity !== line.wanted; });
-    if (moved) return { ok: false, error: "The stock of " + moved.name + " has changed. Go back to your cart and check the quantities." };
+    if (moved) return { ok: false, error: "The stock of " + moved.name + " has changed. Go back to your order and check the quantities." };
     if (!group.ready) return { ok: false, error: "This grower's order is under the $" + MIN_ORDER_DOLLARS + " minimum." };
     if (!user.bank) return { ok: false, field: "bank", error: "Connect a bank before placing the order." };
 
@@ -1246,7 +1333,9 @@ const PH = (function () {
     order.lines.forEach(function (line) { changes[line.listingId] = -line.quantity; });
     changeStock(nurseryId, changes);
 
-    saveBasketLines(basketLines().filter(function (line) { return line.nurseryId !== nurseryId; }));
+    const rest = basketLines().filter(function (line) { return line.nurseryId !== nurseryId; });
+    if (rest.length) saveBasketLines(rest);
+    else deleteDraft(draftBook().active);
     return { ok: true, order: findOrder(order.id) };
   }
 
@@ -1672,18 +1761,7 @@ const PH = (function () {
         '<a href="orders.html" class="corner-link">Orders' +
           (toAnswer ? ' <span class="corner-count">' + toAnswer + "</span>" : "") + "</a>";
 
-      // Buyers also get their basket. It stays on a phone, as a small
-      // basket drawing with the number of lines in it.
-      const lines = basketCount();
-      const basketLink = user.side !== "Buyer" ? "" :
-        '<a href="basket.html" class="corner-basket" title="Your cart" aria-label="Your cart, ' + lines + (lines === 1 ? " line" : " lines") + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-            '<path d="M3 9h18l-1.6 9.2a2 2 0 0 1-2 1.8H6.6a2 2 0 0 1-2-1.8L3 9z"/><path d="M8 9l3-6M16 9l-3-6"/></svg>' +
-          '<span class="corner-basket-word">Cart</span>' +
-          (lines ? '<span class="corner-count">' + lines + "</span>" : "") +
-        "</a>";
-
-      corner.innerHTML = themeButton() + inbox + basketLink +
+      corner.innerHTML = themeButton() + inbox +
         '<a href="account.html" class="corner-name" title="Your account">' +
           '<span class="corner-initial" aria-hidden="true">' + escapeHtml(user.name.charAt(0).toUpperCase()) + "</span>" +
           '<span class="corner-text">' + escapeHtml(user.name) + "</span>" +
@@ -1767,6 +1845,11 @@ const PH = (function () {
     basket: basket,
     tidyBasket: tidyBasket,
     basketCount: basketCount,
+    activeDraft: activeDraft,
+    drafts: drafts,
+    createDraft: createDraft,
+    setActiveDraft: setActiveDraft,
+    deleteDraft: deleteDraft,
     addToBasket: addToBasket,
     setBasketQuantity: setBasketQuantity,
     removeFromBasket: removeFromBasket,

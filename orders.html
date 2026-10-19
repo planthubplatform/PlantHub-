@@ -56,8 +56,27 @@
         <h1 id="page-title" class="font-display font-semibold text-3xl tracking-tight">Orders</h1>
         <p id="intro" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
 
+        <!-- Buyers: start a named order, and see the ones still being put together. -->
+        <section id="drafts" hidden class="mt-6" aria-labelledby="drafts-title">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="drafts-title" class="font-display font-semibold text-xl tracking-tight">Being put together</h2>
+            <button type="button" id="create-start" class="auth-button account-button-small">Create order</button>
+          </div>
+          <form id="create-form" hidden class="auth-card mt-4" novalidate>
+            <label class="auth-label" for="create-name">Name this order</label>
+            <input class="auth-input" id="create-name" maxlength="60" autocomplete="off" placeholder="The job it is for, like Smith residence">
+            <p id="create-error" role="alert" hidden class="auth-error mt-2"></p>
+            <div class="mt-4 flex flex-wrap gap-3">
+              <button type="submit" class="auth-button account-button-small">Choose plants</button>
+              <button type="button" id="create-cancel" class="auth-button auth-button-outline account-button-small">Cancel</button>
+            </div>
+          </form>
+          <div id="draft-list" class="mt-4 space-y-3"></div>
+        </section>
+
         <!-- store.js hands over the orders; the script below draws them. -->
-        <div id="orders" class="mt-6 space-y-5"></div>
+        <h2 id="placed-title" hidden class="mt-8 font-display font-semibold text-xl tracking-tight">Placed orders</h2>
+        <div id="orders" class="mt-4 space-y-5"></div>
 
         <!-- ===== Growers: who may deliver your orders ====================== -->
         <section id="delivery" hidden class="mt-10" aria-labelledby="delivery-title">
@@ -186,7 +205,7 @@
       $("page-title").textContent = grower ? "Orders to fill" : "Your orders";
       $("intro").textContent = grower
         ? "Orders buyers have sent your nursery. You accept or decline each one, and PlantHub holds the payment until the plants are handed over."
-        : "Each order is with one grower. The grower accepts it, then you choose pickup or delivery.";
+        : "Checking out sends each grower their part of an order. The grower accepts it, then you choose pickup or delivery.";
 
       if (!list.length) {
         $("orders").innerHTML =
@@ -195,17 +214,79 @@
               ? '<p class="font-medium">No orders yet.</p>' +
                 '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">When a buyer orders from your listings, it shows here for you to accept or decline. Fresh listings are found first.</p>' +
                 '<a href="inventory.html" class="mt-4 inline-block auth-button account-button-small">Manage your inventory</a>'
-              : '<p class="font-medium">You haven\'t ordered anything yet.</p>' +
-                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Open any listing in the plant directory and press Add to order. Your cart checks out one grower at a time.</p>' +
-                '<div class="mt-4 flex flex-wrap gap-3">' +
-                  '<a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>' +
-                  (PH.basketCount() ? '<a href="basket.html" class="auth-button auth-button-outline account-button-small">Your cart</a>' : "") +
-                "</div>") +
+              : '<p class="font-medium">You have not placed an order yet.</p>' +
+                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Press Create order, name it, then add plants from the directory. An order with several growers is sent to each one separately.</p>') +
           "</div>";
         return;
       }
       $("orders").innerHTML = list.map(orderHtml).join("");
     }
+
+    // -----------------------------------------------------------------------
+    // 1b. Buyers: orders being put together.
+    // -----------------------------------------------------------------------
+    function drawDrafts() {
+      const list = PH.drafts();
+      $("drafts").hidden = false;
+      $("placed-title").hidden = !PH.myOrders().length;
+      $("draft-list").innerHTML = list.map(function (draft) {
+        const summary = draft.count
+          ? draft.count + (draft.count === 1 ? " plant line" : " plant lines") + " from " + draft.growers + (draft.growers === 1 ? " grower" : " growers") + " · " + moneyText(draft.total)
+          : "Nothing in it yet";
+        return (
+          '<article class="auth-card" data-draft="' + escapeHtml(draft.id) + '">' +
+            '<p class="font-semibold">' + escapeHtml(draft.name) + "</p>" +
+            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">' + escapeHtml(summary) + "</p>" +
+            '<div class="mt-4 flex flex-wrap items-center gap-3">' +
+              '<button type="button" class="auth-button account-button-small' + (draft.count ? " auth-button-outline" : "") + '" data-add>Add plants</button>' +
+              (draft.count ? '<button type="button" class="auth-button account-button-small" data-review>Review and check out</button>' : "") +
+              '<button type="button" class="auth-link text-sm" data-delete>Delete</button>' +
+            "</div>" +
+            '<div class="ask-first mt-3" data-delete-ask hidden>' +
+              '<p class="text-sm text-clay-700 dark:text-clay-300">Delete ' + escapeHtml(draft.name) + " and everything in it?</p>" +
+              '<div class="mt-3 flex flex-wrap gap-3">' +
+                '<button type="button" class="auth-button account-button-small account-button-danger-solid" data-delete-yes>Yes, delete it</button>' +
+                '<button type="button" class="auth-button auth-button-outline account-button-small" data-delete-no>Keep it</button>' +
+              "</div>" +
+            "</div>" +
+          "</article>"
+        );
+      }).join("");
+    }
+
+    $("create-start").addEventListener("click", function () {
+      $("create-form").hidden = false;
+      $("create-name").focus();
+    });
+    $("create-cancel").addEventListener("click", function () {
+      $("create-form").hidden = true;
+      $("create-error").hidden = true;
+    });
+    $("create-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const result = PH.createDraft($("create-name").value);
+      if (!result.ok) {
+        $("create-error").textContent = result.error;
+        $("create-error").hidden = false;
+        $("create-name").focus();
+        return;
+      }
+      location.href = "directory.html";
+    });
+    $("draft-list").addEventListener("click", function (event) {
+      const card = event.target.closest("[data-draft]");
+      if (!card) return;
+      const id = card.dataset.draft;
+      if (event.target.closest("[data-add]")) { PH.setActiveDraft(id); location.href = "directory.html"; }
+      else if (event.target.closest("[data-review]")) { PH.setActiveDraft(id); location.href = "basket.html"; }
+      else if (event.target.closest("[data-delete-yes]")) {
+        PH.deleteDraft(id);
+        drawDrafts();
+        toast("Order deleted.");
+      }
+      else if (event.target.closest("[data-delete-no]")) card.querySelector("[data-delete-ask]").hidden = true;
+      else if (event.target.closest("[data-delete]")) card.querySelector("[data-delete-ask]").hidden = false;
+    });
 
     // -----------------------------------------------------------------------
     // 2. Growers: delivery settings.
@@ -290,6 +371,7 @@
     // -----------------------------------------------------------------------
     if (user && user.type !== "transporter") {
       drawOrders();
+      if (!grower) drawDrafts();
       if (grower) {
         $("delivery").hidden = false;
         drawDelivery(PH.myCarrierRules());

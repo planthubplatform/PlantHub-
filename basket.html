@@ -23,7 +23,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your cart - PlantHub</title>
+  <title>Your order - PlantHub</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -50,7 +50,7 @@
       <section id="not-buyer" hidden class="mx-auto max-w-xl auth-card text-center">
         <h1 class="font-display font-semibold text-2xl tracking-tight">Ordering is for buyers</h1>
         <p class="mt-2 text-sm text-ink-700 dark:text-stone-300">
-          You're signed in with a <span id="not-buyer-type"></span> account, which has no cart.
+          You're signed in with a <span id="not-buyer-type"></span> account, which has no orders to put together.
           To order plants, sign in with a landscaper or personal account.
         </p>
         <div class="mt-5 flex flex-wrap justify-center gap-3">
@@ -61,7 +61,7 @@
 
       <!-- ===== The cart ================================================== -->
       <div id="basket-view" hidden>
-        <h1 class="font-display font-semibold text-3xl tracking-tight">Your cart</h1>
+        <h1 id="cart-title" class="font-display font-semibold text-3xl tracking-tight">Your order</h1>
         <p class="mt-1 text-sm text-ink-400 dark:text-stone-400">
           Each grower's plants become one order, with a <span data-min></span> minimum per grower, paid in full by bank transfer (ACH).
         </p>
@@ -73,9 +73,9 @@
         <div id="groups" class="mt-6 space-y-5"></div>
 
         <div id="empty-row" hidden class="mt-6">
-          <button type="button" id="empty-start" class="auth-link text-sm">Empty the cart</button>
+          <button type="button" id="empty-start" class="auth-link text-sm">Remove all plants</button>
           <div id="empty-ask" hidden class="ask-first mt-3">
-            <p class="text-sm text-clay-700 dark:text-clay-300">Remove everything from your cart?</p>
+            <p class="text-sm text-clay-700 dark:text-clay-300">Remove every plant from this order?</p>
             <div class="mt-3 flex flex-wrap gap-3">
               <button type="button" id="empty-yes" class="auth-button account-button-small account-button-danger-solid">Yes, empty it</button>
               <button type="button" id="empty-no" class="auth-button auth-button-outline account-button-small">Keep it</button>
@@ -86,14 +86,14 @@
 
       <!-- ===== Checking out one grower's group ============================= -->
       <div id="checkout-view" hidden>
-        <a href="basket.html" class="step-back" style="margin-top:0">Your cart</a>
+        <a href="basket.html" class="step-back" style="margin-top:0">Your order</a>
         <h1 class="mt-3 font-display font-semibold text-3xl tracking-tight">Check out</h1>
         <p id="checkout-from" class="mt-1 text-sm text-ink-400 dark:text-stone-400"></p>
 
         <!-- The group isn't in the cart any more, or is under the minimum. -->
         <section id="checkout-missing" hidden class="mt-6 auth-card">
           <p id="checkout-missing-text" class="text-sm text-ink-700 dark:text-stone-300"></p>
-          <a href="basket.html" class="mt-4 inline-block auth-button account-button-small">Back to your cart</a>
+          <a href="basket.html" class="mt-4 inline-block auth-button account-button-small">Back to your order</a>
         </section>
 
         <div id="checkout-steps" class="mt-6 space-y-5">
@@ -309,15 +309,20 @@
       $("empty-row").hidden = !groups.length;
       $("empty-ask").hidden = true;
 
+      const draft = PH.activeDraft();
+      $("cart-title").textContent = draft ? draft.name : "Your order";
+
       if (!groups.length) {
-        const count = PH.myOrders().length;
         $("groups").innerHTML =
           '<section class="auth-card">' +
-            '<p class="font-medium">Your cart is empty.</p>' +
-            '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Open any listing in the plant directory and press Add to order.</p>' +
+            (draft
+              ? '<p class="font-medium">' + escapeHtml(draft.name) + ' has no plants yet.</p>' +
+                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Open any listing in the plant directory and press Add to order.</p>'
+              : '<p class="font-medium">No order is open.</p>' +
+                '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Create an order on your orders page, then add plants to it.</p>') +
             '<div class="mt-4 flex flex-wrap gap-3">' +
-              '<a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>' +
-              (count ? '<a href="orders.html" class="auth-button auth-button-outline account-button-small">Your orders</a>' : "") +
+              (draft ? '<a href="directory.html" class="auth-button account-button-small">Open the plant directory</a>' : "") +
+              '<a href="orders.html" class="auth-button' + (draft ? " auth-button-outline" : "") + ' account-button-small">Your orders</a>' +
             "</div>" +
           "</section>";
         return;
@@ -350,7 +355,7 @@
       PH.removeFromBasket(button.closest("[data-line]").dataset.line);
       drawBasket();
       cornerChanged();
-      toast("Removed from your cart.");
+      toast("Removed from your order.");
     });
 
     // Emptying the whole basket asks first.
@@ -360,7 +365,7 @@
       PH.clearBasket();
       drawBasket();
       cornerChanged();
-      toast("Cart emptied.");
+      toast("Order emptied.");
     });
 
     // -----------------------------------------------------------------------
@@ -403,7 +408,7 @@
         $("checkout-from").textContent = "";
         $("checkout-missing-text").textContent = group
           ? "Your order from " + group.nurseryName + " is under the " + minOrderText() + " minimum, so it can't be checked out yet."
-          : "There is nothing from that grower in your cart.";
+          : "There is nothing from that grower in your order.";
         return;
       }
 
@@ -469,8 +474,8 @@
       $("placed-next-step").textContent = "If they accept, your bank is charged " + moneyText(order.money.subtotal) +
         ". Then you choose pickup or delivery on the order's page.";
       $("placed-order").href = "order.html?id=" + encodeURIComponent(order.id);
-      $("placed-next").textContent = more ? "Back to your cart" : "Keep browsing";
-      $("placed-next").href = more ? "basket.html" : "directory.html";
+      $("placed-next").textContent = more ? "Back to your order" : "Your orders";
+      $("placed-next").href = more ? "basket.html" : "orders.html";
     }
 
     // -----------------------------------------------------------------------
@@ -489,7 +494,7 @@
       if (view === "basket") drawBasket();
       if (view === "checkout") { checkoutId = value; pickingBank = false; drawCheckout(); }
       if (view === "placed") drawPlaced(placed);
-      document.title = (view === "checkout" ? "Check out" : view === "placed" ? "Order placed" : "Your cart") + " - PlantHub";
+      document.title = (view === "checkout" ? "Check out" : view === "placed" ? "Order placed" : "Your order") + " - PlantHub";
       window.scrollTo(0, 0);
     }
 

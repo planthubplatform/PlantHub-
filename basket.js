@@ -34,6 +34,7 @@
     '<div data-view="form">' +
       '<h2 id="add-title" class="font-display font-semibold text-2xl tracking-tight">Add to order</h2>' +
       '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">From <strong data-fill="nursery"></strong></p>' +
+      '<p class="text-sm text-ink-700 dark:text-stone-300">Going into <strong data-fill="order"></strong> · <button type="button" data-switch class="auth-link">change</button></p>' +
       '<div class="mt-3 rounded-lg bg-cream dark:bg-ink-950 px-3 py-2 text-sm">' +
         '<p class="font-medium" data-fill="plant"></p>' +
         '<p class="text-[13px] text-ink-700 dark:text-stone-300" data-fill="detail"></p>' +
@@ -53,13 +54,30 @@
       "</form>" +
     "</div>" +
 
+    // No order open yet, or a different one wanted: pick one or name a new one.
+    '<div data-view="pick" hidden>' +
+      '<h2 class="font-display font-semibold text-2xl tracking-tight">Which order?</h2>' +
+      '<form id="pick-form" class="mt-3 space-y-3" novalidate>' +
+        '<div id="pick-list" class="space-y-2"></div>' +
+        "<div>" +
+          '<label class="auth-label" for="pick-name">Or start a new order</label>' +
+          '<input class="auth-input" id="pick-name" maxlength="60" autocomplete="off" placeholder="The job it is for, like Smith residence">' +
+        "</div>" +
+        '<p id="pick-error" role="alert" hidden class="auth-error"></p>' +
+        '<div class="flex flex-wrap gap-3">' +
+          '<button type="submit" class="auth-button account-button-small">Continue</button>' +
+          '<button type="button" data-close class="auth-button auth-button-outline account-button-small">Cancel</button>' +
+        "</div>" +
+      "</form>" +
+    "</div>" +
+
     // After adding.
     '<div data-view="added" hidden>' +
-      '<h2 class="font-display font-semibold text-2xl tracking-tight">Added to your cart</h2>' +
+      '<h2 class="font-display font-semibold text-2xl tracking-tight">Added to your order</h2>' +
       '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300" data-fill="added"></p>' +
       '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300" data-fill="minimum"></p>' +
       '<div class="mt-5 flex flex-wrap gap-3">' +
-        '<a href="basket.html" class="auth-button account-button-small">View your cart</a>' +
+        '<a href="basket.html" class="auth-button account-button-small">Review this order</a>' +
         '<button type="button" data-close class="auth-button auth-button-outline account-button-small">Keep browsing</button>' +
       "</div>" +
     "</div>" +
@@ -123,10 +141,47 @@
     quantityBox.value = "1";
     errorBox.hidden = true;
     showTotal();
-    view("form");
+    if (PH.activeDraft()) showForm();
+    else showPick();
     dialog.showModal();
-    quantityBox.select();
   };
+
+  function showForm() {
+    fill("order").textContent = PH.activeDraft().name;
+    view("form");
+    quantityBox.select();
+  }
+
+  // The list of orders being put together, with the open one ticked.
+  function showPick() {
+    const drafts = PH.drafts();
+    document.getElementById("pick-list").innerHTML = drafts.map(function (draft) {
+      return '<label class="flex items-center gap-2 text-sm"><input type="radio" name="pick" value="' + escapeHtml(draft.id) + '" class="accent-clay-600"' +
+             (draft.active ? " checked" : "") + "> " + escapeHtml(draft.name) + "</label>";
+    }).join("");
+    document.getElementById("pick-name").value = "";
+    document.getElementById("pick-error").hidden = true;
+    view("pick");
+  }
+
+  dialog.addEventListener("click", function (event) {
+    if (event.target.closest("[data-switch]")) showPick();
+  });
+
+  document.getElementById("pick-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    const name = document.getElementById("pick-name").value.trim();
+    const chosen = dialog.querySelector('input[name="pick"]:checked');
+    const error = document.getElementById("pick-error");
+    // A typed name starts a new order; otherwise the ticked one is used.
+    const result = name ? PH.createDraft(name) : chosen ? PH.setActiveDraft(chosen.value) : { ok: false, error: "Pick an order, or type a name for a new one." };
+    if (!result.ok) {
+      error.textContent = result.error;
+      error.hidden = false;
+      return;
+    }
+    showForm();
+  });
 
   // ---- 3. Add, and the ways to close ----------------------------------------
   quantityBox.addEventListener("input", showTotal);
@@ -146,8 +201,8 @@
     const group = result.group;
     fill("added").textContent = Number(quantity).toLocaleString() + " × " + target.listing.common + " from " + target.nursery.name + ".";
     fill("minimum").textContent = group.ready
-      ? "Your cart with this grower is " + moneyText(group.subtotal) + ", which meets the " + minOrderText() + " minimum."
-      : "Your cart with this grower is " + moneyText(group.subtotal) + ". Add " + moneyText(group.short) + " more to reach the " + minOrderText() + " minimum.";
+      ? "This order with this grower is " + moneyText(group.subtotal) + ", which meets the " + minOrderText() + " minimum."
+      : "This order with this grower is " + moneyText(group.subtotal) + ". Add " + moneyText(group.short) + " more to reach the " + minOrderText() + " minimum.";
     view("added");
     addedAt = Date.now();
 
