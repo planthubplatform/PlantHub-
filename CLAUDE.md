@@ -90,7 +90,11 @@ Plain HTML, CSS and JavaScript. No install, no build step.
 | `signin.html` | Sign in, reset a password (`#forgot`), one-click demo accounts, and a "Create an account" button. Works against `store.js`. |
 | `signup.html` | Create an account, one question per screen (steps after `#`). Makes a mock account and signs in. |
 | `account.html` | The signed-in person's page, in three parts: who they are; "Your pages", one row of links for their kind of account (directory, basket, orders, inquiries, inventory), each saying where things stand; and "Account settings", one card with a row per subject (details, bank, password, leaving). Sends signed-out visitors to sign in first. |
-| `soon.html` | "Coming soon" page for sections not built yet (`soon.html#news` etc). |
+| `transport.html` | Plant Transport, a first simple version: the carriers with their rate per mile, trip minimum, what they haul, equipment and insurance date, filtered by what they haul. Lapsed insurance is left off automatically. Carriers are booked only through an order. |
+| `encyclopedia.html` + `data/plants.js` | Plant Encyclopedia, a first simple version: an entry for every plant in the listings (some written, the rest "not written yet"), with search, a kind-of-plant filter, and who has each plant now. One entry is `encyclopedia.html#sabal-palm`. Draft notes, labelled as not reviewed by a horticulturist. |
+| `news.html` + `data/news.js` | Plant News, a first simple version: a few invented sample articles in three topics, each labelled "Sample article". One article is `news.html#<id>`. |
+| `plant-doc.html` + `data/plant-doc.js` | Plant Doc, a first simple version: three questions (kind of plant, part, what it looks like), then the likely causes from a fixed list, with what to do and links to the encyclopedia and the directory. No AI, and it says so. |
+| `soon.html` | The old "coming soon" page. Nothing links to it any more; it can go. |
 | `theme.js` | Colours and fonts for every page (the Tailwind config). |
 | `styles.css` | Styles Tailwind classes can't say cleanly. |
 
@@ -121,6 +125,7 @@ Rules that are easy to break:
 - **10 Oct 2026 — One shape rule.** Buttons and tags are pills, cards are 16px (`.auth-card`, `.data-card`), boxes you type in are 8px. No em dashes in text a visitor can see.
 - **6 Oct 2026 — Browsing is open.** Prices are public. Ordering and contacting a grower need an account. The directory shows no phone or email; it says "Sign in to order or contact this grower".
 
+- **19 Oct 2026 — First simple versions of Transport, Encyclopedia, News and Plant Doc.** Built as skeletons to edit from. Their questionnaire sections (T, E, N, D in `docs/factory/questionnaire.md`) are left untouched for Hernan to review; the fuller versions in `docs/factory/specs/` wait on his answers.
 - **13 Oct 2026 — Owner's review of checkout.** Four changes, which also bind the pages still to build: the final action on a page goes at the bottom, after what it acts on; money is described as "charged" and "paid"; a pending pickup or delivery can be changed by cancelling it with a confirm; and the account page is a row of page links over one settings card, not a stack of cards.
 - **12 Oct 2026 — Factory questionnaire answered.** Every answer is recorded in
   `docs/factory/questionnaire.md` (the permanent record) and turned into the

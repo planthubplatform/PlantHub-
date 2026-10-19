@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<!--
+  news.html — Plant News: short articles for the trade.
+
+  SKELETON (19 Oct 2026). A few invented sample articles in three topics
+  (data/news.js), each labelled "Sample article", with a topic filter. Nothing
+  is copied from a real publication. The fuller version waits on the
+  questionnaire review: see docs/factory/specs/news.md.
+
+  Two views, picked by what follows the # in the address:
+    news.html                          every article, newest first
+    news.html#scale-on-hedges          one article
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant News - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+
+      <!-- ===== Every article =============================================== -->
+      <div id="list-view">
+        <h1 class="font-display font-semibold text-3xl tracking-tight">Plant News</h1>
+        <p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Prices, pests and weather for South Florida growers and landscapers.</p>
+        <p class="auth-note mt-4">These are sample articles, invented to show how the page works. None reports a real event.</p>
+
+        <div id="topic-filter" class="mt-6 flex flex-wrap gap-2" role="radiogroup" aria-label="Topic"></div>
+        <div id="articles" class="data-card mt-5"></div>
+      </div>
+
+      <!-- ===== One article ================================================= -->
+      <article id="article-view" hidden></article>
+    </div>
+  </main>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: every article here is a sample.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/news.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+    let topic = "All";
+
+    // The samples are dated as "so many days ago", so they never look old.
+    function dateOf(article) {
+      const date = new Date();
+      date.setDate(date.getDate() - article.daysAgo);
+      return date.toISOString().slice(0, 10);
+    }
+
+    const newestFirst = ARTICLES.slice().sort(function (a, b) { return a.daysAgo - b.daysAgo; });
+
+    function lineHtml(article) {
+      return (
+        '<a class="list-row list-row-link" href="#' + escapeHtml(article.id) + '">' +
+          '<span class="min-w-0">' +
+            '<span class="block text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(article.topic) + " · " + escapeHtml(dayText(dateOf(article))) + "</span>" +
+            '<span class="mt-0.5 block font-semibold">' + escapeHtml(article.title) + "</span>" +
+            '<span class="mt-1 block text-sm text-ink-700 dark:text-stone-300">' + escapeHtml(article.summary) + "</span>" +
+          "</span>" +
+          '<span class="status-pill status-pill-off self-start justify-self-start">Sample article</span>' +
+        "</a>"
+      );
+    }
+
+    function drawList() {
+      const shown = newestFirst.filter(function (article) { return topic === "All" || article.topic === topic; });
+      $("articles").innerHTML = shown.length
+        ? shown.map(lineHtml).join("")
+        : '<p class="list-row text-sm text-ink-700 dark:text-stone-300">No articles in this topic yet.</p>';
+    }
+
+    function articleHtml(article) {
+      return (
+        '<a href="news.html" class="step-back" style="margin-top:0">Plant News</a>' +
+        '<p class="mt-4 text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(article.topic) + " · " + escapeHtml(dayText(dateOf(article))) + "</p>" +
+        '<h1 class="mt-1 font-display font-semibold text-3xl tracking-tight">' + escapeHtml(article.title) + "</h1>" +
+        '<p class="mt-3"><span class="status-pill status-pill-off">Sample article</span></p>' +
+        '<div class="mt-6 max-w-[65ch] space-y-4 leading-relaxed">' +
+          article.body.map(function (paragraph) { return "<p>" + escapeHtml(paragraph) + "</p>"; }).join("") +
+        "</div>" +
+        '<p class="mt-6 text-[13px] text-ink-400 dark:text-stone-400">By the PlantHub sample desk</p>' +
+        '<a href="news.html" class="mt-8 inline-block auth-button auth-button-outline account-button-small">All news</a>'
+      );
+    }
+
+    $("topic-filter").innerHTML = ["All"].concat(TOPICS).map(function (name, index) {
+      return '<label class="grade-tick"><input type="radio" name="topic" value="' + escapeHtml(name) + '"' + (index === 0 ? " checked" : "") +
+             "><span>" + escapeHtml(name) + "</span></label>";
+    }).join("");
+    $("topic-filter").addEventListener("change", function (event) { topic = event.target.value; drawList(); });
+
+    function route() {
+      const article = ARTICLES.find(function (other) { return other.id === location.hash.slice(1); });
+      $("list-view").hidden = !!article;
+      $("article-view").hidden = !article;
+      if (article) {
+        $("article-view").innerHTML = articleHtml(article);
+        document.title = article.title + " - Plant News - PlantHub";
+        window.scrollTo(0, 0);
+      } else {
+        document.title = "Plant News - PlantHub";
+        drawList();
+      }
+    }
+    window.addEventListener("hashchange", route);
+    route();
+  </script>
+</body>
+</html>

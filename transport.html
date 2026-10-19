@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!--
+  transport.html — Plant Transport: the carriers who truck plants from a
+  grower to a job site.
+
+  SKELETON (19 Oct 2026). A simple public list of the sample carriers, with
+  one filter. It shows what a carrier profile holds: rate per mile, minimum
+  per trip, what they haul, their equipment, and insurance. A carrier whose
+  insurance has lapsed is left off automatically. The fuller version (a page
+  per carrier, a carrier's own profile and jobs) waits on the questionnaire
+  review: see docs/factory/specs/transport.md.
+
+  Carriers are booked only through a PlantHub order (after the grower
+  accepts, the buyer chooses delivery and picks one), so there is no phone,
+  email or "contact" button here.
+
+  PROTOTYPE ONLY. The carriers are invented (data/carriers.js).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant Transport - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <div class="border-b border-clay-300/50 bg-clay-50 dark:bg-clay-700/20 text-[13px] text-clay-700 dark:text-clay-100">
+    <div class="page py-2">
+      <strong class="font-semibold">Sample data.</strong>
+      Every carrier, rate and insurance date below is invented for testing. None of it describes a real business.
+    </div>
+  </div>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-4xl">
+      <h1 class="font-display font-semibold text-3xl tracking-tight">Plant Transport</h1>
+      <p class="mt-1 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
+        Carriers who truck plants from the grower to your job site. Each charges by the mile, with a minimum per trip.
+        You book one through your order: once the grower accepts it, choose delivery and pick a carrier.
+      </p>
+
+      <!-- What they haul: one choice at a time. -->
+      <fieldset class="mt-6">
+        <legend class="text-[11px] font-semibold uppercase tracking-wider text-ink-400 dark:text-stone-400">Hauls</legend>
+        <div id="haul-filter" class="mt-2 flex flex-wrap gap-2"></div>
+      </fieldset>
+
+      <p id="count" class="mt-5 text-[13px] text-ink-400 dark:text-stone-400"></p>
+      <div id="carriers" class="data-card mt-2"></div>
+
+      <p class="mt-4 text-[13px] text-ink-400 dark:text-stone-400">
+        A carrier whose insurance has run out is left off this list, and can't be picked for a delivery, until it is renewed.
+      </p>
+    </div>
+  </main>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: these carriers are sample data. Nothing is really booked.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script src="data/carriers.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+
+    // Insured today, or they don't appear. PH.carriers() works it out from
+    // the expiry date every time, so a lapse needs nobody to do anything.
+    const all = PH.carriers();
+    const insured = all.filter(function (carrier) { return carrier.insured; });
+    let haul = "All";
+
+    // One carrier, as a row: who and where on the left, what they carry in
+    // the middle, what it costs on the right.
+    function rowHtml(carrier) {
+      const hauls = carrier.plantTypes.join(", ") + " · " + carrier.sizes.join(", ");
+      return (
+        '<article class="list-row">' +
+          '<div class="min-w-0">' +
+            '<h2 class="font-semibold">' + escapeHtml(carrier.name) + "</h2>" +
+            '<p class="text-[13px] text-ink-400 dark:text-stone-400">Based in ' + escapeHtml(carrier.city) + ", " + escapeHtml(carrier.state) + "</p>" +
+            '<dl class="mt-2 grid gap-1 text-[13px] text-ink-700 dark:text-stone-300">' +
+              '<div><dt class="inline font-medium">Hauls: </dt><dd class="inline">' + escapeHtml(hauls) + "</dd></div>" +
+              '<div><dt class="inline font-medium">Loads: </dt><dd class="inline">' + escapeHtml(carrier.loads.join(", ")) + "</dd></div>" +
+              '<div><dt class="inline font-medium">Equipment: </dt><dd class="inline">' + escapeHtml(carrier.equipment.join(", ")) + "</dd></div>" +
+            "</dl>" +
+          "</div>" +
+          '<div class="sm:text-right">' +
+            '<p class="text-lg font-semibold tabular-nums">' + moneyText(carrier.ratePerMile) + ' <span class="text-sm font-normal text-ink-400 dark:text-stone-400">a mile</span></p>' +
+            '<p class="text-[13px] text-ink-700 dark:text-stone-300 tabular-nums">' + moneyText(carrier.tripMinimum) + " trip minimum</p>" +
+            '<p class="mt-2 text-[13px] text-ink-400 dark:text-stone-400">Insured until ' + escapeHtml(dayText(carrier.insuranceExpires)) + "</p>" +
+            '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + carrier.completedDeliveries.toLocaleString() + " deliveries on PlantHub</p>" +
+          "</div>" +
+        "</article>"
+      );
+    }
+
+    function draw() {
+      const shown = insured.filter(function (carrier) { return haul === "All" || carrier.plantTypes.indexOf(haul) !== -1; });
+      const hidden = all.length - insured.length;
+
+      $("count").textContent = shown.length + (shown.length === 1 ? " carrier" : " carriers") +
+        (hidden ? " · " + hidden + " not shown: insurance lapsed" : "");
+
+      $("carriers").innerHTML = shown.length
+        ? shown.map(rowHtml).join("")
+        : '<p class="list-row text-sm text-ink-700 dark:text-stone-300">No insured carrier hauls this yet.</p>';
+    }
+
+    // The filter: the kinds of plant a carrier says it can haul.
+    $("haul-filter").innerHTML = ["All"].concat(HAUL_TYPES).map(function (type, index) {
+      return '<label class="grade-tick"><input type="radio" name="haul" value="' + escapeHtml(type) + '"' + (index === 0 ? " checked" : "") +
+             "><span>" + escapeHtml(type) + "</span></label>";
+    }).join("");
+    $("haul-filter").addEventListener("change", function (event) {
+      haul = event.target.value;
+      draw();
+    });
+
+    draw();
+  </script>
+</body>
+</html>

@@ -9,6 +9,7 @@
     3. the trade's vocabulary: the allowed container sizes, specs and grades
     4. money and dates on orders, and the look of an order's status tag
     5. the transport vocabulary: what a carrier hauls, and with what
+    6. addresses inside a page: a name as the part after the #
 
   Load this file before app.js or any page script that uses these.
 */
@@ -210,3 +211,13 @@ const EQUIPMENT = [
   "Flatbed", "Box truck", "Enclosed trailer", "Gooseneck trailer",
   "Tractor trailer", "Crane truck", "Forklift on board", "Liftgate",
 ];
+
+// ---------------------------------------------------------------------------
+// 6. Addresses inside a page.
+// ---------------------------------------------------------------------------
+
+// A name turned into the part of an address after the #:
+// "Simpson's Stopper" -> "simpsons-stopper". Letters, digits and hyphens only.
+function slugText(text) {
+  return String(text).toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}

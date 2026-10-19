@@ -189,6 +189,14 @@ kept separately, in the "Road Block 2" doc linked from
     Still open: whether a grower's row should also link to their public page,
     and what a transporter's row holds once the transport pages are built.
 
+30. **The four skeleton pages** (19 Oct). Transport, Encyclopedia, News and
+    Plant Doc were built as simple first versions while Hernan reviews their
+    questionnaire sections. Left out on purpose, until his answers: a page per
+    carrier and a carrier's own profile and jobs; pictures, and links from
+    each directory listing to its encyclopedia entry; more than a few sample
+    articles; saving Plant Doc checks to an account. 10 of the 41
+    encyclopedia entries are written. Plant Doc covers 11 symptoms.
+
 ## Decided
 
 - **Where the final action sits** (13 Oct, owner): at the bottom of the page,

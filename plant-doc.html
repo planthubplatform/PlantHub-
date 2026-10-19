@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<!--
+  plant-doc.html — Plant Doc: "my plant is sick, help".
+
+  SKELETON (19 Oct 2026). Three questions (what kind of plant, which part
+  looks wrong, what it looks like), then the likely causes, most likely
+  first, each with what to do. The answers come from a fixed list in
+  data/plant-doc.js; there is no AI or expert behind it, and the page says
+  so. Saving past checks to an account, and a fuller list of problems, wait
+  on the questionnaire review: see docs/factory/specs/plant-doc.md.
+
+  Read first, answer last: the questions come first, and the answer appears
+  under them once they are answered.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant Doc - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-3xl">
+      <h1 class="font-display font-semibold text-3xl tracking-tight">Plant Doc</h1>
+      <p class="mt-1 text-sm text-ink-700 dark:text-stone-300">Something look wrong with a plant? Answer three questions to see the likely causes, most likely first.</p>
+      <p class="auth-note mt-4">
+        Plant Doc answers from a fixed list, not an expert. Draft: not yet reviewed by a horticulturist.
+        For anything serious or spreading fast, ask your county's extension office.
+      </p>
+
+      <form id="doc-form" class="auth-card mt-6 space-y-6" novalidate>
+        <fieldset>
+          <legend class="font-semibold">1. What kind of plant is it?</legend>
+          <div id="kinds" class="mt-3 flex flex-wrap gap-2"></div>
+          <div class="mt-4 max-w-sm">
+            <label class="auth-label" for="which">Which plant, if you know <span class="font-normal text-ink-400 dark:text-stone-400">(optional)</span></label>
+            <select class="auth-input" id="which"></select>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="font-semibold">2. Which part looks wrong?</legend>
+          <div id="parts" class="mt-3 flex flex-wrap gap-2"></div>
+        </fieldset>
+
+        <fieldset id="symptom-step" hidden>
+          <legend class="font-semibold">3. What does it look like?</legend>
+          <div id="symptoms" class="mt-3 flex flex-wrap gap-2"></div>
+        </fieldset>
+
+        <p id="doc-error" role="alert" hidden class="auth-error"></p>
+        <button type="submit" class="auth-button account-button-small">Show likely causes</button>
+      </form>
+
+      <!-- The answer, drawn under the questions. -->
+      <section id="answer" hidden class="mt-6 space-y-5" aria-live="polite"></section>
+    </div>
+  </main>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: draft answers, not reviewed by a horticulturist.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/plants.js"></script>
+  <script src="data/plant-doc.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+
+    // A row of choices drawn as pills, one of which can be picked.
+    function pills(name, values) {
+      return values.map(function (value) {
+        return '<label class="grade-tick"><input type="radio" name="' + name + '" value="' + escapeHtml(value) + '"><span>' + escapeHtml(value) + "</span></label>";
+      }).join("");
+    }
+
+    function picked(name) {
+      const box = document.querySelector('input[name="' + name + '"]:checked');
+      return box ? box.value : "";
+    }
+
+    $("kinds").innerHTML = pills("kind", DOC_KINDS);
+    $("parts").innerHTML = pills("part", Object.keys(DOC_PARTS));
+    $("which").innerHTML = '<option value="">I\'m not sure</option>' + PLANTS.map(function (plant) {
+      return '<option value="' + escapeHtml(plant.name) + '">' + escapeHtml(plant.name) + "</option>";
+    }).join("");
+
+    // Naming the plant answers question 1 as well.
+    $("which").addEventListener("change", function () {
+      const plant = PLANTS.find(function (other) { return other.name === $("which").value; });
+      if (!plant) return;
+      const kind = plant.type === "Groundcover" ? "Groundcover or grass" : plant.type === "Other" ? "Something else" : plant.type;
+      const box = document.querySelector('input[name="kind"][value="' + kind + '"]');
+      if (box) box.checked = true;
+    });
+
+    // The symptoms to choose from depend on the part.
+    $("parts").addEventListener("change", function () {
+      $("symptoms").innerHTML = pills("symptom", DOC_PARTS[picked("part")]);
+      $("symptom-step").hidden = false;
+    });
+
+    // A changed answer means the shown answer is out of date.
+    $("doc-form").addEventListener("change", function () {
+      $("doc-error").hidden = true;
+      $("answer").hidden = true;
+    });
+
+    function causeHtml(id, index) {
+      const cause = DOC_CAUSES[id];
+      return (
+        '<section class="auth-card">' +
+          '<p class="text-[13px] text-ink-400 dark:text-stone-400">' + (index === 0 ? "Most likely" : "Also possible") + "</p>" +
+          '<h2 class="mt-1 font-display font-semibold text-xl tracking-tight">' + escapeHtml(cause.name) + "</h2>" +
+          '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + escapeHtml(cause.means) + "</p>" +
+          '<h3 class="mt-4 text-sm font-semibold">What to do</h3>' +
+          '<ul class="mt-1 list-disc pl-5 space-y-1 text-sm text-ink-700 dark:text-stone-300">' +
+            cause.todo.map(function (step) { return "<li>" + escapeHtml(step) + "</li>"; }).join("") +
+          "</ul>" +
+        "</section>"
+      );
+    }
+
+    $("doc-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      const kind = picked("kind");
+      const part = picked("part");
+      const symptom = picked("symptom");
+      const missing = !kind ? "Choose what kind of plant it is." : !part ? "Choose which part looks wrong." : !symptom ? "Choose what it looks like." : "";
+      if (missing) {
+        $("doc-error").textContent = missing;
+        $("doc-error").hidden = false;
+        return;
+      }
+
+      // The causes for this symptom, most likely first. Some put a cause
+      // first for palms (yellowing palms are most often short of nutrients).
+      const match = DOC_MATCHES[symptom];
+      const first = kind === "Palm" && match.palm ? match.palm : [];
+      const causes = first.concat(match.all.filter(function (id) { return first.indexOf(id) === -1; })).slice(0, 3);
+
+      const plant = PLANTS.find(function (other) { return other.name === $("which").value; });
+      const more = plant
+        ? '<a class="auth-button auth-button-outline account-button-small" href="encyclopedia.html#' + slugText(plant.name) + '">Read about ' + escapeHtml(plant.name) + "</a>"
+        : '<a class="auth-button auth-button-outline account-button-small" href="encyclopedia.html">Browse the encyclopedia</a>';
+      const ask = '<a class="auth-button account-button-small" href="directory.html' + (plant ? "?q=" + encodeURIComponent(plant.name) : "") + '">Find a grower to ask</a>';
+
+      $("answer").innerHTML =
+        '<h2 class="font-display font-semibold text-2xl tracking-tight">Likely causes: ' + escapeHtml(symptom.toLowerCase()) + "</h2>" +
+        causes.map(causeHtml).join("") +
+        '<section class="auth-card">' +
+          '<h2 class="font-semibold">Still stuck?</h2>' +
+          '<p class="mt-1 text-sm text-ink-700 dark:text-stone-300">A grower who sells this plant can tell you a lot. Send one an inquiry from the directory.</p>' +
+          '<div class="mt-4 flex flex-wrap gap-3">' + ask + more + "</div>" +
+        "</section>";
+      $("answer").hidden = false;
+      $("answer").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  </script>
+</body>
+</html>

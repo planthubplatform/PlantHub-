@@ -1,5 +1,5 @@
 # Site build
-Last updated: 13 October 2026 (checkout built and revised after the owner's review; at the checkpoint)
+Last updated: 19 October 2026 (skeletons of the four empty sections built)
 
 ## Lane
 Builds every page of the site on `design-b` as a fully clickable mock, one page
@@ -148,6 +148,16 @@ below is the earlier page-by-page plan it replaces:
 - The Browser pane's screenshot sometimes times out when the app window is in
   the background. Retry, or check with `javascript_tool` / `read_page`.
 - Pushing is Kendrick's: hand over the command, don't push.
+
+## Skeleton pages (19 Oct 2026)
+Kendrick asked for simple versions of every empty section, to edit from:
+`transport.html`, `encyclopedia.html` (+ `data/plants.js`), `news.html`
+(+ `data/news.js`) and `plant-doc.html` (+ `data/plant-doc.js`). The front
+page circles now open them. The questionnaire's T, E, N and D sections are
+left untouched for Hernan; the fuller specs wait on his answers. Each data
+file explains at the top how to add or write an entry. Checked by the builder
+in a real browser (all four pages, phone, dark, no console errors); not
+reviewed by the page-reviewer.
 
 ## Shareable preview link
 https://claude.ai/artifact/WcJ635k193vKXCDPuixrg6 is a clickable copy of the

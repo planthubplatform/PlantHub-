@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<!--
+  encyclopedia.html — Plant Encyclopedia: what each plant is and how to look
+  after it, written for beginners.
+
+  SKELETON (19 Oct 2026). Every plant in the sample listings has an entry
+  (data/plants.js), and some are written so far; the rest say "not written
+  yet". Each entry says who has it right now and links to the directory.
+  The fuller version (pictures, links from each listing, a "for the trade"
+  section) waits on the questionnaire review: see
+  docs/factory/specs/encyclopedia.md.
+
+  Two views, picked by what follows the # in the address:
+    encyclopedia.html               every plant, with a search and a filter
+    encyclopedia.html#sabal-palm    one plant's entry
+
+  The notes are DRAFT: not yet reviewed by a horticulturist, and the page
+  says so.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Plant Encyclopedia - PlantHub</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="theme.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col bg-cream text-ink-900 dark:bg-ink-950 dark:text-stone-100 font-sans antialiased">
+
+  <header class="border-b border-ink-100 dark:border-ink-800">
+    <div class="page flex items-center justify-between gap-4 py-3.5">
+      <a href="index.html" class="font-display font-semibold text-2xl tracking-tight flex items-center gap-2 hover:text-clay-700 dark:hover:text-clay-300">
+        PlantHub<span class="shrink-0 w-2 h-2 rounded-full bg-signal-500" aria-hidden="true"></span>
+      </a>
+      <div data-account-corner class="account-corner"></div>
+    </div>
+  </header>
+
+  <main class="page flex-1 py-8">
+    <div class="mx-auto w-full max-w-5xl">
+
+      <!-- ===== Every plant ================================================= -->
+      <div id="index-view">
+        <h1 class="font-display font-semibold text-3xl tracking-tight">Plant Encyclopedia</h1>
+        <p class="mt-1 max-w-[65ch] text-sm text-ink-700 dark:text-stone-300">
+          The plants South Florida growers list on PlantHub, explained for beginners: how much sun and water, how big, and what goes wrong.
+        </p>
+        <p class="auth-note mt-4 max-w-[65ch]">Draft: these notes are not yet reviewed by a horticulturist. Check before you plant.</p>
+
+        <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+          <label class="sr-only" for="find">Find a plant</label>
+          <input id="find" type="search" autocomplete="off" placeholder="Find a plant"
+                 class="auth-input" style="margin-top:0; max-width:18rem">
+          <div id="type-filter" class="flex flex-wrap gap-2" role="radiogroup" aria-label="Kind of plant"></div>
+        </div>
+
+        <p id="count" class="mt-5 text-[13px] text-ink-400 dark:text-stone-400"></p>
+        <div id="plants" class="mt-2 plant-grid"></div>
+      </div>
+
+      <!-- ===== One plant ================================================== -->
+      <article id="entry-view" hidden class="mx-auto max-w-3xl"></article>
+    </div>
+  </main>
+
+  <footer class="page py-6 text-center text-[13px] text-ink-400 dark:text-stone-500">
+    Preview: draft notes, not reviewed by a horticulturist. Listings are sample data.
+  </footer>
+
+  <script src="shared.js"></script>
+  <script src="store.js"></script>
+  <script src="data/nurseries.js"></script>
+  <script src="data/plants.js"></script>
+  <script>
+    const $ = function (id) { return document.getElementById(id); };
+    const TYPES = ["Palm", "Tree", "Shrub", "Groundcover", "Other"];
+    let type = "All";
+
+    // Who lists each plant right now, by its common name: the growers, how
+    // many plants in all, and which container sizes. Read live, so a grower's
+    // change shows here at once. Listings at zero don't count.
+    const listed = {};
+    PH.nurseries().forEach(function (nursery) {
+      nursery.plants.forEach(function (plant) {
+        if (!plant.quantity) return;
+        const entry = listed[plant.common] || (listed[plant.common] = { growers: new Set(), plants: 0, containers: new Set() });
+        entry.growers.add(nursery.id);
+        entry.plants += plant.quantity;
+        entry.containers.add(plant.container);
+      });
+    });
+
+    function plural(count, word) { return count.toLocaleString() + " " + word + (count === 1 ? "" : "s"); }
+
+    // "1 grower lists", "3 growers list".
+    function growersText(entry) {
+      const count = entry.growers.size;
+      return count === 1 ? "1 grower lists" : count + " growers list";
+    }
+
+    function sellers(plant) {
+      const entry = listed[plant.name];
+      return entry ? growersText(entry) + " it" : "Not listed right now";
+    }
+
+    // ---- Every plant -------------------------------------------------------
+    function tileHtml(plant) {
+      return (
+        '<a class="plant-tile" href="#' + slugText(plant.name) + '">' +
+          '<span class="flex items-baseline justify-between gap-3">' +
+            '<span class="font-semibold">' + escapeHtml(plant.name) + "</span>" +
+            '<span class="text-[11px] font-medium text-ink-400 dark:text-stone-400">' + escapeHtml(plant.type) + "</span>" +
+          "</span>" +
+          '<span class="block italic text-[13px] text-ink-400 dark:text-stone-400">' + escapeHtml(plant.botanical) + "</span>" +
+          '<span class="mt-2 block text-[13px] text-ink-700 dark:text-stone-300">' +
+            (plant.about ? escapeHtml(plant.about) : '<span class="text-ink-400 dark:text-stone-400">Entry not written yet.</span>') +
+          "</span>" +
+          '<span class="mt-2 block text-[12px] text-ink-400 dark:text-stone-400">' + escapeHtml(sellers(plant)) + "</span>" +
+        "</a>"
+      );
+    }
+
+    function drawIndex() {
+      const words = $("find").value.trim().toLowerCase();
+      const shown = PLANTS.filter(function (plant) {
+        if (type !== "All" && plant.type !== type) return false;
+        return !words || (plant.name + " " + plant.botanical).toLowerCase().indexOf(words) !== -1;
+      });
+      const written = PLANTS.filter(function (plant) { return plant.about; }).length;
+      $("count").textContent = plural(shown.length, "plant") + " · " + written + " of " + PLANTS.length + " entries written so far";
+      $("plants").innerHTML = shown.length
+        ? shown.map(tileHtml).join("")
+        : '<p class="text-sm text-ink-700 dark:text-stone-300">No plant matches. Try a shorter word, or choose "All".</p>';
+    }
+
+    $("type-filter").innerHTML = ["All"].concat(TYPES).map(function (name, index) {
+      return '<label class="grade-tick"><input type="radio" name="type" value="' + name + '"' + (index === 0 ? " checked" : "") + "><span>" +
+             (name === "All" ? "All" : name === "Other" ? "Other" : name + "s") + "</span></label>";
+    }).join("");
+    $("type-filter").addEventListener("change", function (event) { type = event.target.value; drawIndex(); });
+    $("find").addEventListener("input", drawIndex);
+
+    // ---- One plant -----------------------------------------------------------
+    function fact(label, value) {
+      return value ? '<div><dt class="text-[13px] text-ink-400 dark:text-stone-400">' + label + '</dt><dd class="text-sm">' + escapeHtml(value) + "</dd></div>" : "";
+    }
+
+    // Read first, act last: the notes, then who has it, then the way to them.
+    function entryHtml(plant) {
+      const entry = listed[plant.name];
+      const notes = plant.about
+        ? '<section class="auth-card">' +
+            '<p class="max-w-[65ch]">' + escapeHtml(plant.about) + "</p>" +
+            '<dl class="mt-5 grid gap-4 sm:grid-cols-2">' +
+              fact("Light", plant.light) + fact("Water", plant.water) + fact("Size", plant.size) +
+              fact("Cold", plant.cold) + fact("Salt", plant.salt) + fact("Common problems", plant.problems) +
+            "</dl>" +
+            (plant.trade ? '<p class="mt-5 border-t border-ink-100 dark:border-ink-700 pt-4 text-sm"><span class="font-medium">For the trade: </span>' + escapeHtml(plant.trade) + "</p>" : "") +
+          "</section>"
+        : '<section class="auth-card"><p class="text-sm text-ink-700 dark:text-stone-300">This entry isn\'t written yet.</p></section>';
+
+      const buy = entry
+        ? "Right now " + growersText(entry) + " " + escapeHtml(plant.name) + ", " + plural(entry.plants, "plant") + " in all, in " +
+          escapeHtml(Array.from(entry.containers).join(", ")) + "."
+        : "No grower lists " + escapeHtml(plant.name) + " right now.";
+
+      return (
+        '<a href="encyclopedia.html" class="step-back" style="margin-top:0">Plant Encyclopedia</a>' +
+        '<h1 class="mt-3 font-display font-semibold text-3xl tracking-tight">' + escapeHtml(plant.name) + "</h1>" +
+        '<p class="mt-1 text-sm text-ink-400 dark:text-stone-400"><span class="italic">' + escapeHtml(plant.botanical) + "</span> · " + escapeHtml(plant.type) + "</p>" +
+        '<p class="auth-note mt-4">Draft: not yet reviewed by a horticulturist. Check before you plant.</p>' +
+        '<div class="mt-5 space-y-5">' +
+          notes +
+          '<section class="auth-card">' +
+            '<h2 class="font-display font-semibold text-xl tracking-tight">Who has it now</h2>' +
+            '<p class="mt-2 text-sm text-ink-700 dark:text-stone-300">' + buy + "</p>" +
+            (entry ? '<a class="mt-4 inline-block auth-button account-button-small" href="directory.html?q=' + encodeURIComponent(plant.name) + '">See the listings</a>' : "") +
+          "</section>" +
+        "</div>"
+      );
+    }
+
+    // ---- Which view? --------------------------------------------------------
+    function route() {
+      const slug = location.hash.slice(1);
+      const plant = PLANTS.find(function (other) { return slugText(other.name) === slug; });
+      $("index-view").hidden = !!plant;
+      $("entry-view").hidden = !plant;
+      if (plant) {
+        $("entry-view").innerHTML = entryHtml(plant);
+        document.title = plant.name + " - Plant Encyclopedia - PlantHub";
+        window.scrollTo(0, 0);
+      } else {
+        document.title = "Plant Encyclopedia - PlantHub";
+        drawIndex();
+      }
+    }
+    window.addEventListener("hashchange", route);
+    route();
+  </script>
+</body>
+</html>

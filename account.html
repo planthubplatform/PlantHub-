@@ -249,9 +249,12 @@
         ];
       }
 
-      // Transport companies get their jobs and profile with the transport
-      // pages. Until then, the directory is the one place they can go.
-      return [directory];
+      // Transport companies: the carrier list for now. Their own profile
+      // and delivery jobs come with the fuller transport pages.
+      return [
+        { name: "Plant Transport", href: "transport.html", note: "Carriers, rates and insurance" },
+        directory,
+      ];
     }
 
     function drawPages() {
