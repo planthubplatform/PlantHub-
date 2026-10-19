@@ -188,7 +188,7 @@ Four separate facets, in the trade's own words. **A value never appears in two f
 
 1. **Container size** — a pick list, not a number: Liners, Bare Root, 5" Quart, 1G / 6", 3G / 10", 15G / 17", 45G / 28", 100G / 36", 60" Box, 108" Box, Field Grown, Grow Bags.
 2. **Specs** — numbers; the buyer enters the minimum: Caliper (in), Height (ft or in), Spread (ft or in), Clear Trunk (ft).
-3. **Grade and features** — tick boxes: Florida Fancy, Grade #1, Grade #2, Specimen, Single Leader, Standard, Balled and Burlapped, Staked, Multi, Seedling.
+3. **Grade and features** — tick boxes: Florida Fancy, Grade #1, Grade #2, Specimen, Single Leader, Standard, Balled and Burlapped, Multi, Seedling. ("Staked" was removed on 19 Oct 2026, owner.)
 4. **Photos** — yes/no. Listings with photos rank above those without; in the directory that means "among equally fresh listings", so freshness still leads. Each photo is timestamped on upload; label it "added", never "taken".
 
 The lists live in section 3 of `shared.js` (`CONTAINERS`, `SPECS`, `GRADES`). The data format is described at the top of `data/nurseries.js`.

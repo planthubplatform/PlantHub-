@@ -51,7 +51,7 @@ PORT=5174 python serve.py
 - Filter down the left the four ways the trade describes stock, each option
   with a count: container size (a pick list such as 3G / 10" or Field Grown),
   specs (the minimum caliper, height, spread or clear trunk), grade and
-  features (Florida Fancy, Staked, ...), and photos. City too.
+  features (Florida Fancy, Specimen, ...), and photos. City too.
   Everything is open to browse without an account, prices included. An
   account is needed to order, to contact a grower, or to list plants
   (`signin.html` and `signup.html` are previews).

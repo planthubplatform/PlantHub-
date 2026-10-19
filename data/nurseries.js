@@ -31,7 +31,7 @@
          spread      in FEET                            6
          clearTrunk  bare trunk below the head, FEET    8
 
-    3. grades     A list, from the GRADES list in app.js.  ["Florida Fancy", "Staked"]
+    3. grades     A list, from the GRADES list in app.js.  ["Florida Fancy", "Specimen"]
 
     4. photos     How many photos the listing has. 0 for none.   2
 
@@ -133,7 +133,7 @@ const NURSERIES = [
     plants: [
       { common: "Live Oak", botanical: "Quercus virginiana",
         container: "Field Grown", caliper: 3, height: 12, spread: 6, clearTrunk: 5,
-        grades: ["Grade #1", "Single Leader", "Balled and Burlapped", "Staked"], photos: 2,
+        grades: ["Grade #1", "Single Leader", "Balled and Burlapped"], photos: 2,
         quantity: 210, price: 339.5, updated: "2026-09-08" },
       { common: "Slash Pine", botanical: "Pinus elliottii",
         container: "45G / 28\"", caliper: 2, height: 10,
@@ -165,15 +165,15 @@ const NURSERIES = [
     plants: [
       { common: "Royal Poinciana", botanical: "Delonix regia",
         container: "45G / 28\"", caliper: 2.5, height: 10, spread: 5,
-        grades: ["Florida Fancy", "Single Leader", "Staked"], photos: 3,
+        grades: ["Florida Fancy", "Single Leader"], photos: 3,
         quantity: 90, price: 200.75, updated: "2026-09-26" },
       { common: "Tabebuia", botanical: "Handroanthus chrysotrichus",
         container: "45G / 28\"", caliper: 2, height: 9, spread: 4,
-        grades: ["Specimen", "Staked"], photos: 2,
+        grades: ["Specimen"], photos: 2,
         quantity: 150, price: 149.5, updated: "2026-09-24" },
       { common: "Bougainvillea", botanical: "Bougainvillea spectabilis",
         container: "15G / 17\"", height: 4, spread: 3,
-        grades: ["Grade #1", "Staked"], photos: 2,
+        grades: ["Grade #1"], photos: 2,
         quantity: 850, price: 24.75, updated: "2026-09-26" },
       { common: "Hibiscus", botanical: "Hibiscus rosa-sinensis",
         container: "3G / 10\"", height: 2.5, spread: 1.5,
@@ -205,7 +205,7 @@ const NURSERIES = [
         quantity: 110, price: 276, updated: "2026-06-12" },
       { common: "Mahogany", botanical: "Swietenia mahagoni",
         container: "45G / 28\"", caliper: 2.5, height: 11, spread: 5,
-        grades: ["Standard", "Single Leader", "Staked"], photos: 0,
+        grades: ["Standard", "Single Leader"], photos: 0,
         quantity: 230, price: 182, updated: "2026-06-26" },
       { common: "Silver Buttonwood", botanical: "Conocarpus erectus var. sericeus",
         container: "45G / 28\"", height: 8, spread: 5,
@@ -309,7 +309,7 @@ const NURSERIES = [
         quantity: 540, price: 22.5, updated: "2026-07-31" },
       { common: "Starfruit", botanical: "Averrhoa carambola 'Kari'",
         container: "15G / 17\"", height: 5, spread: 2.5,
-        grades: ["Standard", "Staked"], photos: 0,
+        grades: ["Standard"], photos: 0,
         quantity: 160, price: 44.5, updated: "2026-07-12" }
     ]
   },

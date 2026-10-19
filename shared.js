@@ -140,7 +140,7 @@ const SPECS = [
 // 3. Grade and features: tick boxes. A listing can have several.
 const GRADES = [
   'Florida Fancy', 'Grade #1', 'Grade #2', 'Specimen', 'Single Leader',
-  'Standard', 'Balled and Burlapped', 'Staked', 'Multi', 'Seedling',
+  'Standard', 'Balled and Burlapped', 'Multi', 'Seedling',
 ];
 
 // 4. Photos: yes or no.

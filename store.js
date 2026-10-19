@@ -394,6 +394,14 @@ const PH = (function () {
       copy.plants = changed.plants || (nursery.plants || []).map(function (plant, index) {
         return Object.assign({ id: nursery.id + "-" + (index + 1) }, plant);
       });
+      // A grade taken off the list (like "Staked") also comes off any listing
+      // saved in this browser before it was removed.
+      if (typeof GRADES !== "undefined") {
+        copy.plants = copy.plants.map(function (plant) {
+          if (!plant.grades) return plant;
+          return Object.assign({}, plant, { grades: plant.grades.filter(function (grade) { return GRADES.indexOf(grade) !== -1; }) });
+        });
+      }
       return copy;
     });
   }
