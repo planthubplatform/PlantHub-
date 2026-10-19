@@ -4,8 +4,9 @@
   after it, written for beginners.
 
   SKELETON (19 Oct 2026). Every plant in the sample listings has an entry
-  (data/plants.js), and some are written so far; the rest say "not written
-  yet". Each entry says who has it right now and links to the directory.
+  (data/plants.js), all written as drafts on 19 Oct; one added without notes
+  says "not written yet". Each entry says who has it right now and links to
+  the directory.
   The fuller version (pictures, links from each listing, a "for the trade"
   section) waits on the questionnaire review: see
   docs/factory/specs/encyclopedia.md.
@@ -132,7 +133,8 @@
         return !words || (plant.name + " " + plant.botanical).toLowerCase().indexOf(words) !== -1;
       });
       const written = PLANTS.filter(function (plant) { return plant.about; }).length;
-      $("count").textContent = plural(shown.length, "plant") + " · " + written + " of " + PLANTS.length + " entries written so far";
+      $("count").textContent = plural(shown.length, "plant") +
+        (written < PLANTS.length ? " · " + written + " of " + PLANTS.length + " entries written so far" : "");
       $("plants").innerHTML = shown.length
         ? shown.map(tileHtml).join("")
         : '<p class="text-sm text-ink-700 dark:text-stone-300">No plant matches. Try a shorter word, or choose "All".</p>';

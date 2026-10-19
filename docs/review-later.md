@@ -194,8 +194,9 @@ kept separately, in the "Road Block 2" doc linked from
     questionnaire sections. Left out on purpose, until his answers: a page per
     carrier and a carrier's own profile and jobs; pictures, and links from
     each directory listing to its encyclopedia entry; more than a few sample
-    articles; saving Plant Doc checks to an account. 10 of the 41
-    encyclopedia entries are written. Plant Doc covers 11 symptoms.
+    articles; saving Plant Doc checks to an account. All 41 encyclopedia
+    entries are written, as drafts for a horticulturist to check. Plant Doc
+    covers 11 symptoms.
 
 ## Decided
 
